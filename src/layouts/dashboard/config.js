@@ -6,15 +6,24 @@ import LockClosedIcon from '@heroicons/react/24/solid/LockClosedIcon';
 // import UserPlusIcon from '@heroicons/react/24/solid/UserPlusIcon';
 import UsersIcon from '@heroicons/react/24/solid/UsersIcon';
 // import XCircleIcon from '@heroicons/react/24/solid/XCircleIcon';
-import ShieldCheckIcon from '@heroicons/react/24/solid/ShieldCheckIcon';
-import PuzzlePieceIcon from '@heroicons/react/24/solid/PuzzlePieceIcon';
-import WrenchScrewdriverIcon from '@heroicons/react/24/solid/WrenchScrewdriverIcon';
 import CalendarDaysIcon from '@heroicons/react/24/solid/CalendarDaysIcon';
+import PuzzlePieceIcon from '@heroicons/react/24/solid/PuzzlePieceIcon';
 import RocketLaunchIcon from '@heroicons/react/24/solid/RocketLaunchIcon';
+import ShieldCheckIcon from '@heroicons/react/24/solid/ShieldCheckIcon';
+import WrenchScrewdriverIcon from '@heroicons/react/24/solid/WrenchScrewdriverIcon';
+import { Dashboard } from '@mui/icons-material';
 import { SvgIcon } from '@mui/material';
-import permissions from 'src/utils/permissions-config';
 
 export const items = [
+  {
+    title: 'Dashboard',
+    path: '/',
+    icon: (
+      <SvgIcon fontSize="small">
+        <Dashboard />
+      </SvgIcon>
+    ),
+  },
   {
     title: 'Overview',
     path: '/',
@@ -32,7 +41,6 @@ export const items = [
         <ShieldCheckIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_roles,
   },
   {
     title: 'Top Leagues',
@@ -42,7 +50,6 @@ export const items = [
         <ChartBarIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_top_leagues,
   },
   {
     title: 'Users',
@@ -52,7 +59,6 @@ export const items = [
         <UsersIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_users,
   },
   {
     title: 'Events',
@@ -62,7 +68,6 @@ export const items = [
         <PuzzlePieceIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_events,
   },
   {
     title: 'App Settings',
@@ -72,7 +77,6 @@ export const items = [
         <WrenchScrewdriverIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_settings,
   },
   {
     title: 'Fixtures',
@@ -82,7 +86,6 @@ export const items = [
         <CalendarDaysIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_fixtures,
   },
   {
     title: 'Open Duels',
@@ -92,7 +95,6 @@ export const items = [
         <RocketLaunchIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_open_duels,
   },
   {
     title: 'Locked Duels',
@@ -102,7 +104,6 @@ export const items = [
         <LockClosedIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_locked_duels,
   },
   {
     title: 'Leaderboards',
@@ -112,7 +113,6 @@ export const items = [
         <ChartBarIcon />
       </SvgIcon>
     ),
-    page_access_permission: permissions.view_leader_board,
   },
   // {
   //   title: 'Companies',

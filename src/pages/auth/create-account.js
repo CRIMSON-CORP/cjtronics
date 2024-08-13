@@ -1,10 +1,8 @@
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { LockClockSharp } from '@mui/icons-material';
 import {
   Box,
   Button,
   FormControl,
-  IconButton,
   InputAdornment,
   Stack,
   TextField,
@@ -15,7 +13,7 @@ import { useFormik } from 'formik';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as AuthLayout } from 'src/layouts/auth/layout';
 import * as Yup from 'yup';
@@ -28,12 +26,12 @@ const Page = () => {
   const formik = useFormik({
     initialValues: {
       email: emailPrams || '',
-      password: '',
+      otp: '',
       submit: null,
     },
     validationSchema: Yup.object({
       email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
-      password: Yup.string().max(255).required('Password is required'),
+      otp: Yup.string().length(6, 'OPT should be 6 characters').required('OTP is required'),
     }),
     onSubmit: async (values, helpers) => {
       try {
@@ -47,12 +45,8 @@ const Page = () => {
     },
   });
 
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
-
-  const handleMouseDownPassword = (event) => {
-    event.preventDefault();
+  const resentOTP = () => {
+    // resend OTP
   };
 
   useEffect(() => {
@@ -66,7 +60,7 @@ const Page = () => {
   return (
     <>
       <Head>
-        <title>Login | Cjtronics Admin</title>
+        <title>Create Account | Cjtronics Admin</title>
       </Head>
       <Box
         sx={{
@@ -88,10 +82,10 @@ const Page = () => {
           <div>
             <Stack spacing={1} sx={{ mb: 3 }}>
               <Typography variant="h3" color="white">
-                Welcome back!
+                CreateAccount
               </Typography>
               <Typography variant="p" color="white">
-                Enter the form below to log in to your account
+                Enter the form below to create your account
               </Typography>
             </Stack>
             <form noValidate onSubmit={formik.handleSubmit}>
@@ -112,39 +106,40 @@ const Page = () => {
                 </FormControl>
                 <FormControl>
                   <TextField
-                    error={!!(formik.touched.password && formik.errors.password)}
+                    error={!!(formik.touched.otp && formik.errors.otp)}
                     fullWidth
-                    helperText={formik.touched.password && formik.errors.password}
-                    label="Password"
-                    name="password"
+                    helperText={formik.touched.otp && formik.errors.otp}
+                    label="OTP"
+                    name="otp"
                     onBlur={formik.handleBlur}
                     onChange={formik.handleChange}
-                    type={showPassword ? 'text' : 'password'}
-                    value={formik.values.password}
+                    type="text"
+                    value={formik.values.otp}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton
-                            aria-label="toggle password visibility"
-                            onClick={handleClickShowPassword}
-                            onMouseDown={handleMouseDownPassword}
-                            edge="end"
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
+                          <LockClockSharp />
                         </InputAdornment>
                       ),
                     }}
                   />
                 </FormControl>
-                <Link
-                  style={{ textDecoration: 'none' }}
-                  href={`/auth/forgot-password${
-                    formik.values.email ? `?email=${formik.values.email}` : ''
-                  }`}
-                >
-                  <Typography color="neutral.400">Forgot password?</Typography>
-                </Link>
+                <Stack direction="horizontal" justifyContent="space-between" alignItems="center">
+                  <Typography>
+                    Already have an account?{' '}
+                    <Link
+                      style={{ textDecoration: 'none' }}
+                      href={`/auth/login${
+                        formik.values.email ? `?email=${formik.values.email}` : ''
+                      }`}
+                    >
+                      <Typography component="span" color="primary">
+                        Sign in!
+                      </Typography>
+                    </Link>
+                  </Typography>
+                  <Button variant="text">Resnd OTP</Button>
+                </Stack>
               </Stack>
               {formik.errors.submit && (
                 <Typography color="error" sx={{ mt: 3 }} variant="body2">
