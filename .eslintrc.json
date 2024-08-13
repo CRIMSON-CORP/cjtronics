@@ -1,0 +1,45 @@
+{
+  "env": {
+    "es6": true
+  },
+  "extends": [
+    "next",
+    "next/core-web-vitals",
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
+    "plugin:import/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:jsx-a11y/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "plugins": ["react", "import", "prettier"],
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "project": "./jsconfig.json",
+    "jsconfigRootDir": "./"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    },
+    "import/extensions": [".js", ".jsx"],
+    "import/parsers": {
+      "@babel/eslint-parser": [".js", ".jsx"]
+    },
+    "import/resolver": {
+      "node": {
+        "paths": ["."]
+      }
+    }
+  },
+  "rules": {
+    "prettier/prettier": ["error", { "endOfLine": "auto" }],
+    "@next/next/no-img-element": "off",
+    "react/display-name": "off",
+    "react/prop-types": "off",
+    "jsx-a11y/no-autofocus": "off"
+  }
+}
