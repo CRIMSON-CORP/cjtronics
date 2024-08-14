@@ -11,7 +11,7 @@ import PuzzlePieceIcon from '@heroicons/react/24/solid/PuzzlePieceIcon';
 import RocketLaunchIcon from '@heroicons/react/24/solid/RocketLaunchIcon';
 import ShieldCheckIcon from '@heroicons/react/24/solid/ShieldCheckIcon';
 import WrenchScrewdriverIcon from '@heroicons/react/24/solid/WrenchScrewdriverIcon';
-import { AddBusiness, Dashboard } from '@mui/icons-material';
+import { AddBusiness, Dashboard, People } from '@mui/icons-material';
 import { SvgIcon } from '@mui/material';
 
 export const items = [
@@ -32,6 +32,26 @@ export const items = [
         <AddBusiness />
       </SvgIcon>
     ),
+  },
+  {
+    title: 'Users',
+    type: 'drop-down',
+    icon: (
+      <SvgIcon fontSize="small">
+        <AddBusiness />
+      </SvgIcon>
+    ),
+    links: [
+      {
+        title: 'All Users',
+        path: '/users',
+        icon: (
+          <SvgIcon fontSize="small">
+            <People />
+          </SvgIcon>
+        ),
+      },
+    ],
   },
   {
     title: 'Overview',

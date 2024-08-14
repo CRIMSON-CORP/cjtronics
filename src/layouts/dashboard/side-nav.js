@@ -1,11 +1,12 @@
+import { Box, Divider, Drawer, Stack, useMediaQuery } from '@mui/material';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import PropTypes from 'prop-types';
-import { Box, Divider, Drawer, Stack, useMediaQuery } from '@mui/material';
 import { Logo } from 'src/components/logo';
+import { useAuth } from 'src/hooks/use-auth';
 import { items } from './config';
 import { SideNavItem } from './side-nav-item';
-import { useAuth } from 'src/hooks/use-auth';
+import SideNavDropList from './SideNavDropList';
 
 export const SideNav = (props) => {
   const { open, onClose } = props;
@@ -54,28 +55,25 @@ export const SideNav = (props) => {
             m: 0,
           }}
         >
-          {items
-            .filter(
-              (item) =>
-                userRoles.includes(item.page_access_permission) ||
-                item.page_access_permission === undefined
-            )
-            .map((item, index) => {
-              const active =
-                item.path.includes(pathname.split('/')[1] || ' ') ||
-                (pathname === '/' && index === 0);
-              return (
-                <SideNavItem
-                  active={active}
-                  disabled={item.disabled}
-                  external={item.external}
-                  icon={item.icon}
-                  key={item.title}
-                  path={item.path}
-                  title={item.title}
-                />
-              );
-            })}
+          {items.map((item, index) => {
+            if (item.type === 'drop-down') {
+              return <SideNavDropList links={item.links} title={item.title} icon={item.icon} />;
+            }
+            const active =
+              item.path.includes(pathname.split('/')[1] || ' ') ||
+              (pathname === '/' && index === 0);
+            return (
+              <SideNavItem
+                active={active}
+                disabled={item.disabled}
+                external={item.external}
+                icon={item.icon}
+                key={item.title}
+                path={item.path}
+                title={item.title}
+              />
+            );
+          })}
         </Stack>
       </Box>
       <Divider sx={{ borderColor: 'neutral.700' }} />
