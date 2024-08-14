@@ -208,6 +208,12 @@ export function createComponents(config) {
               boxShadow: `${palette.error.main} 0 0 0 2px`,
             },
           },
+          [`&.${filledInputClasses.disabled}`]: {
+            backgroundColor: palette.neutral[200],
+            [`& .${outlinedInputClasses.notchedOutline}`]: {
+              borderColor: palette.neutral[300],
+            },
+          },
         },
         input: {
           fontSize: 14,
@@ -286,11 +292,6 @@ export function createComponents(config) {
             paddingBottom: 4,
           },
         },
-      },
-    },
-    MuiTextField: {
-      defaultProps: {
-        variant: 'filled',
       },
     },
   };
