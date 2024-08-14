@@ -57,14 +57,23 @@ export const SideNav = (props) => {
         >
           {items.map((item, index) => {
             if (item.type === 'drop-down') {
-              return <SideNavDropList links={item.links} title={item.title} icon={item.icon} />;
+              return (
+                <SideNavDropList
+                  key={item.title}
+                  links={item.links}
+                  title={item.title}
+                  icon={item.icon}
+                  active={item.matchers?.includes(pathname.split('/')[1])}
+                />
+              );
             }
-            const active =
-              item.path.includes(pathname.split('/')[1] || ' ') ||
-              (pathname === '/' && index === 0);
             return (
               <SideNavItem
-                active={active}
+                active={
+                  item.matchers?.includes(pathname.split('/')[1]) ||
+                  item.path.includes(pathname.split('/')[1] || ' ') ||
+                  (pathname === '/' && index === 0)
+                }
                 disabled={item.disabled}
                 external={item.external}
                 icon={item.icon}

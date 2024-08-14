@@ -11,7 +11,7 @@ import PuzzlePieceIcon from '@heroicons/react/24/solid/PuzzlePieceIcon';
 import RocketLaunchIcon from '@heroicons/react/24/solid/RocketLaunchIcon';
 import ShieldCheckIcon from '@heroicons/react/24/solid/ShieldCheckIcon';
 import WrenchScrewdriverIcon from '@heroicons/react/24/solid/WrenchScrewdriverIcon';
-import { AddBusiness, Dashboard, People } from '@mui/icons-material';
+import { AddBusiness, Business, Dashboard, People } from '@mui/icons-material';
 import { SvgIcon } from '@mui/material';
 
 export const items = [
@@ -41,6 +41,7 @@ export const items = [
         <AddBusiness />
       </SvgIcon>
     ),
+    matchers: ['users'],
     links: [
       {
         title: 'All Users',
@@ -50,6 +51,27 @@ export const items = [
             <People />
           </SvgIcon>
         ),
+        matchers: [undefined],
+      },
+      {
+        title: 'Companies',
+        path: '/users/companies',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Business />
+          </SvgIcon>
+        ),
+        matchers: ['companies'],
+      },
+      {
+        title: 'Organizations',
+        path: '/users/organizations',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Business />
+          </SvgIcon>
+        ),
+        matchers: ['organizations'],
       },
     ],
   },

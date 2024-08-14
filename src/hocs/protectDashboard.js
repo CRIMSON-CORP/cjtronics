@@ -4,7 +4,7 @@ import { ADMIN_COOKIE_NAME } from 'src/utils/constants';
 function ProtectDashboard(getServerSideProps) {
   return async function getServerSidePropsHOC(context) {
     const userAuthToken = parse(context.req.headers.cookie)?.[ADMIN_COOKIE_NAME];
-    getServerSideProps(context, userAuthToken);
+    return getServerSideProps(context, userAuthToken);
     // if (userAuthToken === undefined) {
     //   return {
     //     redirect: {

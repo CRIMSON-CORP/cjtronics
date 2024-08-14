@@ -14,11 +14,12 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { formatDistanceToNow } from 'date-fns';
 import PropTypes from 'prop-types';
 import { Scrollbar } from 'src/components/scrollbar';
 import { getInitials } from 'src/utils/get-initials';
 
-export const CustomersTable = (props) => {
+export const CompaniesTable = (props) => {
   const {
     count = 0,
     items = [],
@@ -55,8 +56,9 @@ export const CustomersTable = (props) => {
                     }}
                   />
                 </TableCell>
-                <TableCell>User</TableCell>
-                <TableCell>Usernmae</TableCell>
+                <TableCell>Company</TableCell>
+                <TableCell>Ad Account Manager</TableCell>
+                <TableCell>Last Updated</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
@@ -73,15 +75,15 @@ export const CustomersTable = (props) => {
             )}
 
             <TableBody>
-              {items.map((user) => {
-                const isSelected = selected.includes(user._id);
+              {items.map((company) => {
+                const isSelected = selected.includes(company._id);
                 return (
                   <TableRow
                     hover
-                    key={user.email}
+                    key={company.email}
                     selected={isSelected}
                     sx={{
-                      bgcolor: user.userActiveStatus === 1 ? '#7ae57a12' : '#e57a7a12',
+                      bgcolor: company.companyActiveStatus === 1 ? '#7ae57a12' : '#e57a7a12',
                     }}
                   >
                     <TableCell padding="checkbox">
@@ -90,48 +92,49 @@ export const CustomersTable = (props) => {
                         onChange={(event) => {
                           event.stopPropagation();
                           if (event.target.checked) {
-                            onSelectOne?.(user._id);
+                            onSelectOne?.(company._id);
                           } else {
-                            onDeselectOne?.(user._id);
+                            onDeselectOne?.(company._id);
                           }
                         }}
                       />
                     </TableCell>
                     <TableCell>
+                      <Typography variant="subtitle2">
+                        {company.companyName} ({company.companyAbbreviation})
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
                       <Stack direction="row" alignItems="center" spacing={2}>
-                        <Avatar src={user.avatar}>
-                          {getInitials(`${user.firstName} ${user.lastName}`)}
+                        <Avatar src={company.avatar}>
+                          {getInitials(`${company.adAccountManager}`)}
                         </Avatar>
-                        <Stack spacing={0.5}>
-                          <Typography variant="subtitle1">
-                            {user.firstName} {user.lastName}
+                        <Stack spacing={0.5} alignItems="flex-start">
+                          <Typography variant="subtitle1">{company.adAccountManager}</Typography>
+                          <Typography variant="subtitle2">
+                            {company.adAccountManagerEmail}
                           </Typography>
-                          <Typography variant="subtitle2">{user.email}</Typography>
+                          <Chip
+                            label={company.adAccountManagerPhoneNumber}
+                            sx={{ textTransform: 'capitalize' }}
+                          />
                         </Stack>
-                        <Chip label={user.privilege} sx={{ textTransform: 'capitalize' }} />
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="subtitle2">{user.username}</Typography>
+                      <Typography variant="subtitle2">
+                        {formatDistanceToNow(new Date(company.createdAt))}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2}>
-                        {user.userActiveStatus === 1 ? (
+                        {company.companyActiveStatus === 1 ? (
                           <Button variant="contained" color="error">
                             Deactivate
                           </Button>
                         ) : (
                           <Button variant="contained" color="primary">
                             Activate
-                          </Button>
-                        )}
-                        {user.privilege === 'user' ? (
-                          <Button variant="contained" color="info">
-                            Activate as Admin
-                          </Button>
-                        ) : (
-                          <Button variant="contained" color="error">
-                            Remove as Admin
                           </Button>
                         )}
                       </Stack>
@@ -155,7 +158,7 @@ export const CustomersTable = (props) => {
   );
 };
 
-CustomersTable.propTypes = {
+CompaniesTable.propTypes = {
   count: PropTypes.number,
   items: PropTypes.array,
   onDeselectAll: PropTypes.func,

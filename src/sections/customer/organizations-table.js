@@ -1,10 +1,10 @@
+import { DeleteForever } from '@mui/icons-material';
 import {
   Avatar,
   Box,
   Button,
   Card,
   Checkbox,
-  Chip,
   Stack,
   Table,
   TableBody,
@@ -14,11 +14,12 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { formatDistanceToNow } from 'date-fns';
 import PropTypes from 'prop-types';
 import { Scrollbar } from 'src/components/scrollbar';
 import { getInitials } from 'src/utils/get-initials';
 
-export const CustomersTable = (props) => {
+export const OrganizationsTable = (props) => {
   const {
     count = 0,
     items = [],
@@ -55,8 +56,8 @@ export const CustomersTable = (props) => {
                     }}
                   />
                 </TableCell>
-                <TableCell>User</TableCell>
-                <TableCell>Usernmae</TableCell>
+                <TableCell>Organiaztion</TableCell>
+                <TableCell>Last Updated</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
@@ -73,15 +74,15 @@ export const CustomersTable = (props) => {
             )}
 
             <TableBody>
-              {items.map((user) => {
-                const isSelected = selected.includes(user._id);
+              {items.map((organization) => {
+                const isSelected = selected.includes(organization._id);
                 return (
                   <TableRow
                     hover
-                    key={user.email}
+                    key={organization.email}
                     selected={isSelected}
                     sx={{
-                      bgcolor: user.userActiveStatus === 1 ? '#7ae57a12' : '#e57a7a12',
+                      bgcolor: organization.companyActiveStatus === 1 ? '#7ae57a12' : '#e57a7a12',
                     }}
                   >
                     <TableCell padding="checkbox">
@@ -90,51 +91,30 @@ export const CustomersTable = (props) => {
                         onChange={(event) => {
                           event.stopPropagation();
                           if (event.target.checked) {
-                            onSelectOne?.(user._id);
+                            onSelectOne?.(organization._id);
                           } else {
-                            onDeselectOne?.(user._id);
+                            onDeselectOne?.(organization._id);
                           }
                         }}
                       />
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" alignItems="center" spacing={2}>
-                        <Avatar src={user.avatar}>
-                          {getInitials(`${user.firstName} ${user.lastName}`)}
+                        <Avatar src={organization.avatar}>
+                          {getInitials(`${organization.name}`)}
                         </Avatar>
-                        <Stack spacing={0.5}>
-                          <Typography variant="subtitle1">
-                            {user.firstName} {user.lastName}
-                          </Typography>
-                          <Typography variant="subtitle2">{user.email}</Typography>
-                        </Stack>
-                        <Chip label={user.privilege} sx={{ textTransform: 'capitalize' }} />
+                        <Typography variant="subtitle1">{organization.name}</Typography>
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="subtitle2">{user.username}</Typography>
+                      <Typography variant="subtitle2">
+                        {formatDistanceToNow(new Date(organization.updatedAt))}
+                      </Typography>
                     </TableCell>
                     <TableCell>
-                      <Stack direction="row" spacing={2}>
-                        {user.userActiveStatus === 1 ? (
-                          <Button variant="contained" color="error">
-                            Deactivate
-                          </Button>
-                        ) : (
-                          <Button variant="contained" color="primary">
-                            Activate
-                          </Button>
-                        )}
-                        {user.privilege === 'user' ? (
-                          <Button variant="contained" color="info">
-                            Activate as Admin
-                          </Button>
-                        ) : (
-                          <Button variant="contained" color="error">
-                            Remove as Admin
-                          </Button>
-                        )}
-                      </Stack>
+                      <Button startIcon={<DeleteForever />} variant="contained" color="error">
+                        Delete
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -155,7 +135,7 @@ export const CustomersTable = (props) => {
   );
 };
 
-CustomersTable.propTypes = {
+OrganizationsTable.propTypes = {
   count: PropTypes.number,
   items: PropTypes.array,
   onDeselectAll: PropTypes.func,

@@ -3,10 +3,10 @@ import { Accordion, AccordionDetails, AccordionSummary, Box, ButtonBase } from '
 import { usePathname } from 'next/navigation';
 import { SideNavItem } from './side-nav-item';
 
-function SideNavDropList({ title, icon, links }) {
+function SideNavDropList({ title, icon, links, active, disabled }) {
   const pathname = usePathname();
   return (
-    <Accordion sx={{ p: 0, my: 0, backgroundColor: 'rgba(255, 255, 255, 0.04)' }}>
+    <Accordion disableGutters sx={{ p: 0, my: 0, backgroundColor: 'rgba(255, 255, 255, 0.04)' }}>
       <AccordionSummary
         expandIcon={<ArrowDropDownIcon />}
         aria-controls="panel1-content"
@@ -18,6 +18,12 @@ function SideNavDropList({ title, icon, links }) {
           minHeight: '0px',
           '& .MuiAccordionSummary-content': {
             margin: '0px',
+          },
+          ...(active && {
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          }),
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
           },
         }}
       >
@@ -47,6 +53,9 @@ function SideNavDropList({ title, icon, links }) {
                   display: 'inline-flex',
                   justifyContent: 'center',
                   mr: 2,
+                  ...(active && {
+                    color: 'primary.main',
+                  }),
                 }}
               >
                 {icon}
@@ -61,6 +70,12 @@ function SideNavDropList({ title, icon, links }) {
                 fontSize: 14,
                 fontWeight: 600,
                 lineHeight: '24px',
+                ...(active && {
+                  color: 'common.white',
+                }),
+                ...(disabled && {
+                  color: 'neutral.500',
+                }),
               }}
             >
               {title}
@@ -70,8 +85,7 @@ function SideNavDropList({ title, icon, links }) {
       </AccordionSummary>
       <AccordionDetails>
         {links.map((item, index) => {
-          const active =
-            item.path.includes(pathname.split('/')[1] || ' ') || (pathname === '/' && index === 0);
+          const active = item?.matchers.includes(pathname.split('/')[2]);
           return (
             <SideNavItem
               active={active}

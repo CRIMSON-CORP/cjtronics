@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
-import { CustomersTable } from 'src/sections/customer/customers-table';
+import { CompaniesTable } from 'src/sections/customer/companies-table';
 import { applyPagination } from 'src/utils/apply-pagination';
 
 const useCustomers = (users, page) => {
@@ -34,7 +34,7 @@ const Page = ({ users, total_results, pager_current_page }) => {
   return (
     <>
       <Head>
-        <title>Users | Dalukwa Admin</title>
+        <title>Companies | Dalukwa Admin</title>
       </Head>
       <Box
         component="main"
@@ -45,8 +45,8 @@ const Page = ({ users, total_results, pager_current_page }) => {
       >
         <Container maxWidth="xl">
           <Stack spacing={3}>
-            <Typography variant="h5">Users({total_results})</Typography>
-            <CustomersTable
+            <Typography variant="h5">Companies({total_results})</Typography>
+            <CompaniesTable
               count={total_results}
               items={users}
               onDeselectAll={customersSelection.handleDeselectAll}
@@ -98,16 +98,15 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
     props: {
       users: [
         {
-          createdAt: '2024-08-07T23:10:31.980Z',
-          email: 'aa@aa.com',
-          firstName: 'aa',
-          lastName: 'aa',
-          organizationId: '64ae8231564cd6a76b7b2a42',
-          privilege: 'user',
-          type: 'individual',
-          updatedAt: '2024-08-07T23:10:31.980Z',
-          userActiveStatus: 1,
-          username: 'aa.aa',
+          accountServiceManagerId: '633c408ffc79025375eb8a2a',
+          adAccountManager: 'Oluwatayo Oredugba',
+          adAccountManagerEmail: 'oluwatayo@folham.com',
+          adAccountManagerPhoneNumber: '08032371888',
+          companyAbbreviation: 'COM1',
+          companyActiveStatus: 1,
+          companyName: 'Company 1',
+          createdAt: '2022-10-11T06:43:33.673Z',
+          updatedAt: '2022-10-11T06:43:33.673Z',
         },
       ],
       total_results: 1,

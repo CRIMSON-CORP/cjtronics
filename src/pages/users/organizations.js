@@ -1,10 +1,23 @@
-import { Box, Container, Stack, Typography } from '@mui/material';
+import AddBusinessIcon from '@mui/icons-material/AddBusiness';
+import {
+  Box,
+  Button,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import Head from 'next/head';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
-import { CustomersTable } from 'src/sections/customer/customers-table';
+import { OrganizationsTable } from 'src/sections/customer/organizations-table';
 import { applyPagination } from 'src/utils/apply-pagination';
 
 const useCustomers = (users, page) => {
@@ -34,7 +47,7 @@ const Page = ({ users, total_results, pager_current_page }) => {
   return (
     <>
       <Head>
-        <title>Users | Dalukwa Admin</title>
+        <title>Organizations | Dalukwa Admin</title>
       </Head>
       <Box
         component="main"
@@ -45,8 +58,11 @@ const Page = ({ users, total_results, pager_current_page }) => {
       >
         <Container maxWidth="xl">
           <Stack spacing={3}>
-            <Typography variant="h5">Users({total_results})</Typography>
-            <CustomersTable
+            <Stack flexWrap="wrap" gap={3} direction="row" justifyContent="space-between">
+              <Typography variant="h5">Organizations({total_results})</Typography>
+              <CreateOrganizationForm />
+            </Stack>
+            <OrganizationsTable
               count={total_results}
               items={users}
               onDeselectAll={customersSelection.handleDeselectAll}
@@ -98,16 +114,9 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
     props: {
       users: [
         {
-          createdAt: '2024-08-07T23:10:31.980Z',
-          email: 'aa@aa.com',
-          firstName: 'aa',
-          lastName: 'aa',
-          organizationId: '64ae8231564cd6a76b7b2a42',
-          privilege: 'user',
-          type: 'individual',
-          updatedAt: '2024-08-07T23:10:31.980Z',
-          userActiveStatus: 1,
-          username: 'aa.aa',
+          createdAt: '2023-07-11T21:14:46.284Z',
+          name: 'Techbeaver',
+          updatedAt: '2023-07-11T21:14:46.284Z',
         },
       ],
       total_results: 1,
@@ -117,3 +126,61 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
 });
 
 export default Page;
+
+function CreateOrganizationForm() {
+  const [open, setOpen] = useState(false);
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+  return (
+    <>
+      <Button onClick={handleClickOpen} startIcon={<AddBusinessIcon />} variant="contained">
+        Create Organization
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        PaperProps={{
+          component: 'form',
+          onSubmit: (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const formJson = Object.fromEntries(formData.entries());
+            const email = formJson.email;
+            console.log(email);
+            handleClose();
+          },
+        }}
+      >
+        <DialogTitle>Create Organization</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            To subscribe to this website, please enter your email address here. We will send updates
+            occasionally.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            required
+            margin="dense"
+            id="name"
+            name="organization-name"
+            label="Organization name"
+            type="text"
+            fullWidth
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
