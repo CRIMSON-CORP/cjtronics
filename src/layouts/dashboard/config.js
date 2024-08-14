@@ -11,7 +11,7 @@ import PuzzlePieceIcon from '@heroicons/react/24/solid/PuzzlePieceIcon';
 import RocketLaunchIcon from '@heroicons/react/24/solid/RocketLaunchIcon';
 import ShieldCheckIcon from '@heroicons/react/24/solid/ShieldCheckIcon';
 import WrenchScrewdriverIcon from '@heroicons/react/24/solid/WrenchScrewdriverIcon';
-import { Dashboard } from '@mui/icons-material';
+import { AddBusiness, Dashboard } from '@mui/icons-material';
 import { SvgIcon } from '@mui/material';
 
 export const items = [
@@ -21,6 +21,15 @@ export const items = [
     icon: (
       <SvgIcon fontSize="small">
         <Dashboard />
+      </SvgIcon>
+    ),
+  },
+  {
+    title: 'Add Ad Company',
+    path: '/add-ad-company',
+    icon: (
+      <SvgIcon fontSize="small">
+        <AddBusiness />
       </SvgIcon>
     ),
   },

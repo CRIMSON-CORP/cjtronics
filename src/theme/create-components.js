@@ -205,7 +205,6 @@ export function createComponents(config) {
           [`&.${filledInputClasses.error}`]: {
             [`& .${outlinedInputClasses.notchedOutline}`]: {
               borderColor: palette.error.main,
-              boxShadow: `${palette.error.main} 0 0 0 2px`,
             },
           },
           [`&.${filledInputClasses.disabled}`]: {
