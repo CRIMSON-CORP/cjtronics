@@ -11,8 +11,17 @@ import PuzzlePieceIcon from '@heroicons/react/24/solid/PuzzlePieceIcon';
 import RocketLaunchIcon from '@heroicons/react/24/solid/RocketLaunchIcon';
 import ShieldCheckIcon from '@heroicons/react/24/solid/ShieldCheckIcon';
 import WrenchScrewdriverIcon from '@heroicons/react/24/solid/WrenchScrewdriverIcon';
-import { AddBusiness, Business, Campaign, Dashboard, Monitor, People } from '@mui/icons-material';
-import VideoCameraFrontIcon from '@mui/icons-material/VideoCameraFront';
+import {
+  AddBusiness,
+  Business,
+  Campaign,
+  Dashboard,
+  Monitor,
+  OndemandVideo,
+  People,
+  VideoCameraFront,
+} from '@mui/icons-material';
+import HistoryIcon from '@mui/icons-material/History';
 import { SvgIcon } from '@mui/material';
 
 export const items = [
@@ -39,7 +48,7 @@ export const items = [
     type: 'drop-down',
     icon: (
       <SvgIcon fontSize="small">
-        <AddBusiness />
+        <People />
       </SvgIcon>
     ),
     matchers: ['users'],
@@ -113,9 +122,51 @@ export const items = [
     path: '/ad-account',
     icon: (
       <SvgIcon fontSize="small">
-        <VideoCameraFrontIcon />
+        <VideoCameraFront />
       </SvgIcon>
     ),
+  },
+  {
+    title: 'Campaing',
+    type: 'drop-down',
+    icon: (
+      <SvgIcon fontSize="small">
+        <Campaign />
+      </SvgIcon>
+    ),
+    matchers: ['campaing'],
+    links: [
+      {
+        title: 'Create Ads',
+        path: '/campaing',
+        icon: (
+          <SvgIcon fontSize="small">
+            <OndemandVideo />
+          </SvgIcon>
+        ),
+        matchers: ['campaing'],
+      },
+      {
+        title: 'Create Campaing',
+        path: '/campaing/create-campaing',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Campaign />
+          </SvgIcon>
+        ),
+        matchers: ['create-campaing'],
+      },
+      {
+        title: 'Create Shedule',
+        path: '/campaing/create-schedule',
+        icon: (
+          <SvgIcon fontSize="small">
+            <HistoryIcon />
+          </SvgIcon>
+        ),
+        matchers: ['screens'],
+      },
+    ],
   },
   {
     title: 'Overview',

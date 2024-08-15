@@ -99,7 +99,11 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
       </AccordionSummary>
       <AccordionDetails>
         {links.map((item, index) => {
-          const active = item?.matchers.includes(pathname.split('/')[index === 0 ? 1 : 2]);
+          const splitPath = pathname.split('/');
+          const active =
+            index === 0
+              ? item.matchers.includes(splitPath[1]) && splitPath.length === 2
+              : item?.matchers.includes(splitPath[index === 0 ? 1 : 2]);
           return (
             <SideNavItem
               active={active}
