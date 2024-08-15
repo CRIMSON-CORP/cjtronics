@@ -6,7 +6,21 @@ import { SideNavItem } from './side-nav-item';
 function SideNavDropList({ title, icon, links, active, disabled }) {
   const pathname = usePathname();
   return (
-    <Accordion disableGutters sx={{ p: 0, my: 0, backgroundColor: 'rgba(255, 255, 255, 0.04)' }}>
+    <Accordion
+      disableGutters
+      sx={{
+        p: 0,
+        my: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        '&:before': {
+          content: 'none',
+        },
+        overflow: 'hidden',
+        '&:last-of-type, &:first-of-type': {
+          borderRadius: ' 8px',
+        },
+      }}
+    >
       <AccordionSummary
         expandIcon={<ArrowDropDownIcon />}
         aria-controls="panel1-content"
@@ -85,7 +99,7 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
       </AccordionSummary>
       <AccordionDetails>
         {links.map((item, index) => {
-          const active = item?.matchers.includes(pathname.split('/')[2]);
+          const active = item?.matchers.includes(pathname.split('/')[index === 0 ? 1 : 2]);
           return (
             <SideNavItem
               active={active}

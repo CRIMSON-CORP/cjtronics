@@ -11,7 +11,8 @@ import PuzzlePieceIcon from '@heroicons/react/24/solid/PuzzlePieceIcon';
 import RocketLaunchIcon from '@heroicons/react/24/solid/RocketLaunchIcon';
 import ShieldCheckIcon from '@heroicons/react/24/solid/ShieldCheckIcon';
 import WrenchScrewdriverIcon from '@heroicons/react/24/solid/WrenchScrewdriverIcon';
-import { AddBusiness, Business, Dashboard, People } from '@mui/icons-material';
+import { AddBusiness, Business, Campaign, Dashboard, Monitor, People } from '@mui/icons-material';
+import VideoCameraFrontIcon from '@mui/icons-material/VideoCameraFront';
 import { SvgIcon } from '@mui/material';
 
 export const items = [
@@ -51,7 +52,7 @@ export const items = [
             <People />
           </SvgIcon>
         ),
-        matchers: [undefined],
+        matchers: ['users'],
       },
       {
         title: 'Companies',
@@ -74,6 +75,47 @@ export const items = [
         matchers: ['organizations'],
       },
     ],
+  },
+  {
+    title: 'Screens',
+    type: 'drop-down',
+    icon: (
+      <SvgIcon fontSize="small">
+        <Monitor />
+      </SvgIcon>
+    ),
+    matchers: ['screens'],
+    links: [
+      {
+        title: 'All Screens',
+        path: '/screens',
+        icon: (
+          <SvgIcon fontSize="small">
+            <People />
+          </SvgIcon>
+        ),
+        matchers: ['screens'],
+      },
+      {
+        title: 'Screen Campaing',
+        path: '/screens/campaing',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Campaign />
+          </SvgIcon>
+        ),
+        matchers: ['campaing'],
+      },
+    ],
+  },
+  {
+    title: 'Ad Account',
+    path: '/ad-account',
+    icon: (
+      <SvgIcon fontSize="small">
+        <VideoCameraFrontIcon />
+      </SvgIcon>
+    ),
   },
   {
     title: 'Overview',
