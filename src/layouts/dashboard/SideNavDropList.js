@@ -16,7 +16,7 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
           content: 'none',
         },
         overflow: 'hidden',
-        '&:last-of-type, &:first-of-type': {
+        '&,&:last-of-type, &:first-of-type': {
           borderRadius: ' 8px',
         },
       }}
