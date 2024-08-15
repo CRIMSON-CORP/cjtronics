@@ -1,21 +1,32 @@
-import { useCallback } from 'react';
+import { Box, Divider, MenuItem, MenuList, Popover, Typography } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import PropTypes from 'prop-types';
-import { Box, Divider, MenuItem, MenuList, Popover, Typography } from '@mui/material';
+import { useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from 'src/hooks/use-auth';
 
 export const AccountPopover = (props) => {
   const { anchorEl, onClose, open } = props;
   const router = useRouter();
-  const auth = useAuth();
+  const { signOut, user } = useAuth();
 
-  const handleSignOut = useCallback(() => {
+  const handleSignOut = useCallback(async () => {
+    try {
+      await toast.promise(signOut(), {
+        loading: 'Signing out',
+        success: () => {
+          router.push('/auth/login');
+          return 'Sign out successfull';
+        },
+        error: (error) => {
+          return error.message;
+        },
+      });
+    } catch (erro) {}
     onClose?.();
-    auth.signOut();
-    router.push('/auth/login');
-  }, [onClose, auth, router]);
+  }, [onClose, signOut, router]);
 
-  const { firstname, lastname } = auth?.user?.user || {};
+  const { firstname, lastname } = user?.user || {};
 
   return (
     <Popover

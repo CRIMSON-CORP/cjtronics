@@ -42,8 +42,6 @@ const Page = () => {
         loading: 'Signing in...',
         success: (message) => {
           router.push(router.query.continueUrl ?? '/');
-          console.log(message);
-
           return message;
         },
         error: (error) => {

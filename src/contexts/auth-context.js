@@ -114,7 +114,10 @@ export const AuthProvider = (props) => {
         window.sessionStorage.setItem('user', JSON.stringify(data.data));
         dispatch({
           type: HANDLERS.SIGN_IN,
-          payload: data.data,
+          payload: {
+            token: data.token,
+            ...data.data,
+          },
         });
         return data.message;
       } else throw new Error(data.message);
@@ -125,14 +128,19 @@ export const AuthProvider = (props) => {
 
   const signOut = useCallback(async () => {
     try {
-      await axios.post('/api/auth/logout');
-      window.sessionStorage.setItem('authenticated', 'false');
-      window.sessionStorage.setItem('user', null);
-      dispatch({
-        type: HANDLERS.SIGN_OUT,
-      });
-    } catch (error) {
-      console.log('error loging out', error);
+      const { data, status } = await axios.post('/api/auth/logout');
+      if (status === 200) {
+        window.sessionStorage.setItem('authenticated', 'false');
+        window.sessionStorage.setItem('user', null);
+        dispatch({
+          type: HANDLERS.SIGN_OUT,
+        });
+        return data.message;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      throw new Error(err?.response?.data?.message ?? err.message);
     }
   }, []);
 
