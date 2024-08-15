@@ -1,3 +1,5 @@
+import axios from 'axios';
+import PropTypes from 'prop-types';
 import {
   createContext,
   useCallback,
@@ -7,9 +9,6 @@ import {
   useReducer,
   useRef,
 } from 'react';
-import PropTypes from 'prop-types';
-import axios from 'src/lib/axios';
-import permissions from 'src/utils/permissions-config';
 
 const HANDLERS = {
   INITIALIZE: 'INITIALIZE',
@@ -110,18 +109,14 @@ export const AuthProvider = (props) => {
         email,
         password,
       });
-      if (status === 200 && data.success) {
-        if (data.data.user.role.meta.includes(permissions.browse_admin)) {
-          window.sessionStorage.setItem('authenticated', 'true');
-          window.sessionStorage.setItem('user', JSON.stringify(data.data));
-          dispatch({
-            type: HANDLERS.SIGN_IN,
-            payload: data.data,
-          });
-        } else
-          throw new Error(
-            'Access denied!, only admins are allowed, contact an admin to give access'
-          );
+      if (status === 200 && data.status) {
+        window.sessionStorage.setItem('authenticated', 'true');
+        window.sessionStorage.setItem('user', JSON.stringify(data.data));
+        dispatch({
+          type: HANDLERS.SIGN_IN,
+          payload: data.data,
+        });
+        return data.message;
       } else throw new Error(data.message);
     } catch (err) {
       throw new Error(err?.response?.data?.message ?? err.message);

@@ -6,17 +6,17 @@ export default async function handler(req, res) {
   try {
     const response = await axios.post('/auth/login', req.body);
 
-    if (response.data.success && response.status === 200) {
+    if (response.data.status && response.status === 200) {
       res.setHeader(
         'Set-Cookie',
-        `${ADMIN_COOKIE_NAME}=${response.data.data.auth_token}; Max-Age=900000; HttpOnly; Path=/`
+        `${ADMIN_COOKIE_NAME}=${response.data.token}; Max-Age=900000; HttpOnly; Path=/`
       );
 
       res.status(response.status).json(response.data);
     } else throw response;
   } catch (error) {
     if (error.data) {
-      res.status(401).json({ message: error.data.message });
+      res.status(401).json({ message: error.message });
     }
     if (!error.response) {
       res.status(503).json({ message: 'No response from Server' });

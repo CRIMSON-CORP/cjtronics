@@ -16,6 +16,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as AuthLayout } from 'src/layouts/auth/layout';
 import * as Yup from 'yup';
@@ -36,14 +37,20 @@ const Page = () => {
       password: Yup.string().max(255).required('Password is required'),
     }),
     onSubmit: async (values, helpers) => {
-      try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
-        helpers.setSubmitting(false);
-      }
+      helpers.setSubmitting(true);
+      await toast.promise(signIn(values.email, values.password), {
+        loading: 'Signing in...',
+        success: (message) => {
+          router.push(router.query.continueUrl ?? '/');
+          console.log(message);
+
+          return message;
+        },
+        error: (error) => {
+          return error.message;
+        },
+      });
+      helpers.setSubmitting(false);
     },
   });
 
@@ -108,6 +115,11 @@ const Page = () => {
                     onChange={formik.handleChange}
                     type="email"
                     value={formik.values.email}
+                    sx={{
+                      '& input': {
+                        color: 'white',
+                      },
+                    }}
                   />
                 </FormControl>
                 <FormControl>
@@ -135,6 +147,11 @@ const Page = () => {
                         </InputAdornment>
                       ),
                     }}
+                    sx={{
+                      '& input': {
+                        color: 'white',
+                      },
+                    }}
                   />
                 </FormControl>
                 <Link
@@ -157,7 +174,7 @@ const Page = () => {
                 sx={{ mt: 3 }}
                 type="submit"
                 variant="contained"
-                disabled={!(formik.isValid && formik.dirty)}
+                disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
               >
                 Continue
               </Button>
