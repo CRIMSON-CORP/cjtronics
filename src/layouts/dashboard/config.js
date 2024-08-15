@@ -9,9 +9,11 @@ import {
   Business,
   Campaign,
   Dashboard,
+  Dvr,
   Monitor,
   OndemandVideo,
   People,
+  ShowChart,
   VideoCameraFront,
   Widgets,
 } from '@mui/icons-material';
@@ -168,6 +170,24 @@ export const items = [
     icon: (
       <SvgIcon fontSize="small">
         <Widgets />
+      </SvgIcon>
+    ),
+  },
+  {
+    title: 'Activity Log',
+    path: '/activity-log',
+    icon: (
+      <SvgIcon fontSize="small">
+        <ShowChart />
+      </SvgIcon>
+    ),
+  },
+  {
+    title: 'Device Log',
+    path: '/generate-report',
+    icon: (
+      <SvgIcon fontSize="small">
+        <Dvr />
       </SvgIcon>
     ),
   },
