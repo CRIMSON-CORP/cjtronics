@@ -56,7 +56,7 @@ export const CustomersTable = (props) => {
                   />
                 </TableCell>
                 <TableCell>User</TableCell>
-                <TableCell>Usernmae</TableCell>
+                <TableCell>Reference</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
@@ -74,11 +74,11 @@ export const CustomersTable = (props) => {
 
             <TableBody>
               {items.map((user) => {
-                const isSelected = selected.includes(user._id);
+                const isSelected = selected.includes(user.id);
                 return (
                   <TableRow
                     hover
-                    key={user.email}
+                    key={user.id}
                     selected={isSelected}
                     sx={{
                       bgcolor: user.userActiveStatus === 1 ? '#7ae57a12' : '#e57a7a12',
@@ -100,11 +100,11 @@ export const CustomersTable = (props) => {
                     <TableCell>
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Avatar src={user.avatar}>
-                          {getInitials(`${user.firstName} ${user.lastName}`)}
+                          {getInitials(`${user.first_name} ${user.last_name}`)}
                         </Avatar>
                         <Stack spacing={0.5}>
                           <Typography variant="subtitle1">
-                            {user.firstName} {user.lastName}
+                            {user.first_name} {user.last_name}
                           </Typography>
                           <Typography variant="subtitle2">{user.email}</Typography>
                         </Stack>
@@ -112,7 +112,7 @@ export const CustomersTable = (props) => {
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="subtitle2">{user.username}</Typography>
+                      <Typography variant="subtitle2">{user.reference}</Typography>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2}>

@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import axios from 'src/lib/axios';
 import { CustomersTable } from 'src/sections/customer/customers-table';
 import { applyPagination } from 'src/utils/apply-pagination';
 
@@ -34,7 +35,7 @@ const Page = ({ users, total_results, pager_current_page }) => {
   return (
     <>
       <Head>
-        <title>Users | Dalukwa Admin</title>
+        <title>Users | Cjtronics Admin</title>
       </Head>
       <Box
         component="main"
@@ -73,47 +74,55 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
     ...ctx.query,
     page: ctx.query.page || 1,
   };
-  const urlParams = new URLSearchParams(params).toString();
+  try {
+    const { data } = await axios.get(`/users/all`, {
+      headers: {
+        Authorization: `Bearer ${userAuthToken}`,
+      },
+    });
 
-  // try {
-  //   const {
-  //     data: { data },
-  //   } = await axios.get(`/admin/user/list?${urlParams}`, {
-  //     headers: {
-  //       Authorization: `Bearer ${userAuthToken}`,
-  //     },
-  //   });
-
-  //   return {
-  //     props: data,
-  //   };
-  // } catch (error) {
-  //   console.log(error);
-  //   return {
-  //     notFound: true,
-  //   };
-  // }
-
-  return {
-    props: {
-      users: [
-        {
-          createdAt: '2024-08-07T23:10:31.980Z',
-          email: 'aa@aa.com',
-          firstName: 'aa',
-          lastName: 'aa',
-          organizationId: '64ae8231564cd6a76b7b2a42',
-          privilege: 'user',
-          type: 'individual',
-          updatedAt: '2024-08-07T23:10:31.980Z',
-          userActiveStatus: 1,
-          username: 'aa.aa',
+    return {
+      props: {
+        users: data.data,
+        total_results: 2,
+        pager_current_page: 1,
+      },
+    };
+  } catch (error) {
+    if (error.response.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
         },
-      ],
-      total_results: 1,
-      pager_current_page: 1,
-    },
-  };
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+
+  // return {
+  //   props: {
+  //     users: [
+  //       {
+  //         createdAt: '2024-08-07T23:10:31.980Z',
+  //         email: 'aa@aa.com',
+  //         firstName: 'aa',
+  //         lastName: 'aa',
+  //         organizationId: '64ae8231564cd6a76b7b2a42',
+  //         privilege: 'user',
+  //         type: 'individual',
+  //         updatedAt: '2024-08-07T23:10:31.980Z',
+  //         userActiveStatus: 1,
+  //         username: 'aa.aa',
+  //       },
+  //     ],
+  //     total_results: 1,
+  //     pager_current_page: 1,
+  //   },
+  // };
 });
 
 export default Page;
