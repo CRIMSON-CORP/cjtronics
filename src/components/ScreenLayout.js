@@ -42,13 +42,15 @@ function ScreenLayout({ landscape, full, split = '', horizontal, title, name, va
         )}
       </Stack>
       <Typography>{title}</Typography>
-      <Radio
-        checked={value === formik.values[name]}
-        onChange={formik.handleChange}
-        value={value}
-        name={name}
-        inputProps={{ 'aria-label': title }}
-      />
+      {formik ? (
+        <Radio
+          checked={value === formik.values[name]}
+          onChange={formik.handleChange}
+          value={value}
+          name={name}
+          inputProps={{ 'aria-label': title }}
+        />
+      ) : null}
     </Stack>
   );
 }

@@ -128,7 +128,6 @@ export function createComponents(config) {
     MuiInputBase: {
       styleOverrides: {
         input: {
-          color: 'white',
           '&::placeholder': {
             opacity: 1,
           },

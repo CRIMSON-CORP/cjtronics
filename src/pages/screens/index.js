@@ -263,28 +263,6 @@ const Page = ({}) => {
                       </FormControl>
                       <Divider />
                       <Typography variant="subtitle1">Select Screen Layout</Typography>
-                      <FormControl variant="outlined">
-                        <InputLabel htmlFor="account_officer">Account Officer</InputLabel>
-                        <Select
-                          error={
-                            !!(formik.touched.account_officer && formik.errors.account_officer)
-                          }
-                          fullWidth
-                          label="Account Officer"
-                          name="account_officer"
-                          id="account_officer"
-                          onBlur={formik.handleBlur}
-                          onChange={formik.handleChange}
-                          value={formik.values.account_officer}
-                        >
-                          <MenuItem value="Ajayi">Ajayi</MenuItem>
-                        </Select>
-                        {!!(formik.touched.account_officer && formik.errors.account_officer) && (
-                          <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.account_officer}
-                          </FormHelperText>
-                        )}
-                      </FormControl>
                       <Stack>
                         <Grid container spacing={{ xs: 2 }} columns={{ xs: 4, sm: 8, md: 12 }}>
                           <Grid xs={2} sm={4} md={4}>
