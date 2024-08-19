@@ -63,7 +63,9 @@ const Page = () => {
   useEffect(() => {
     (async () => {
       if (router.query?.auth === 'false') {
-        signOut();
+        try {
+          await signOut();
+        } catch (error) {}
       }
     })();
   }, [signOut, router.query?.auth]);

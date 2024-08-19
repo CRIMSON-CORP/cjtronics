@@ -111,7 +111,7 @@ export const AuthProvider = (props) => {
       });
       if (status === 200 && data.status) {
         window.sessionStorage.setItem('authenticated', 'true');
-        window.sessionStorage.setItem('user', JSON.stringify(data.data));
+        window.sessionStorage.setItem('user', JSON.stringify(data.data) || {});
         dispatch({
           type: HANDLERS.SIGN_IN,
           payload: {

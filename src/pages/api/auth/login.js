@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     if (response.data.status && response.status === 200) {
       res.setHeader(
         'Set-Cookie',
-        `${ADMIN_COOKIE_NAME}=${response.data.token}; Max-Age=900000; HttpOnly; Path=/`
+        `${ADMIN_COOKIE_NAME}=${response.data.token}; Max-Age=777600; HttpOnly; Path=/`
       );
 
       res.status(response.status).json(response.data);
