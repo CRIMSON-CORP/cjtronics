@@ -90,9 +90,9 @@ export const CustomersTable = (props) => {
                         onChange={(event) => {
                           event.stopPropagation();
                           if (event.target.checked) {
-                            onSelectOne?.(user._id);
+                            onSelectOne?.(user.id);
                           } else {
-                            onDeselectOne?.(user._id);
+                            onDeselectOne?.(user.id);
                           }
                         }}
                       />
@@ -123,6 +123,15 @@ export const CustomersTable = (props) => {
                         ) : (
                           <Button variant="contained" color="primary">
                             Activate
+                          </Button>
+                        )}
+                        {user.userActiveStatus === 1 ? (
+                          <Button variant="contained" color="error">
+                            Unsuspend
+                          </Button>
+                        ) : (
+                          <Button variant="contained" color="primary">
+                            Suspend
                           </Button>
                         )}
                         {user.privilege === 'user' ? (
