@@ -5,6 +5,12 @@ import {
   Card,
   Checkbox,
   Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Stack,
   Table,
   TableBody,
@@ -14,9 +20,15 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Scrollbar } from 'src/components/scrollbar';
+import { useAuth } from 'src/hooks/use-auth';
 import { getInitials } from 'src/utils/get-initials';
 
 export const CustomersTable = (props) => {
@@ -35,8 +47,36 @@ export const CustomersTable = (props) => {
     onRowsPerPageChange,
   } = props;
 
+  const { replace, asPath } = useRouter();
+
   const selectedSome = selected.length > 0 && selected.length < items.length;
   const selectedAll = items.length > 0 && selected.length === items.length;
+
+  const toggleAdminUser = (reference, set) => async (e) => {
+    try {
+      const { data } = await axios.post(`/api/admin/users/${set ? 'set-admin' : 'remove-admin'}`, {
+        reference,
+      });
+      toast.success(data.message);
+      replace(asPath);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+      throw error;
+    }
+  };
+
+  const toggleSuspendUser = (reference, suspend) => async (e) => {
+    try {
+      const { data } = await axios.post(`/api/admin/users/${suspend ? 'disable' : 'enable'}`, {
+        reference,
+      });
+      toast.success(data.message);
+      replace(asPath);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+      throw error;
+    }
+  };
 
   return (
     <Card>
@@ -125,34 +165,43 @@ export const CustomersTable = (props) => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2}>
-                        {user.userType !== 'admin' &&
-                          (user.isActive ? (
-                            <Button variant="contained" color="error">
-                              Deactivate
-                            </Button>
-                          ) : (
-                            <Button variant="contained" color="primary">
-                              Activate
-                            </Button>
-                          ))}
-                        {user.userActiveStatus === 1 ? (
-                          <Button variant="contained" color="error">
-                            Unsuspend
-                          </Button>
-                        ) : (
-                          <Button variant="contained" color="primary">
+                        {user.isActive ? (
+                          <ConfirmAction
+                            title="Suspend User?"
+                            color="error"
+                            action={toggleSuspendUser(user.reference, true)}
+                            content="Are you sure you want to Suspend this User?"
+                          >
                             Suspend
-                          </Button>
+                          </ConfirmAction>
+                        ) : (
+                          <ConfirmAction
+                            title="Unsuspend User?"
+                            action={toggleSuspendUser(user.reference, false)}
+                            content="Are you sure you want to Unsuspend this User?"
+                          >
+                            Unsuspend
+                          </ConfirmAction>
                         )}
                         {user.userType !== 'admin' &&
                           (user.userType == 'partner' ? (
-                            <Button variant="contained" color="error">
+                            <ConfirmAction
+                              color="error"
+                              title="Remove User as partner?"
+                              action={toggleAdminUser(user.reference, false)}
+                              content="Are you sure you want to remove this User as a Partner?"
+                            >
                               Remove as Partner
-                            </Button>
+                            </ConfirmAction>
                           ) : (
-                            <Button variant="contained" color="info">
+                            <ConfirmAction
+                              color="info"
+                              title="Remove User as partner?"
+                              action={toggleAdminUser(user.reference, true)}
+                              content="Are you sure you want to remove this User as a Partner?"
+                            >
                               Activate as Partner
-                            </Button>
+                            </ConfirmAction>
                           ))}
                       </Stack>
                     </TableCell>
@@ -189,3 +238,56 @@ CustomersTable.propTypes = {
   rowsPerPage: PropTypes.number,
   selected: PropTypes.array,
 };
+
+function ConfirmAction({ children, action, title, proceedText, dissmissText, content, color }) {
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [requestProcessing, setRequestProcessing] = useState(false);
+
+  const openConfirmModal = () => {
+    setConfirmModalOpen(true);
+  };
+  const closeConfirmModal = () => {
+    setConfirmModalOpen(false);
+  };
+
+  const handleAction = async () => {
+    try {
+      setRequestProcessing(true);
+      await action();
+      setConfirmModalOpen(false);
+    } finally {
+      setRequestProcessing(false);
+    }
+  };
+
+  return (
+    <>
+      <Button variant="contained" color={color} onClick={openConfirmModal}>
+        {children}
+      </Button>
+      <Dialog
+        sx={{ '& .MuiDialog-paper': { width: '80%', maxHeight: 435 } }}
+        maxWidth="xs"
+        open={confirmModalOpen}
+      >
+        <DialogTitle>{title}</DialogTitle>
+        <DialogContent dividers>
+          <DialogContentText>{content}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={closeConfirmModal}>
+            {dissmissText || 'Cancel'}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAction}
+            startIcon={requestProcessing && <CircularProgress sx={{ color: 'white' }} size={16} />}
+            color={color}
+          >
+            {proceedText || 'Confirm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}

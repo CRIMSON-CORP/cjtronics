@@ -42,6 +42,7 @@ const handlers = {
   },
   [HANDLERS.SIGN_IN]: (state, action) => {
     const user = action.payload;
+    console.log(user, action.payload);
 
     return {
       ...state,
@@ -109,6 +110,7 @@ export const AuthProvider = (props) => {
         email,
         password,
       });
+
       if (status === 200 && data.status) {
         window.sessionStorage.setItem('authenticated', 'true');
         window.sessionStorage.setItem('user', JSON.stringify(data.data) || {});
@@ -116,7 +118,7 @@ export const AuthProvider = (props) => {
           type: HANDLERS.SIGN_IN,
           payload: {
             token: data.token,
-            ...data.data,
+            ...JSON.parse(data.data),
           },
         });
         return data.message;

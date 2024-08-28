@@ -95,7 +95,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
   } catch (error) {
     console.log(error);
 
-    if (error.response.status === 401) {
+    if (error?.response?.status === 401) {
       return {
         redirect: {
           destination: '/auth/login?auth=false',
