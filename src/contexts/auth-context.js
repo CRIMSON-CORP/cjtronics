@@ -144,13 +144,41 @@ export const AuthProvider = (props) => {
     }
   }, []);
 
+  const forgotPassword = useCallback(async (email) => {
+    try {
+      const { data, status } = await axios.post('/api/auth/forgot-password', { email });
+      if (status === 200) {
+        return data.message;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      throw new Error(err?.response?.data?.message ?? err.message);
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (payload) => {
+    try {
+      const { data, status } = await axios.post('/api/auth/reset-password', payload);
+      if (status === 200) {
+        return data.message;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      throw new Error(err?.response?.data?.message ?? err.message);
+    }
+  });
+
   const contextValues = useMemo(
     () => ({
       ...state,
       signIn,
       signOut,
+      forgotPassword,
+      resetPassword,
     }),
-    [signOut, state]
+    [signIn, signOut, forgotPassword, resetPassword, state]
   );
 
   return <AuthContext.Provider value={contextValues}>{children}</AuthContext.Provider>;

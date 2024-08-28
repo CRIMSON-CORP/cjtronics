@@ -4,34 +4,39 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as AuthLayout } from 'src/layouts/auth/layout';
 import * as Yup from 'yup';
 
 const Page = () => {
   const router = useRouter();
-  const { signIn, signOut } = useAuth();
+  const { forgotPassword, signOut } = useAuth();
   const theme = useTheme();
   const emailPrams = router.query.email;
+
   const formik = useFormik({
     initialValues: {
       email: emailPrams || '',
-      password: '',
       submit: null,
     },
     validationSchema: Yup.object({
       email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
-      password: Yup.string().max(255).required('Password is required'),
     }),
-    onSubmit: async (values, helpers) => {
-      try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
-        helpers.setSubmitting(false);
-      }
+    onSubmit: async ({ email }, helpers) => {
+      console.log('submit');
+
+      helpers.setSubmitting(true);
+      await toast.promise(forgotPassword(email), {
+        loading: 'Requesting Change of passsword...',
+        success: (message) => {
+          return message;
+        },
+        error: (error) => {
+          return error.message;
+        },
+      });
+      helpers.setSubmitting(false);
     },
   });
 
@@ -86,6 +91,11 @@ const Page = () => {
                   onChange={formik.handleChange}
                   type="email"
                   value={formik.values.email}
+                  sx={{
+                    '& input': {
+                      color: 'white',
+                    },
+                  }}
                 />
                 <Link
                   href={`/auth/login${formik.values.email ? `?email=${formik.values.email}` : ''}`}
@@ -99,7 +109,14 @@ const Page = () => {
                   {formik.errors.submit}
                 </Typography>
               )}
-              <Button fullWidth size="large" sx={{ mt: 3 }} type="submit" variant="contained">
+              <Button
+                disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
+                fullWidth
+                size="large"
+                sx={{ mt: 3 }}
+                type="submit"
+                variant="contained"
+              >
                 Continue
               </Button>
             </form>

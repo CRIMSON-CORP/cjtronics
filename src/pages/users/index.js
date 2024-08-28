@@ -1,5 +1,6 @@
 import { Box, Container, Stack, Typography } from '@mui/material';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useCallback, useMemo } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { useSelection } from 'src/hooks/use-selection';
@@ -8,29 +9,28 @@ import axios from 'src/lib/axios';
 import { CustomersTable } from 'src/sections/customer/customers-table';
 import { applyPagination } from 'src/utils/apply-pagination';
 
-const useCustomers = (users, page) => {
-  return useMemo(() => {
-    return applyPagination(users, page);
-  }, [users, page]);
-};
-
 const useCustomerIds = (customers) => {
   return useMemo(() => {
     return customers.map((customer) => customer.id);
   }, [customers]);
 };
 
-const Page = ({ users, total_results, pager_current_page }) => {
-  const page = pager_current_page - 1;
-  const customers = useCustomers(users, page);
-  const customersIds = useCustomerIds(customers);
+const Page = ({ users, total_results, current_page, rows_per_page }) => {
+  const page = current_page - 1;
+
+  const { replace, query } = useRouter();
+
+  const customersIds = useCustomerIds(users);
+
   const customersSelection = useSelection(customersIds);
 
-  const handleRowsPerPageChange = useCallback(() => {}, []);
+  const handleRowsPerPageChange = useCallback((event) => {
+    replace(`/users?size=${event.target.value}&${query.page ? `page=${query.page}` : ''}`);
+  }, []);
 
-  const onPageChange = () => {};
-
-  const rowsPerPage = Math.min(users.length, 25);
+  const onPageChange = (_event, newPage) => {
+    replace(`/users?page=${newPage + 1}&${query.size ? `size=${query.size}` : ''}`);
+  };
 
   return (
     <>
@@ -58,7 +58,8 @@ const Page = ({ users, total_results, pager_current_page }) => {
               onSelectOne={customersSelection.handleSelectOne}
               page={page}
               selected={customersSelection.selected}
-              rowsPerPage={rowsPerPage}
+              rowsPerPage={parseInt(rows_per_page)}
+              pageSizeOptions={[1, 5, 10, 25, 30]}
             />
           </Stack>
         </Container>
@@ -73,22 +74,27 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
+    size: ctx.query.size || 25,
   };
+
   try {
-    const { data } = await axios.get(`/users/all`, {
+    const { data } = await axios.get(`/users`, {
       headers: {
         Authorization: `Bearer ${userAuthToken}`,
       },
+      params,
     });
-
     return {
       props: {
-        users: data.data,
-        total_results: 2,
-        pager_current_page: 1,
+        users: data.data.users,
+        total_results: data.data.totalRows,
+        current_page: data.data.currentPage,
+        rows_per_page: data.data.rowsPerPage,
       },
     };
   } catch (error) {
+    console.log(error);
+
     if (error.response.status === 401) {
       return {
         redirect: {
