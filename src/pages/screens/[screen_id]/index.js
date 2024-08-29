@@ -1,10 +1,12 @@
 import { Delete, Edit, HelpOutline } from '@mui/icons-material';
 import {
+  Autocomplete,
   Box,
   Button,
   Card,
   CardContent,
   CardHeader,
+  CircularProgress,
   Container,
   Divider,
   FormControl,
@@ -32,10 +34,22 @@ import {
 import { useFormik } from 'formik';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ScreenLayout from 'src/components/ScreenLayout';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import {
+  getAllOrganizations,
+  getAllScreens,
+  getScreen,
+  getScreenCities,
+  getScreenLayouts,
+} from 'src/lib/actions';
 import * as Yup from 'yup';
+import { screenLayoutToReferenceMap } from '..';
+import toast from 'react-hot-toast';
+import axios from 'axios';
+import ConfirmAction from 'src/components/ConfirmAction';
 
 const campaings = [
   {
@@ -78,12 +92,11 @@ const campaings = [
   },
 ];
 
-const Page = () => {
-  const { query } = useRouter();
-  const [selectedScreen, setSelectedScreen] = useState(query.screen_id);
+const Page = ({ screens, screen, organizations, cities, screen_layouts }) => {
+  const { query, replace } = useRouter();
 
   const handleScreenSelect = (event) => {
-    setSelectedScreen(event.target.value);
+    replace(`/screens/${event.target.value}`);
   };
 
   return (
@@ -108,20 +121,26 @@ const Page = () => {
                   <Select
                     labelId="scrren-select-label"
                     id="screen-select"
-                    value={selectedScreen}
+                    value={query.screen_id}
                     label="Select Screen"
                     onChange={handleScreenSelect}
                   >
-                    <MenuItem value="123">Mysogi</MenuItem>
-                    <MenuItem value="10">Ten</MenuItem>
-                    <MenuItem value="10">Twenty</MenuItem>
-                    <MenuItem value="10">Thirty</MenuItem>
+                    {screens.screen.map((screen) => (
+                      <MenuItem value={screen.reference} key={screen.reference}>
+                        {screen.screenName}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
             </Grid>
             <ScreenCampaings campaings={campaings} />
-            <ScreenDetails />
+            <ScreenDetails
+              cities={cities}
+              screen={screen}
+              organizations={organizations}
+              screenLayouts={screen_layouts}
+            />
           </Stack>
         </Container>
       </Box>
@@ -192,7 +211,59 @@ function ScreenCampaings({ campaings }) {
   );
 }
 
-function ScreenDetails() {
+function ScreenDetails({ screen, organizations, cities, screenLayouts }) {
+  const { replace, asPath } = useRouter();
+  const onNotifyChange = (event) => {
+    const { checked } = event.target;
+    toast.promise(
+      axios.post('/api/admin/screens/toggle-notify', {
+        reference: screen.reference,
+        notify: checked,
+      }),
+      {
+        loading: `Turning ${checked ? 'on' : 'off'} Notifications...`,
+        success: () => {
+          replace(asPath);
+          return `Notifications turned ${checked ? 'on' : 'off'}!`;
+        },
+        error: `Error turning ${checked ? 'on' : 'off'} Notifications!, Please try again`,
+      }
+    );
+  };
+  const onScrollChange = (event) => {
+    const { checked } = event.target;
+    toast.promise(
+      axios.post('/api/admin/screens/toggle-scroll', {
+        reference: screen.reference,
+        scroll: checked,
+      }),
+      {
+        loading: `Turning ${checked ? 'on' : 'off'} Scrolling Banner...`,
+        success: () => {
+          replace(asPath);
+          return `Scrolling Banner turned ${checked ? 'on' : 'off'}!`;
+        },
+        error: `Error turning ${checked ? 'on' : 'off'} Scrolling Banner!, Please try again`,
+      }
+    );
+  };
+
+  const deleteScreen = () => {
+    toast.promise(
+      axios.post('/api/admin/screens/delete', {
+        reference: screen.reference,
+      }),
+      {
+        loading: 'Deleting Screen, Hold on...',
+        success: () => {
+          replace('/screens');
+          return 'Screen Deleted!';
+        },
+        error: 'Failed to delete this screen, Please try again',
+      }
+    );
+  };
+
   return (
     <Card>
       <CardHeader
@@ -200,10 +271,22 @@ function ScreenDetails() {
           <Stack justifyContent="space-between" direction="row" flexWrap="wrap" spacing={2}>
             <Typography variant="h5">Screen Details</Typography>
             <Stack direction="row" spacing={1}>
-              <EditScreen />
-              <Button startIcon={<Delete />} color="error">
+              <EditScreen
+                screen={screen}
+                cities={cities}
+                organizations={organizations}
+                screenLayouts={screenLayouts}
+              />
+              <ConfirmAction
+                color="error"
+                action={deleteScreen}
+                title="Delete Screen?"
+                proceedText="Delete Screen"
+                buttonProps={{ startIcon: <Delete /> }}
+                content="Are you absolutely sure you want to delete this screen?"
+              >
                 Delete
-              </Button>
+              </ConfirmAction>
             </Stack>
           </Stack>
         }
@@ -217,7 +300,7 @@ function ScreenDetails() {
                   <Typography>Screen Name</Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography>BISHOP ABOYADE</Typography>
+                  <Typography>{screen.screenName}</Typography>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -225,7 +308,7 @@ function ScreenDetails() {
                   <Typography>Layout</Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography>Landscape-Full</Typography>
+                  <Typography>{screen.layoutName}</Typography>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -233,7 +316,9 @@ function ScreenDetails() {
                   <Typography>Screen Output Size(W x H):</Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography>1280 x 720</Typography>
+                  <Typography>
+                    {screen.screenWidth} x {screen.screenHeight}
+                  </Typography>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -241,7 +326,7 @@ function ScreenDetails() {
                   <Typography>Screen ID</Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography>FOL-ABO</Typography>
+                  <Typography>{screen.screenId}</Typography>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -249,7 +334,7 @@ function ScreenDetails() {
                   <Typography>Device ID</Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography>RDID1Z</Typography>
+                  <Typography>{screen.deviceId}</Typography>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -258,7 +343,7 @@ function ScreenDetails() {
                 </TableCell>
                 <TableCell>
                   <Box maxWidth={300}>
-                    <ScreenLayout full horizontal landscape />
+                    {screenLayoutToReferenceMap[screen.layoutReference](undefined, screen)}
                   </Box>
                 </TableCell>
               </TableRow>
@@ -267,7 +352,9 @@ function ScreenDetails() {
                   <Typography>Notificatons</Typography>
                 </TableCell>
                 <TableCell>
-                  <FormControlLabel control={<Switch defaultChecked />} />
+                  <FormControlLabel
+                    control={<Switch checked={screen.isNotify} onChange={onNotifyChange} />}
+                  />
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -275,7 +362,9 @@ function ScreenDetails() {
                   <Typography>Scrolling Banner</Typography>
                 </TableCell>
                 <TableCell>
-                  <FormControlLabel control={<Switch defaultChecked />} />
+                  <FormControlLabel
+                    control={<Switch checked={screen.isScroll} onChange={onScrollChange} />}
+                  />
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -293,7 +382,7 @@ const modalStyles = {
   transform: 'translate(-50%, -50%)',
 };
 
-function EditScreen() {
+function EditScreen({ screen, organizations, cities, screenLayouts }) {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const openModal = () => {
     setEditModalOpen(true);
@@ -308,7 +397,13 @@ function EditScreen() {
       </Button>
       <Modal open={editModalOpen} onClose={closeModal}>
         <Box sx={modalStyles}>
-          <EditScreenForm />
+          <EditScreenForm
+            screen={screen}
+            cities={cities}
+            closeModal={closeModal}
+            organizations={organizations}
+            screenLayouts={screenLayouts}
+          />
         </Box>
       </Modal>
     </>
@@ -321,42 +416,67 @@ const cardStyles = {
   overflowY: 'auto',
 };
 
-const EditScreenForm = ({}) => {
+const EditScreenForm = ({ screen, organizations, cities, screenLayouts, closeModal }) => {
+  const { replace, asPath } = useRouter();
   const formik = useFormik({
     initialValues: {
-      screen_id: '',
-      screen_name: '',
-      screen_height: '',
-      screen_width: '',
-      screen_layout: '',
-      unique_device_id: '',
-      ad_account_manager_name: '',
-      ad_account_manager_email: '',
-      ad_account_manager_phone_number: '',
-      account_officer: '',
-
-      password: '',
+      organizationId: screen.organizationReference,
+      screenName: screen.screenName,
+      screenId: screen.screenId,
+      screenHeight: screen.screenHeight,
+      screenWidth: screen.screenWidth,
+      screenCity: screen.screenCity,
+      screenUniqueId: screen.deviceId,
+      screenLayout: screen.layoutReference,
       submit: null,
     },
     validationSchema: Yup.object({
-      screen_id: Yup.string().max(255).required('Screen ID is required'),
-      screen_name: Yup.string().max(255).required('Screen Name is required'),
-      screen_height: Yup.string().max(255).required('Screen Height is required'),
-      screen_width: Yup.string().max(255).required('Screen Width is required'),
-      screen_layout: Yup.string().max(255).required('Screen Layout is required'),
-      unique_device_id: Yup.string().max(255).required('Device ID is required'),
+      organizationId: Yup.string().max(255).required('organization ID is required'),
+      screenName: Yup.string().max(255).required('Screen Name is required'),
+      screenId: Yup.string().max(255).required('Screen ID is required'),
+      screenHeight: Yup.string().max(255).required('Screen Height is required'),
+      screenWidth: Yup.string().max(255).required('Screen Width is required'),
+      screenCity: Yup.string().max(255).required('Screen Layout is required'),
+      screenUniqueId: Yup.string().max(255).required('Device ID is required'),
     }),
     onSubmit: async (values, helpers) => {
-      try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
-        helpers.setSubmitting(false);
-      }
+      values.reference = screen.reference;
+      values.screenCity = 'Lagos';
+      helpers.setSubmitting(true);
+      await toast.promise(axios.post('/api/admin/screens/edit', values), {
+        loading: 'Updating Screen, Hang on...',
+        error: (err) => {
+          helpers.setStatus({ success: false });
+          helpers.setSubmitting(false);
+          return err.response?.data?.message || err.message;
+        },
+        success: () => {
+          helpers.setStatus({ success: true });
+          helpers.setSubmitting(false);
+          replace(asPath);
+          closeModal();
+          return 'Screen Updated';
+        },
+      });
     },
   });
+
+  const citiesOptions = useMemo(() => cities.map((city) => city.city), [cities]);
+
+  const handleCityChange = useCallback((_event, value) => {
+    formik.setFieldValue('screenCity', value);
+  }, []);
+
+  const selectedScreenCoordinates = useMemo(() => {
+    const city = cities.find((city) => city.city === formik.values.screenCity);
+    if (city) {
+      return {
+        longitude: city.lng,
+        latitude: city.lat,
+      };
+    }
+  }, [formik.values.screenCity]);
+
   return (
     <Card sx={cardStyles}>
       <CardHeader
@@ -375,143 +495,150 @@ const EditScreenForm = ({}) => {
         <form onSubmit={formik.handleSubmit}>
           <Stack spacing={3}>
             <FormControl variant="outlined">
-              <TextField
-                error={!!(formik.touched.screen_id && formik.errors.screen_id)}
+              <InputLabel htmlFor="organizationId">Select Organization</InputLabel>
+              <Select
+                error={!!(formik.touched.organizationId && formik.errors.organizationId)}
                 fullWidth
-                helperText={formik.touched.screen_id && formik.errors.screen_id}
-                label="Screen ID"
-                name="screen_id"
-                id="screen_id"
+                name="organizationId"
+                id="organizationId"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
-                type="email"
-                value={formik.values.screen_id}
+                value={formik.values.organizationId}
+              >
+                {organizations.map((organization) => (
+                  <MenuItem key={organization.id} value={organization.reference}>
+                    {organization.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {!!(formik.touched.organizationId && formik.errors.organizationId) && (
+                <FormHelperText sx={{ color: 'error.main' }}>
+                  {formik.errors.organizationId}
+                </FormHelperText>
+              )}
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.screenId && formik.errors.screenId)}
+                fullWidth
+                helperText={formik.touched.screenId && formik.errors.screenId}
+                label="Screen ID"
+                name="screenId"
+                id="screenId"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                type="text"
+                value={formik.values.screenId}
               />
               <FormHelperText>e.g FLH2</FormHelperText>
             </FormControl>
             <FormControl variant="outlined">
               <TextField
-                error={!!(formik.touched.screen_name && formik.errors.screen_name)}
+                error={!!(formik.touched.screenName && formik.errors.screenName)}
                 fullWidth
-                helperText={formik.touched.screen_name && formik.errors.screen_name}
+                helperText={formik.touched.screenName && formik.errors.screenName}
                 label="Screen Name"
-                name="screen_name"
-                id="screen_name"
+                name="screenName"
+                id="screenName"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
-                type="email"
-                value={formik.values.screen_name}
+                type="text"
+                value={formik.values.screenName}
               />
             </FormControl>
             <FormControl variant="outlined">
               <TextField
-                error={!!(formik.touched.screen_height && formik.errors.screen_height)}
+                error={!!(formik.touched.screenHeight && formik.errors.screenHeight)}
                 fullWidth
-                helperText={formik.touched.screen_height && formik.errors.screen_height}
+                helperText={formik.touched.screenHeight && formik.errors.screenHeight}
                 label="Screen Height"
-                name="screen_height"
-                id="screen_height"
+                name="screenHeight"
+                id="screenHeight"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 type="number"
-                value={formik.values.screen_height}
+                value={formik.values.screenHeight}
               />
             </FormControl>
             <FormControl variant="outlined">
               <TextField
-                error={!!(formik.touched.screen_width && formik.errors.screen_width)}
+                error={!!(formik.touched.screenWidth && formik.errors.screenWidth)}
                 fullWidth
-                helperText={formik.touched.screen_width && formik.errors.screen_width}
+                helperText={formik.touched.screenWidth && formik.errors.screenWidth}
                 label="Screen Width"
-                name="screen_width"
-                id="screen_width"
+                name="screenWidth"
+                id="screenWidth"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 type="number"
-                value={formik.values.screen_width}
+                value={formik.values.screenWidth}
               />
             </FormControl>
             <Divider />
             <FormControl variant="outlined">
-              <TextField
-                error={!!(formik.touched.unique_device_id && formik.errors.unique_device_id)}
+              <Autocomplete
+                error={formik.touched.screenCity && formik.errors.screenCity}
                 fullWidth
-                helperText={formik.touched.unique_device_id && formik.errors.unique_device_id}
+                options={citiesOptions}
+                label="Screen Location"
+                name="screenCity"
+                id="screenCity"
+                onBlur={formik.handleBlur}
+                onChange={handleCityChange}
+                value={formik.values.screenCity || null}
+                renderInput={(params) => <TextField {...params} label="Select Screen Location" />}
+              />
+              {!!(formik.touched.screenCity && formik.errors.screenCity) && (
+                <FormHelperText sx={{ color: 'error.main' }}>
+                  {formik.errors.screenCity}
+                </FormHelperText>
+              )}
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                fullWidth
+                disabled
+                label="Screen longitude"
+                name="screen_longitude"
+                id="screen_longitude"
+                type="text"
+                value={selectedScreenCoordinates?.longitude || ''}
+              />
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                fullWidth
+                disabled
+                label="Screen latitude"
+                name="screen_latitude"
+                id="screen_latitude"
+                type="text"
+                value={selectedScreenCoordinates?.latitude || ''}
+              />
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.screenUniqueId && formik.errors.screenUniqueId)}
+                fullWidth
+                helperText={formik.touched.screenUniqueId && formik.errors.screenUniqueId}
                 label="Unique Device ID"
-                name="unique_device_id"
-                id="unique_device_id"
+                name="screenUniqueId"
+                id="screenUniqueId"
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
-                type="email"
-                value={formik.values.ad_account_manager_email}
+                type="text"
+                value={formik.values.screenUniqueId}
               />
             </FormControl>
             <Divider />
             <Typography variant="subtitle1">Select Screen Layout</Typography>
             <Stack>
               <Grid container spacing={{ xs: 2 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                <Grid xs={2} sm={4} md={4}>
-                  <ScreenLayout
-                    full
-                    landscape
-                    formik={formik}
-                    name="screen_layout"
-                    value="landspace-full"
-                    title="Landscape Full"
-                  />
-                </Grid>
-                <Grid xs={2} sm={4} md={4}>
-                  <ScreenLayout
-                    landscape
-                    split="80%,20%"
-                    formik={formik}
-                    name="screen_layout"
-                    value="landspace-80-20"
-                    title="Landscape 80/20"
-                  />
-                </Grid>
-                <Grid xs={2} sm={4} md={4}>
-                  <ScreenLayout
-                    landscape
-                    split="50%,50%"
-                    horizontal
-                    formik={formik}
-                    name="screen_layout"
-                    value="landspace-50-50"
-                    title="Landscape Split"
-                  />
-                </Grid>
-                <Grid xs={2} sm={4} md={4}>
-                  <ScreenLayout
-                    landscape={false}
-                    full
-                    formik={formik}
-                    name="screen_layout"
-                    value="portrait-full"
-                    title="Portrait"
-                  />
-                </Grid>
-                <Grid xs={2} sm={4} md={4}>
-                  <ScreenLayout
-                    landscape={false}
-                    split="80%,20%"
-                    formik={formik}
-                    name="screen_layout"
-                    value="portrait-80-20"
-                    title="Portrait 80/20"
-                  />
-                </Grid>
-                <Grid xs={2} sm={4} md={4}>
-                  <ScreenLayout
-                    landscape={false}
-                    split="50%,50%"
-                    horizontal={false}
-                    formik={formik}
-                    name="screen_layout"
-                    value="portrait-split"
-                    title="Portrait Split"
-                  />
-                </Grid>
+                {screenLayouts.map((screenLayout) => (
+                  <Grid xs={2} sm={4} md={4} key={screenLayout.id}>
+                    {screenLayoutToReferenceMap[screenLayout.reference]?.(formik, screenLayout)}
+                  </Grid>
+                ))}
               </Grid>
               {!!(formik.touched.screen_layout && formik.errors.screen_layout) && (
                 <FormHelperText sx={{ color: 'error.main' }}>
@@ -519,7 +646,17 @@ const EditScreenForm = ({}) => {
                 </FormHelperText>
               )}
             </Stack>
-            <Button variant="contained" size="large" disabled={!(formik.isValid && formik.dirty)}>
+            <Button
+              type="submit"
+              startIcon={
+                formik.isSubmitting && (
+                  <CircularProgress size={16} sx={{ color: 'rgba(17,25,39,0.6)' }} />
+                )
+              }
+              variant="contained"
+              size="large"
+              disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
+            >
               Update Screen
             </Button>
           </Stack>
@@ -546,3 +683,33 @@ function ToolTipContent() {
     </div>
   );
 }
+
+export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  try {
+    const [screens, screen, organizations, cities, screen_layouts] = await Promise.all([
+      getAllScreens(ctx.req),
+      getScreen(ctx.req, ctx.query.screen_id),
+      getAllOrganizations(ctx.req),
+      getScreenCities(ctx.req),
+      getScreenLayouts(ctx.req),
+    ]);
+    return {
+      props: { screens, screen, organizations, cities, screen_layouts },
+    };
+  } catch (error) {
+    console.log(error);
+
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});

@@ -29,6 +29,20 @@ export async function getAllScreens(req, params) {
   }
 }
 
+export async function getScreen(req, screen_id) {
+  try {
+    const { data } = await axios.get(`/screen/${screen_id}`, {
+      headers: {
+        Authorization: `Bearer ${getCookie(req)}`,
+      },
+    });
+
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function getScreenCities(req) {
   try {
     const { data } = await axios.get('/screen/city/all', {

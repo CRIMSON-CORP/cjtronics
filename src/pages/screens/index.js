@@ -331,7 +331,6 @@ function Form({ organizations, cities, screenLayouts }) {
                 {formik.errors.submit}
               </Typography>
             )}
-            {console.log(formik.isSubmitting)}
             <Button
               type="submit"
               startIcon={
@@ -353,7 +352,7 @@ function Form({ organizations, cities, screenLayouts }) {
 }
 
 function Screens({ screens }) {
-  const { replace, asPath, query } = useRouter();
+  const { replace, asPath } = useRouter();
   const refreshPageForScreens = () => replace(asPath);
 
   const hanldePageChange = (_event, value) => {
@@ -409,7 +408,6 @@ function Screens({ screens }) {
               </ListItem>
             ))}
           </List>
-          {console.log(screens)}
           <Pagination
             sx={{ ul: { justifyContent: 'space-between' } }}
             count={Math.ceil(screens.totalRows / +screens.rowsPerPage)}
@@ -423,7 +421,7 @@ function Screens({ screens }) {
   );
 }
 
-const screenLayoutToReferenceMap = {
+export const screenLayoutToReferenceMap = {
   VBSGTREW43: (formik, screenLayout) => (
     <Layout
       full

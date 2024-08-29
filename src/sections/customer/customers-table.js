@@ -27,6 +27,7 @@ import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import ConfirmAction from 'src/components/ConfirmAction';
 import { Scrollbar } from 'src/components/scrollbar';
 import { useAuth } from 'src/hooks/use-auth';
 import { getInitials } from 'src/utils/get-initials';
@@ -238,56 +239,3 @@ CustomersTable.propTypes = {
   rowsPerPage: PropTypes.number,
   selected: PropTypes.array,
 };
-
-function ConfirmAction({ children, action, title, proceedText, dissmissText, content, color }) {
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [requestProcessing, setRequestProcessing] = useState(false);
-
-  const openConfirmModal = () => {
-    setConfirmModalOpen(true);
-  };
-  const closeConfirmModal = () => {
-    setConfirmModalOpen(false);
-  };
-
-  const handleAction = async () => {
-    try {
-      setRequestProcessing(true);
-      await action();
-      setConfirmModalOpen(false);
-    } finally {
-      setRequestProcessing(false);
-    }
-  };
-
-  return (
-    <>
-      <Button variant="contained" color={color} onClick={openConfirmModal}>
-        {children}
-      </Button>
-      <Dialog
-        sx={{ '& .MuiDialog-paper': { width: '80%', maxHeight: 435 } }}
-        maxWidth="xs"
-        open={confirmModalOpen}
-      >
-        <DialogTitle>{title}</DialogTitle>
-        <DialogContent dividers>
-          <DialogContentText>{content}</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button autoFocus onClick={closeConfirmModal}>
-            {dissmissText || 'Cancel'}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleAction}
-            startIcon={requestProcessing && <CircularProgress sx={{ color: 'white' }} size={16} />}
-            color={color}
-          >
-            {proceedText || 'Confirm'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
-}
