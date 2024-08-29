@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CircularProgress,
   Container,
   Divider,
   FormControl,
@@ -15,50 +16,62 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useMemo } from 'react';
+import toast from 'react-hot-toast';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import { getUsers } from 'src/lib/actions';
 import * as Yup from 'yup';
 
-const Page = ({}) => {
+const Page = ({ users }) => {
+  const { push } = useRouter();
   const formik = useFormik({
     initialValues: {
-      company_name: '',
-      company_code: '',
-      ad_account_manager_name: '',
-      ad_account_manager_email: '',
-      ad_account_manager_phone_number: '',
-      account_officer: '',
-      password: '',
+      name: '',
+      code: '',
+      managerName: '',
+      managerPhone: '',
+      managerEmail: '',
+      accountOfficer: '',
       submit: null,
     },
     validationSchema: Yup.object({
-      company_name: Yup.string().max(255).required('Company Name is required'),
-      company_code: Yup.string().max(255).required('Company Code is required'),
-      ad_account_manager_name: Yup.string()
-        .max(255)
-        .required('Ad account manager name is required'),
-      ad_account_manager_email: Yup.string()
+      name: Yup.string().max(255).required('Company Name is required'),
+      code: Yup.string().max(255).required('Company Code is required'),
+      managerName: Yup.string().max(255).required('Ad account manager name is required'),
+      managerPhone: Yup.string().max(255).required('Ad account manager phone number is required'),
+      managerEmail: Yup.string()
         .email('Must be a valid email!')
         .max(255)
         .required('Ad account manager name is required'),
-      ad_account_manager_phone_number: Yup.string()
-        .max(255)
-        .required('Ad account manager phone number is required'),
-      account_officer: Yup.string().max(255).required('Ad account officer is required'),
-      password: Yup.string().max(255).required('Password is required'),
+      accountOfficer: Yup.string().max(255).required('Ad account officer is required'),
     }),
     onSubmit: async (values, helpers) => {
+      helpers.setSubmitting(true);
       try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
+        await toast.promise(axios.post('/api/admin/companies/create', values), {
+          loading: 'Creating Ad Company, hang on a sec...',
+          success: (response) => {
+            push('/users/companies');
+            return response.data.message;
+          },
+          error: (error) => {
+            return error.response?.data?.message || error.message;
+          },
+        });
+      } catch (error) {
+      } finally {
         helpers.setSubmitting(false);
       }
     },
   });
+
+  const filteredUser = useMemo(() => users.filter((user) => user.isActive), [users]);
+
   return (
     <>
       <Head>
@@ -79,30 +92,30 @@ const Page = ({}) => {
                 <Stack spacing={3}>
                   <FormControl variant="outlined">
                     <TextField
-                      error={!!(formik.touched.company_name && formik.errors.company_name)}
+                      error={!!(formik.touched.name && formik.errors.name)}
                       fullWidth
-                      helperText={formik.touched.company_name && formik.errors.company_name}
+                      helperText={formik.touched.name && formik.errors.name}
                       label="Company Name"
-                      name="company_name"
-                      id="company_name"
+                      name="name"
+                      id="name"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       type="text"
-                      value={formik.values.company_name}
+                      value={formik.values.name}
                     />
                   </FormControl>
                   <FormControl variant="outlined">
                     <TextField
-                      error={!!(formik.touched.company_code && formik.errors.company_code)}
+                      error={!!(formik.touched.code && formik.errors.code)}
                       fullWidth
-                      helperText={formik.touched.company_code && formik.errors.company_code}
+                      helperText={formik.touched.code && formik.errors.code}
                       label="Company Code"
-                      name="company_code"
-                      id="company_code"
+                      name="code"
+                      id="code"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       type="text"
-                      value={formik.values.company_code}
+                      value={formik.values.code}
                     />
                     <FormHelperText>This can be the company's abbreviation e.g ABBV</FormHelperText>
                   </FormControl>
@@ -110,68 +123,44 @@ const Page = ({}) => {
                   <Typography variant="subtitle1">Company Ad Account Manager</Typography>
                   <FormControl variant="outlined">
                     <TextField
-                      error={
-                        !!(
-                          formik.touched.ad_account_manager_name &&
-                          formik.errors.ad_account_manager_name
-                        )
-                      }
+                      error={!!(formik.touched.managerName && formik.errors.managerName)}
                       fullWidth
-                      helperText={
-                        formik.touched.ad_account_manager_name &&
-                        formik.errors.ad_account_manager_name
-                      }
+                      helperText={formik.touched.managerName && formik.errors.managerName}
                       label="Ad Account Manager Name"
-                      name="ad_account_manager_name"
-                      id="ad_account_manager_name"
+                      name="managerName"
+                      id="managerName"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       type="text"
-                      value={formik.values.ad_account_manager_name}
+                      value={formik.values.managerName}
                     />
                   </FormControl>
                   <FormControl variant="outlined">
                     <TextField
-                      error={
-                        !!(
-                          formik.touched.ad_account_manager_email &&
-                          formik.errors.ad_account_manager_email
-                        )
-                      }
+                      error={!!(formik.touched.managerEmail && formik.errors.managerEmail)}
                       fullWidth
-                      helperText={
-                        formik.touched.ad_account_manager_email &&
-                        formik.errors.ad_account_manager_email
-                      }
+                      helperText={formik.touched.managerEmail && formik.errors.managerEmail}
                       label="Ad Account Manager Email"
-                      name="ad_account_manager_email"
-                      id="ad_account_manager_email"
+                      name="managerEmail"
+                      id="managerEmail"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       type="email"
-                      value={formik.values.ad_account_manager_email}
+                      value={formik.values.managerEmail}
                     />
                   </FormControl>
                   <FormControl variant="outlined">
                     <TextField
-                      error={
-                        !!(
-                          formik.touched.ad_account_manager_phone_number &&
-                          formik.errors.ad_account_manager_phone_number
-                        )
-                      }
+                      error={!!(formik.touched.managerPhone && formik.errors.managerPhone)}
                       fullWidth
-                      helperText={
-                        formik.touched.ad_account_manager_phone_number &&
-                        formik.errors.ad_account_manager_phone_number
-                      }
+                      helperText={formik.touched.managerPhone && formik.errors.managerPhone}
                       label="Ad Account Manager Phone number"
-                      name="ad_account_manager_phone_number"
-                      id="ad_account_manager_phone_number"
+                      name="managerPhone"
+                      id="managerPhone"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
-                      type="email"
-                      value={formik.values.ad_account_manager_phone_number}
+                      type="tel"
+                      value={formik.values.managerPhone}
                     />
                   </FormControl>
                   <Divider />
@@ -179,28 +168,37 @@ const Page = ({}) => {
                   <FormControl variant="outlined">
                     <InputLabel htmlFor="account_officer">Account Officer</InputLabel>
                     <Select
-                      error={!!(formik.touched.account_officer && formik.errors.account_officer)}
+                      error={!!(formik.touched.accountOfficer && formik.errors.accountOfficer)}
                       fullWidth
-                      helperText={formik.touched.account_officer && formik.errors.account_officer}
                       label="Account Officer"
-                      name="account_officer"
-                      id="account_officer"
+                      name="accountOfficer"
+                      id="accountOfficer"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
-                      value={formik.values.account_officer}
+                      value={formik.values.accountOfficer}
                     >
-                      <MenuItem value="Ajayi">Ajayi</MenuItem>
+                      {filteredUser.map((user) => (
+                        <MenuItem key={user.id} value={user.reference}>
+                          {user.firstName} {user.lastName}
+                        </MenuItem>
+                      ))}
                     </Select>
-                    {!!(formik.touched.account_officer && formik.errors.account_officer) && (
+                    {!!(formik.touched.accountOfficer && formik.errors.accountOfficer) && (
                       <FormHelperText sx={{ color: 'error.main' }}>
-                        {formik.errors.account_officer}
+                        {formik.errors.accountOfficer}
                       </FormHelperText>
                     )}
                   </FormControl>
                   <Button
+                    type="submit"
+                    startIcon={
+                      formik.isSubmitting && (
+                        <CircularProgress size={16} sx={{ color: 'rgba(17,25,39,0.6)' }} />
+                      )
+                    }
                     variant="contained"
                     size="large"
-                    disabled={!(formik.isValid && formik.dirty)}
+                    disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
                   >
                     Add Company
                   </Button>
@@ -218,28 +216,28 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function Setting({
-  settingKey,
-  value,
-  onSettingChange,
-  onPrivateChange,
-  private_mode,
-  onRadioChange,
-}) {
-  return (
-    <Card p={3} sx={{ width: 'fit-content' }}>
-      <CardHeader sx={{ textTransform: 'capitalize' }} title={settingKey.replaceAll('_', ' ')} />
-      <Divider />
-      <CardContent>
-        <SettingForm
-          settingKey={settingKey}
-          value={value}
-          private_mode={private_mode}
-          onSettingChange={onSettingChange}
-          onPrivateChange={onPrivateChange}
-          onRadioChange={onRadioChange}
-        />
-      </CardContent>
-    </Card>
-  );
-}
+export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+  try {
+    const { users } = await getUsers(ctx.req);
+    return {
+      props: {
+        users,
+      },
+    };
+  } catch (error) {
+    console.log(error);
+
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});

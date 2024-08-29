@@ -1,6 +1,19 @@
 import getCookie from 'src/utils/get-cookie';
 import axios from './axios';
 
+export async function getUsers(req, params) {
+  try {
+    const { data } = await axios.get('/users', {
+      headers: {
+        Authorization: `Bearer ${getCookie(req)}`,
+      },
+      params,
+    });
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+}
 export async function getAllOrganizations(req, params) {
   try {
     const { data } = await axios.get('/organization', {
@@ -66,6 +79,20 @@ export async function getScreenLayouts(req) {
       },
     });
 
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getCompanies(req, params) {
+  try {
+    const { data } = await axios.get('/company', {
+      headers: {
+        Authorization: `Bearer ${getCookie(req)}`,
+      },
+      params,
+    });
     return data.data;
   } catch (error) {
     throw error;

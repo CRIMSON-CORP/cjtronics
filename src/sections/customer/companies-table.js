@@ -14,8 +14,12 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
+import toast from 'react-hot-toast';
+import ConfirmAction from 'src/components/ConfirmAction';
 import { Scrollbar } from 'src/components/scrollbar';
 import { getInitials } from 'src/utils/get-initials';
 
@@ -31,10 +35,34 @@ export const CompaniesTable = (props) => {
     page = 0,
     selected = [],
     rowsPerPage,
+    pageSizeOptions,
+    onRowsPerPageChange,
   } = props;
+  const { replace, asPath } = useRouter();
 
   const selectedSome = selected.length > 0 && selected.length < items.length;
   const selectedAll = items.length > 0 && selected.length === items.length;
+
+  const toggleActivateCompany = (reference, status) => async (e) => {
+    try {
+      await toast.promise(
+        axios.put('/api/admin/companies/update-status', {
+          reference,
+          status,
+        }),
+        {
+          loading: `${status ? 'Activating' : 'Deactivating'} Company, Hang on a sec...`,
+          success: (response) => {
+            replace(asPath);
+            return response.data.message;
+          },
+          error: (error) => {
+            return error.response?.data?.message || error.response?.data || error.message;
+          },
+        }
+      );
+    } catch (error) {}
+  };
 
   return (
     <Card>
@@ -57,6 +85,7 @@ export const CompaniesTable = (props) => {
                   />
                 </TableCell>
                 <TableCell>Company</TableCell>
+                <TableCell>Ad Account Officer</TableCell>
                 <TableCell>Ad Account Manager</TableCell>
                 <TableCell>Last Updated</TableCell>
                 <TableCell>Action</TableCell>
@@ -76,14 +105,14 @@ export const CompaniesTable = (props) => {
 
             <TableBody>
               {items.map((company) => {
-                const isSelected = selected.includes(company._id);
+                const isSelected = selected.includes(company.id);
                 return (
                   <TableRow
                     hover
-                    key={company.email}
+                    key={company.id}
                     selected={isSelected}
                     sx={{
-                      bgcolor: company.companyActiveStatus === 1 ? '#7ae57a12' : '#e57a7a12',
+                      bgcolor: company.isActive ? '#7ae57a12' : '#e57a7a12',
                     }}
                   >
                     <TableCell padding="checkbox">
@@ -92,32 +121,30 @@ export const CompaniesTable = (props) => {
                         onChange={(event) => {
                           event.stopPropagation();
                           if (event.target.checked) {
-                            onSelectOne?.(company._id);
+                            onSelectOne?.(company.id);
                           } else {
-                            onDeselectOne?.(company._id);
+                            onDeselectOne?.(company.id);
                           }
                         }}
                       />
                     </TableCell>
                     <TableCell>
                       <Typography variant="subtitle2">
-                        {company.companyName} ({company.companyAbbreviation})
+                        {company.name} ({company.code})
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="subtitle2">{company.officerName}</Typography>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Avatar src={company.avatar}>
-                          {getInitials(`${company.adAccountManager}`)}
+                          {getInitials(`${company.managerName}`)}
                         </Avatar>
                         <Stack spacing={0.5} alignItems="flex-start">
-                          <Typography variant="subtitle1">{company.adAccountManager}</Typography>
-                          <Typography variant="subtitle2">
-                            {company.adAccountManagerEmail}
-                          </Typography>
-                          <Chip
-                            label={company.adAccountManagerPhoneNumber}
-                            sx={{ textTransform: 'capitalize' }}
-                          />
+                          <Typography variant="subtitle1">{company.managerName}</Typography>
+                          <Typography variant="subtitle2">{company.managerEmail}</Typography>
+                          <Chip label={company.managerPhone} sx={{ textTransform: 'capitalize' }} />
                         </Stack>
                       </Stack>
                     </TableCell>
@@ -128,14 +155,23 @@ export const CompaniesTable = (props) => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2}>
-                        {company.companyActiveStatus === 1 ? (
-                          <Button variant="contained" color="error">
+                        {company.isActive ? (
+                          <ConfirmAction
+                            title="Deactivate Company?"
+                            color="error"
+                            action={toggleActivateCompany(company.reference, false)}
+                            content="Are you sure you want to Deactivate this Company?"
+                          >
                             Deactivate
-                          </Button>
+                          </ConfirmAction>
                         ) : (
-                          <Button variant="contained" color="primary">
+                          <ConfirmAction
+                            title="Activate Company?"
+                            action={toggleActivateCompany(company.reference, true)}
+                            content="Are you sure you want to Activate this Company?"
+                          >
                             Activate
-                          </Button>
+                          </ConfirmAction>
                         )}
                       </Stack>
                     </TableCell>
@@ -152,7 +188,8 @@ export const CompaniesTable = (props) => {
         onPageChange={onPageChange}
         page={page}
         rowsPerPage={rowsPerPage}
-        rowsPerPageOptions={[]}
+        onRowsPerPageChange={onRowsPerPageChange}
+        rowsPerPageOptions={pageSizeOptions}
       />
     </Card>
   );
