@@ -185,7 +185,7 @@ function Form({ organizations, cities, screenLayouts }) {
                 onChange={formik.handleChange}
                 value={formik.values.organizationId}
               >
-                {organizations.map((organization) => (
+                {organizations.list.map((organization) => (
                   <MenuItem key={organization.id} value={organization.reference}>
                     {organization.name}
                   </MenuItem>

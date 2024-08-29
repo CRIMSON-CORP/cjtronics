@@ -59,7 +59,7 @@ const Page = ({ users, total_results, current_page, rows_per_page }) => {
               page={page}
               selected={customersSelection.selected}
               rowsPerPage={parseInt(rows_per_page)}
-              pageSizeOptions={[1, 5, 10, 25, 30]}
+              pageSizeOptions={[5, 10, 25, 30]}
             />
           </Stack>
         </Container>

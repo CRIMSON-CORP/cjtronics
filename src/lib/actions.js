@@ -1,12 +1,13 @@
 import getCookie from 'src/utils/get-cookie';
 import axios from './axios';
 
-export async function getAllOrganizations(req) {
+export async function getAllOrganizations(req, params) {
   try {
-    const { data } = await axios.get('/organization/all', {
+    const { data } = await axios.get('/organization', {
       headers: {
         Authorization: `Bearer ${getCookie(req)}`,
       },
+      params,
     });
     return data.data;
   } catch (error) {

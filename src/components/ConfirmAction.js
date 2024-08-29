@@ -54,7 +54,7 @@ function ConfirmAction({
           <DialogContentText>{content}</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button autoFocus onClick={closeConfirmModal}>
+          <Button disabled={requestProcessing} autoFocus onClick={closeConfirmModal}>
             {dissmissText || 'Cancel'}
           </Button>
           <Button
@@ -62,6 +62,7 @@ function ConfirmAction({
             onClick={handleAction}
             startIcon={requestProcessing && <CircularProgress sx={{ color: 'white' }} size={16} />}
             color={color}
+            disabled={requestProcessing}
           >
             {proceedText || 'Confirm'}
           </Button>
