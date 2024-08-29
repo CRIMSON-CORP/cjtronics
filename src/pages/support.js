@@ -5,13 +5,16 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CircularProgress,
   Container,
   FormControl,
   Stack,
   TextField,
 } from '@mui/material';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
+import toast from 'react-hot-toast';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import * as Yup from 'yup';
 
@@ -25,14 +28,21 @@ const Page = ({}) => {
       message: Yup.string().max(255).required('A Message is required'),
     }),
     onSubmit: async (values, helpers) => {
+      helpers.setSubmitting(true);
       try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
-        helpers.setSubmitting(false);
-      }
+        await toast.promise(axios.post('/api/admin/support/send', values), {
+          loading: 'Sending message...',
+          success: (response) => {
+            helpers.resetForm();
+            return response.data.message;
+          },
+          error: (error) => {
+            const err = error.response?.data?.message ?? error.message;
+            helpers.setSubmitting(false);
+            return err;
+          },
+        });
+      } catch (error) {}
     },
   });
   return (
@@ -71,10 +81,17 @@ const Page = ({}) => {
                     />
                   </FormControl>
                   <Button
+                    type="submit"
+                    endIcon={
+                      formik.isSubmitting ? (
+                        <CircularProgress size={16} sx={{ color: 'rgba(17,25,39,0.6)' }} />
+                      ) : (
+                        <Send />
+                      )
+                    }
                     variant="contained"
                     size="large"
-                    endIcon={<Send />}
-                    disabled={!(formik.isValid && formik.dirty)}
+                    disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
                   >
                     Send message
                   </Button>
