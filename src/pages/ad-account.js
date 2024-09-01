@@ -7,6 +7,7 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  CircularProgress,
   Collapse,
   Container,
   FormControl,
@@ -26,38 +27,16 @@ import {
 } from '@mui/material';
 import { useFormik } from 'formik';
 import Head from 'next/head';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import { getAllOrganizations, getAllScreens, getCompanies } from 'src/lib/actions';
+import axios from 'axios';
 import { adAccountCampaings } from 'src/utils/data';
 import * as Yup from 'yup';
 
-const Page = ({}) => {
-  const formik = useFormik({
-    initialValues: {
-      organization: '',
-      company_name: '',
-      screen: '',
-      ad_account_name: '',
-      submit: null,
-    },
-    validationSchema: Yup.object({
-      organization: Yup.string().required('Organization is required'),
-      screen_id: Yup.string().max(255).required('Screen ID is required'),
-      company_name: Yup.string().max(255).required('Screen Name is required'),
-      screen: Yup.string().max(255).required('Screen is required'),
-      ad_account_name: Yup.string().max(255).required('Ad Account name is required'),
-    }),
-    onSubmit: async (values, helpers) => {
-      try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
-        helpers.setSubmitting(false);
-      }
-    },
-  });
+const Page = ({ organizations, companies, screens }) => {
   return (
     <>
       <Head>
@@ -73,109 +52,10 @@ const Page = ({}) => {
         <Container maxWidth="xl">
           <Grid container spacing={3}>
             <Grid xs={12} md={6}>
-              <Card>
-                <CardHeader
-                  title={
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography variant="h5">Create Ad Account</Typography>
-                    </Stack>
-                  }
-                />
-                <CardContent>
-                  <form onSubmit={formik.handleSubmit}>
-                    <Stack spacing={3}>
-                      <FormControl variant="outlined">
-                        <InputLabel htmlFor="organization">Select Organization</InputLabel>
-                        <Select
-                          error={!!(formik.touched.organization && formik.errors.organization)}
-                          fullWidth
-                          label="Account Officer"
-                          name="organization"
-                          id="organization"
-                          onBlur={formik.handleBlur}
-                          onChange={formik.handleChange}
-                          value={formik.values.organization}
-                        >
-                          <MenuItem value="Ajayi">Ajayi</MenuItem>
-                        </Select>
-                        {!!(formik.touched.organization && formik.errors.organization) && (
-                          <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.organization}
-                          </FormHelperText>
-                        )}
-                      </FormControl>
-                      <FormControl variant="outlined">
-                        <InputLabel htmlFor="organization">Select Company name</InputLabel>
-                        <Select
-                          error={!!(formik.touched.company_name && formik.errors.company_name)}
-                          fullWidth
-                          label="Company name"
-                          name="company_name"
-                          id="company_name"
-                          onBlur={formik.handleBlur}
-                          onChange={formik.handleChange}
-                          value={formik.values.company_name}
-                        >
-                          <MenuItem value="Ajayi">Ajayi</MenuItem>
-                        </Select>
-                        {!!(formik.touched.company_name && formik.errors.company_name) && (
-                          <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.company_name}
-                          </FormHelperText>
-                        )}
-                      </FormControl>
-                      <FormControl variant="outlined">
-                        <InputLabel htmlFor="organization">Select Screen</InputLabel>
-                        <Select
-                          error={!!(formik.touched.screen && formik.errors.screen)}
-                          fullWidth
-                          label="Screen"
-                          name="screen"
-                          id="screen"
-                          onBlur={formik.handleBlur}
-                          onChange={formik.handleChange}
-                          value={formik.values.screen}
-                        >
-                          <MenuItem value="Ajayi">Ajayi</MenuItem>
-                        </Select>
-                        {!!(formik.touched.screen && formik.errors.screen) && (
-                          <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.screen}
-                          </FormHelperText>
-                        )}
-                      </FormControl>
-                      <FormControl variant="outlined">
-                        <TextField
-                          error={
-                            !!(formik.touched.ad_account_name && formik.errors.ad_account_name)
-                          }
-                          fullWidth
-                          helperText={
-                            formik.touched.ad_account_name && formik.errors.ad_account_name
-                          }
-                          label="Ad Account Name"
-                          name="ad_account_name"
-                          id="ad_account_name"
-                          onBlur={formik.handleBlur}
-                          onChange={formik.handleChange}
-                          type="number"
-                          value={formik.values.ad_account_name}
-                        />
-                      </FormControl>
-                      <Button
-                        variant="contained"
-                        size="large"
-                        disabled={!(formik.isValid && formik.dirty)}
-                      >
-                        Add Company
-                      </Button>
-                    </Stack>
-                  </form>
-                </CardContent>
-              </Card>
+              <AdAccountForm {...{ organizations, companies, screens }} />
             </Grid>
             <Grid xs={12} md={6}>
-              <AdAccountsListWrapper adAccountName={formik.values.company_name} />
+              <AdAccountsListWrapper />
             </Grid>
           </Grid>
         </Container>
@@ -188,7 +68,207 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function AdAccountsListWrapper({ adAccountName }) {
+function AdAccountForm({ organizations, companies, screens, setSelectedCompany }) {
+  const formik = useFormik({
+    initialValues: {
+      organizationId: '',
+      companyId: '',
+      screenId: '',
+      name: '',
+      submit: null,
+    },
+    validationSchema: Yup.object({
+      organizationId: Yup.string().required('Organization is required'),
+      companyId: Yup.string().max(255).required('Company Name is required'),
+      screenId: Yup.string().max(255).required('Screen is required'),
+      name: Yup.string().max(255).required('Ad Account name is required'),
+    }),
+    onSubmit: async (values, helpers) => {
+      helpers.setSubmitting(true);
+
+      await toast.promise(axios.post('/api/admin/ad-account/create', values), {
+        loading: 'Creatiing Ad Account, Please wait...',
+        success: (response) => {
+          helpers.setStatus({ success: true });
+          helpers.resetForm();
+          dispatchRefetchAdAccounts();
+          return response.data.message;
+        },
+        error: (error) => error.response?.data?.message || error.message,
+      });
+
+      helpers.setSubmitting(false);
+    },
+  });
+
+  const dispatchRefetchAdAccounts = useCallback(() => {
+    window.dispatchEvent(
+      new CustomEvent('refetch-ad-accounts', {
+        detail: formik.values.companyId,
+      })
+    );
+  }, [formik.values.companyId]);
+
+  useEffect(() => {
+    if (formik.values.companyId) {
+      dispatchRefetchAdAccounts();
+    }
+  }, [formik.values.companyId]);
+
+  return (
+    <Card>
+      <CardHeader
+        title={
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h5">Create Ad Account</Typography>
+          </Stack>
+        }
+      />
+      <CardContent>
+        <form onSubmit={formik.handleSubmit}>
+          <Stack spacing={3}>
+            <FormControl variant="outlined">
+              <InputLabel htmlFor="organization">Select Organization</InputLabel>
+              <Select
+                error={!!(formik.touched.organizationId && formik.errors.organizationId)}
+                fullWidth
+                label="Account Officer"
+                name="organizationId"
+                id="organizationId"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.organizationId}
+              >
+                {organizations.list.map((organization) => (
+                  <MenuItem key={organization.id} value={organization.reference}>
+                    {organization.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {!!(formik.touched.organizationId && formik.errors.organizationId) && (
+                <FormHelperText sx={{ color: 'error.main' }}>
+                  {formik.errors.organizationId}
+                </FormHelperText>
+              )}
+            </FormControl>
+            <FormControl>
+              <InputLabel htmlFor="organization">Select Company name</InputLabel>
+              <Select
+                error={!!(formik.touched.companyId && formik.errors.companyId)}
+                fullWidth
+                label="Account Officer"
+                name="companyId"
+                id="companyId"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.companyId}
+              >
+                {companies.list.map((company) => (
+                  <MenuItem key={company.id} value={company.reference}>
+                    {company.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              {!!(formik.touched.companyId && formik.errors.companyId) && (
+                <FormHelperText sx={{ color: 'error.main' }}>
+                  {formik.errors.companyId}
+                </FormHelperText>
+              )}
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel id="scrren-select-label">Select Screen</InputLabel>
+              <Select
+                error={!!(formik.touched.screenId && formik.errors.screenId)}
+                labelId="scrren-select-label"
+                id="screen-select"
+                name="screenId"
+                value={formik.values.screenId}
+                label="Select Screen"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+              >
+                {screens.screen.map((screen) => (
+                  <MenuItem value={screen.reference} key={screen.reference}>
+                    {screen.screenName}
+                  </MenuItem>
+                ))}
+              </Select>
+              {!!(formik.touched.screenId && formik.errors.screenId) && (
+                <FormHelperText sx={{ color: 'error.main' }}>
+                  {formik.errors.screenId}
+                </FormHelperText>
+              )}
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.name && formik.errors.name)}
+                fullWidth
+                helperText={formik.touched.name && formik.errors.name}
+                label="Ad Account Name"
+                name="name"
+                id="name"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                type="text"
+                value={formik.values.name}
+              />
+            </FormControl>
+            <Button
+              type="submit"
+              startIcon={
+                formik.isSubmitting && (
+                  <CircularProgress size={16} sx={{ color: 'rgba(17,25,39,0.6)' }} />
+                )
+              }
+              variant="contained"
+              size="large"
+              disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
+            >
+              Add Company
+            </Button>
+          </Stack>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AdAccountsListWrapper() {
+  const [companyId, setCompanyId] = useState(null);
+
+  const fetchAdAccounts = async (reference) => {
+    try {
+      const response = await axios.get(
+        '/api/admin/ad-account/get-by-company?reference=' + reference
+      );
+      console.log(response);
+    } catch (error) {}
+  };
+  useEffect(() => {
+    const refetchAddAccounts = (e) => {
+      setCompanyId(e.detail);
+      fetchAdAccounts(e.detail);
+    };
+    window.addEventListener('refetch-ad-accounts', refetchAddAccounts);
+
+    return () => {
+      window.removeEventListener('refetch-ad-accounts', refetchAddAccounts);
+    };
+  }, []);
+
+  if (!companyId) {
+    return (
+      <Card>
+        <CardContent>
+          <Typography>Select company to see Ad Accounts</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+  return <AdAccountList adAccountName={companyId} />;
+}
+
+function AdAccountList({ adAccountName }) {
   return (
     <Card>
       <CardHeader
@@ -207,23 +287,13 @@ function AdAccountsListWrapper({ adAccountName }) {
         }
       />
       <CardContent>
-        {adAccountName ? (
-          <AdAccountList adAccountName={adAccountName} />
-        ) : (
-          <Typography>Select company to see Ad Accounts</Typography>
-        )}
+        <List sx={{ maxHeight: '60vh', overflow: 'auto' }}>
+          {adAccountCampaings.adAccountAndCampaigns.map((campaing) => (
+            <AdCampaingWrapper key={campaing.adAccountId} {...campaing} />
+          ))}
+        </List>
       </CardContent>
     </Card>
-  );
-}
-
-function AdAccountList({ adAccountName }) {
-  return (
-    <List sx={{ maxHeight: '60vh', overflow: 'auto' }}>
-      {adAccountCampaings.adAccountAndCampaigns.map((campaing) => (
-        <AdCampaingWrapper key={campaing.adAccountId} {...campaing} />
-      ))}
-    </List>
   );
 }
 
@@ -284,3 +354,31 @@ function AdCampaingWrapper({ adAccount, campaigns }) {
     </>
   );
 }
+
+export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  try {
+    const [organizations, companies, screens] = await Promise.all([
+      getAllOrganizations(ctx.req),
+      getCompanies(ctx.req),
+      getAllScreens(ctx.req),
+    ]);
+    return {
+      props: { organizations, companies, screens },
+    };
+  } catch (error) {
+    console.log(error);
+
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});
