@@ -1,3 +1,4 @@
+import { DeleteSweep } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -64,8 +65,66 @@ export const CompaniesTable = (props) => {
     } catch (error) {}
   };
 
+  const deleteCompany = (reference) => async (e) => {
+    try {
+      await toast.promise(
+        axios.put('/api/admin/companies/delete', {
+          reference,
+        }),
+        {
+          loading: 'Deleting Company, Hang on a sec...',
+          success: (response) => {
+            replace(asPath);
+            return response.data.message;
+          },
+          error: (error) => error.response?.data?.message || error.response?.data || error.message,
+        }
+      );
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const deleteSelectedCompanies = (references) => async (e) => {
+    try {
+      await toast.promise(
+        Promise.all([
+          ...references.map((reference) =>
+            axios.post('/api/admin/companies/delete', {
+              reference,
+            })
+          ),
+        ]),
+        {
+          loading: 'Deleteing Companies...',
+          success: () => {
+            replace(asPath);
+            return 'Companies deleted';
+          },
+          error: (error) => error.response?.data?.message || error.response?.data || error.message,
+        }
+      );
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return (
     <Card>
+      {selected.length > 0 && (
+        <Stack direction="row" justifyContent="flex-end" p={1}>
+          <ConfirmAction
+            color="error"
+            title="Delete Selected Companies?"
+            proceedText="Delete Companies"
+            buttonProps={{ startIcon: <DeleteSweep />, variant: 'text' }}
+            action={deleteSelectedCompanies(selected)}
+            content="Are you sure you want to delete the selected Companies?"
+          >
+            Delete Selected
+          </ConfirmAction>
+        </Stack>
+      )}
       <Scrollbar>
         <Box sx={{ minWidth: 800 }}>
           <Table>
@@ -105,7 +164,7 @@ export const CompaniesTable = (props) => {
 
             <TableBody>
               {items.map((company) => {
-                const isSelected = selected.includes(company.id);
+                const isSelected = selected.includes(company.reference);
                 return (
                   <TableRow
                     hover
@@ -121,9 +180,9 @@ export const CompaniesTable = (props) => {
                         onChange={(event) => {
                           event.stopPropagation();
                           if (event.target.checked) {
-                            onSelectOne?.(company.id);
+                            onSelectOne?.(company.reference);
                           } else {
-                            onDeselectOne?.(company.id);
+                            onDeselectOne?.(company.reference);
                           }
                         }}
                       />
@@ -155,24 +214,24 @@ export const CompaniesTable = (props) => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2}>
-                        {company.isActive ? (
-                          <ConfirmAction
-                            title="Deactivate Company?"
-                            color="error"
-                            action={toggleActivateCompany(company.reference, false)}
-                            content="Are you sure you want to Deactivate this Company?"
-                          >
-                            Deactivate
-                          </ConfirmAction>
-                        ) : (
-                          <ConfirmAction
-                            title="Activate Company?"
-                            action={toggleActivateCompany(company.reference, true)}
-                            content="Are you sure you want to Activate this Company?"
-                          >
-                            Activate
-                          </ConfirmAction>
-                        )}
+                        <ConfirmAction
+                          title={company.isActive ? 'Deactivate Company?' : 'Activate Company?'}
+                          color={company.isActive ? 'error' : undefined}
+                          action={toggleActivateCompany(company.reference, !company.isActive)}
+                          content={`Are you sure you want to ${
+                            company.isActive ? 'Deactivate' : 'Activate'
+                          } this Company?`}
+                        >
+                          {company.isActive ? 'Deactivate' : 'Activate'}
+                        </ConfirmAction>
+                        <ConfirmAction
+                          title="Delete Company?"
+                          color="error"
+                          action={deleteCompany(company.reference)}
+                          content="Are you sure you want to delete this Company?"
+                        >
+                          Delete
+                        </ConfirmAction>
                       </Stack>
                     </TableCell>
                   </TableRow>

@@ -10,7 +10,7 @@ import { CompaniesTable } from 'src/sections/customer/companies-table';
 
 const useCustomerIds = (customers) => {
   return useMemo(() => {
-    return customers.map((customer) => customer.id);
+    return customers.map((customer) => customer.reference);
   }, [customers]);
 };
 

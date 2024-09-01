@@ -34,6 +34,7 @@ function ConfirmAction({
       setRequestProcessing(true);
       await action();
       setConfirmModalOpen(false);
+    } catch (error) {
     } finally {
       setRequestProcessing(false);
     }

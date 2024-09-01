@@ -67,7 +67,9 @@ export const OrganizationsTable = (props) => {
           error: 'Failed to delete Organization, Please try again',
         }
       );
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const deleteSelectedOrganizations = (references) => async (e) => {
