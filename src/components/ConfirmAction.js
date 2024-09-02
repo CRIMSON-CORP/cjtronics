@@ -1,3 +1,4 @@
+import { Close } from '@mui/icons-material';
 import {
   Button,
   CircularProgress,
@@ -6,6 +7,9 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
+  Stack,
+  Typography,
 } from '@mui/material';
 import { useState } from 'react';
 
@@ -50,7 +54,14 @@ function ConfirmAction({
         maxWidth="xs"
         open={confirmModalOpen}
       >
-        <DialogTitle>{title}</DialogTitle>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h5">{title}</Typography>
+            <IconButton disabled={requestProcessing} onClick={closeConfirmModal}>
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
         <DialogContent dividers>
           <DialogContentText>{content}</DialogContentText>
         </DialogContent>

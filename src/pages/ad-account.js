@@ -25,6 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
 import { useCallback, useEffect, useState } from 'react';
@@ -32,8 +33,7 @@ import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllOrganizations, getAllScreens, getCompanies } from 'src/lib/actions';
-import axios from 'axios';
-import { adAccountCampaings } from 'src/utils/data';
+import { adAccountCampaigns } from 'src/utils/data';
 import * as Yup from 'yup';
 
 const Page = ({ organizations, companies, screens }) => {
@@ -288,8 +288,8 @@ function AdAccountList({ adAccountName }) {
       />
       <CardContent>
         <List sx={{ maxHeight: '60vh', overflow: 'auto' }}>
-          {adAccountCampaings.adAccountAndCampaigns.map((campaing) => (
-            <AdCampaingWrapper key={campaing.adAccountId} {...campaing} />
+          {adAccountCampaigns.adAccountAndCampaigns.map((campaign) => (
+            <AdCampaignWrapper key={campaign.adAccountId} {...campaign} />
           ))}
         </List>
       </CardContent>
@@ -297,7 +297,7 @@ function AdAccountList({ adAccountName }) {
   );
 }
 
-function AdCampaingWrapper({ adAccount, campaigns }) {
+function AdCampaignWrapper({ adAccount, campaigns }) {
   const [expanded, setExpanded] = useState(false);
 
   const toggleExpanded = () => {
@@ -322,13 +322,13 @@ function AdCampaingWrapper({ adAccount, campaigns }) {
             <Campaign />
           </Avatar>
         </ListItemAvatar>
-        <ListItemText primary={adAccount} secondary={`${campaigns.length} campaings`} />
+        <ListItemText primary={adAccount} secondary={`${campaigns.length} campaigns`} />
       </ListItem>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <List component="div" disablePadding>
-          {campaigns.map((campaing) => (
+          {campaigns.map((campaign) => (
             <ListItem
-              key={campaing._id}
+              key={campaign._id}
               sx={{ pl: 4 }}
               secondaryAction={
                 <Stack direction="row" spacing={1}>
@@ -346,7 +346,7 @@ function AdCampaingWrapper({ adAccount, campaigns }) {
                   <Campaign />
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText primary={campaing.name} />
+              <ListItemText primary={campaign.name} />
             </ListItem>
           ))}
         </List>

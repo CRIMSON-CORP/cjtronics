@@ -31,11 +31,13 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useCallback, useMemo, useState } from 'react';
-import ScreenLayout from 'src/components/ScreenLayout';
+import toast from 'react-hot-toast';
+import ConfirmAction from 'src/components/ConfirmAction';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import {
@@ -47,11 +49,8 @@ import {
 } from 'src/lib/actions';
 import * as Yup from 'yup';
 import { screenLayoutToReferenceMap } from '..';
-import toast from 'react-hot-toast';
-import axios from 'axios';
-import ConfirmAction from 'src/components/ConfirmAction';
 
-const campaings = [
+const campaigns = [
   {
     _id: '64b64ca8bae11621a2433fda',
     adAccount: {
@@ -134,7 +133,7 @@ const Page = ({ screens, screen, organizations, cities, screen_layouts }) => {
                 </FormControl>
               </Grid>
             </Grid>
-            <ScreenCampaings campaings={campaings} />
+            <ScreenCampaigns campaigns={campaigns} />
             <ScreenDetails
               cities={cities}
               screen={screen}
@@ -153,11 +152,11 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 export default Page;
 
 const columns = [
-  { id: 'campaings', label: 'Campaings', minWidth: 170 },
+  { id: 'campaigns', label: 'Campaigns', minWidth: 170 },
   { id: 'ad_accounts', label: 'Ad Accounts', minWidth: 100 },
 ];
 
-function ScreenCampaings({ campaings }) {
+function ScreenCampaigns({ campaigns }) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -187,11 +186,11 @@ function ScreenCampaings({ campaings }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {campaings.map((campaing) => {
+            {campaigns.map((campaign) => {
               return (
-                <TableRow hover role="checkbox" tabIndex={-1} key={campaing._id}>
-                  <TableCell>{campaing.name}</TableCell>
-                  <TableCell>{campaing.adAccount.name}</TableCell>
+                <TableRow hover role="checkbox" tabIndex={-1} key={campaign._id}>
+                  <TableCell>{campaign.name}</TableCell>
+                  <TableCell>{campaign.adAccount.name}</TableCell>
                 </TableRow>
               );
             })}
@@ -201,7 +200,7 @@ function ScreenCampaings({ campaings }) {
       <TablePagination
         rowsPerPageOptions={[10, 25, 100]}
         component="div"
-        count={campaings.length}
+        count={campaigns.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}

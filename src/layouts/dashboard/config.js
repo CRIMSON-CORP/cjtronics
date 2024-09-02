@@ -97,14 +97,14 @@ export const items = [
         matchers: ['screens'],
       },
       {
-        title: 'Screen Campaing',
-        path: '/screens/campaing',
+        title: 'Screen Campaign',
+        path: '/screens/campaign',
         icon: (
           <SvgIcon fontSize="small">
             <Campaign />
           </SvgIcon>
         ),
-        matchers: ['campaing'],
+        matchers: ['campaign'],
       },
     ],
   },
@@ -118,38 +118,38 @@ export const items = [
     ),
   },
   {
-    title: 'Campaing',
+    title: 'Campaign',
     type: 'drop-down',
     icon: (
       <SvgIcon fontSize="small">
         <Campaign />
       </SvgIcon>
     ),
-    matchers: ['campaing'],
+    matchers: ['campaign'],
     links: [
       {
         title: 'Create Ads',
-        path: '/campaing',
+        path: '/campaign',
         icon: (
           <SvgIcon fontSize="small">
             <OndemandVideo />
           </SvgIcon>
         ),
-        matchers: ['campaing'],
+        matchers: ['campaign'],
       },
       {
-        title: 'Create Campaing',
-        path: '/campaing/create-campaing',
+        title: 'Create Campaign',
+        path: '/campaign/create-campaign',
         icon: (
           <SvgIcon fontSize="small">
             <Campaign />
           </SvgIcon>
         ),
-        matchers: ['create-campaing'],
+        matchers: ['create-campaign'],
       },
       {
-        title: 'Campaing Shedule',
-        path: '/campaing/campaing-schedule',
+        title: 'Campaign Shedule',
+        path: '/campaign/campaign-schedule',
         icon: (
           <SvgIcon fontSize="small">
             <History />

@@ -34,7 +34,7 @@ const Page = () => {
   return (
     <>
       <Head>
-        <title>Campaing Schedule | Dalukwa Admin</title>
+        <title>Campaign Schedule | Dalukwa Admin</title>
       </Head>
       <Box
         component="main"
@@ -76,7 +76,7 @@ const Page = () => {
               </Box>
             </Stack>
 
-            <CampaingSquencing />
+            <CampaignSquencing />
           </Stack>
         </Container>
       </Box>
@@ -88,7 +88,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function CampaingSquencing() {
+function CampaignSquencing() {
   const [sequence, setSequence] = useState([
     'PREMIUM-ADS-1',
     'PREMIUM-ADS-2',
@@ -98,7 +98,7 @@ function CampaingSquencing() {
   return (
     <Grid container spacing={3}>
       <Grid xs={12} sm={6}>
-        <CampaingSequence sequence={sequence} setSequence={setSequence} />
+        <CampaignSequence sequence={sequence} setSequence={setSequence} />
       </Grid>
       <Grid xs={12} sm={6}>
         <SequenceResult sequence={sequence} />
@@ -115,7 +115,7 @@ const reorder = (list, startIndex, endIndex) => {
   return result;
 };
 
-function CampaingSequence({ sequence, setSequence }) {
+function CampaignSequence({ sequence, setSequence }) {
   const onDragEnd = (result) => {
     if (!result.destination) {
       return;
@@ -140,16 +140,16 @@ function CampaingSequence({ sequence, setSequence }) {
       <CardContent>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="body2">Drag and drop to arrange ad accounts</Typography>
-          <Link href="/campaing/create-campaing">
-            <Button startIcon={<Add />}>New Campaing</Button>
+          <Link href="/campaign/create-campaign">
+            <Button startIcon={<Add />}>New Campaign</Button>
           </Link>
         </Stack>
         <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="campaings">
+          <Droppable droppableId="campaigns">
             {(provided, snapshot) => (
               <List {...provided.droppableProps} ref={provided.innerRef}>
-                {sequence.map((campaing, index) => (
-                  <Draggable draggableId={campaing} index={index} key={campaing}>
+                {sequence.map((campaign, index) => (
+                  <Draggable draggableId={campaign} index={index} key={campaign}>
                     {(_provided) => (
                       <ListItem
                         ref={_provided.innerRef}
@@ -161,7 +161,7 @@ function CampaingSequence({ sequence, setSequence }) {
                         }}
                       >
                         <Paper elevation={3} sx={{ padding: 2, width: '100%' }}>
-                          {campaing}
+                          {campaign}
                         </Paper>
                       </ListItem>
                     )}
@@ -193,15 +193,15 @@ function SequenceResult({ sequence }) {
       <CardContent>
         <Typography variant="body2">EKNT-LEKKI - ADMIRALTY (LEKKI-IKOYI) (1280 X 720)</Typography>
         <List>
-          {sequence.map((campaing) => (
+          {sequence.map((campaign) => (
             <ListItem
-              key={campaing}
+              key={campaign}
               sx={{
                 userSelect: 'none',
               }}
             >
               <Paper elevation={3} sx={{ padding: 2, width: '100%' }}>
-                {campaing}
+                {campaign}
               </Paper>
             </ListItem>
           ))}

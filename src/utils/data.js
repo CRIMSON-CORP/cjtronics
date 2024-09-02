@@ -1,4 +1,4 @@
-export const adAccountCampaings = {
+export const adAccountCampaigns = {
   company: 'Folham Adverts',
   adAccountAndCampaigns: [
     {

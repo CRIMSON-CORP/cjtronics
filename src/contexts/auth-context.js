@@ -42,7 +42,6 @@ const handlers = {
   },
   [HANDLERS.SIGN_IN]: (state, action) => {
     const user = action.payload;
-    console.log(user, action.payload);
 
     return {
       ...state,
@@ -112,14 +111,15 @@ export const AuthProvider = (props) => {
       });
 
       if (status === 200 && data.status) {
+        const payload = {
+          token: data.token,
+          ...JSON.parse(data.data),
+        };
         window.sessionStorage.setItem('authenticated', 'true');
-        window.sessionStorage.setItem('user', JSON.stringify(data.data) || {});
+        window.sessionStorage.setItem('user', JSON.stringify(payload));
         dispatch({
           type: HANDLERS.SIGN_IN,
-          payload: {
-            token: data.token,
-            ...JSON.parse(data.data),
-          },
+          payload,
         });
         return data.message;
       } else throw new Error(data.message);

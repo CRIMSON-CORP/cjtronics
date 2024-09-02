@@ -21,7 +21,7 @@ const Page = () => {
   return (
     <>
       <Head>
-        <title>Campaing Schedule | Dalukwa Admin</title>
+        <title>Campaign Schedule | Dalukwa Admin</title>
       </Head>
       <Box
         component="main"

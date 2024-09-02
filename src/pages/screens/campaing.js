@@ -30,7 +30,7 @@ const Page = ({ screens }) => {
   return (
     <>
       <Head>
-        <title>SCreen Campaing | Devias Kit</title>
+        <title>Screen Campaign | Devias Kit</title>
       </Head>
       <Box
         component="main"
@@ -41,7 +41,7 @@ const Page = ({ screens }) => {
       >
         <Container maxWidth="xl">
           <Stack spacing={2}>
-            <Typography variant="h5">Screen Campaing</Typography>
+            <Typography variant="h5">Screen Campaign</Typography>
             <FormControl fullWidth>
               <InputLabel id="scrren-select-label">Select Screen</InputLabel>
               <Select
@@ -58,7 +58,7 @@ const Page = ({ screens }) => {
                 ))}
               </Select>
             </FormControl>
-            <CampaingList />
+            <CampaignList />
             <SelectedScreen />
           </Stack>
         </Container>
@@ -71,24 +71,24 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function CampaingList({ campaings = [] }) {
+function CampaignList({ campaigns = [] }) {
   return (
     <Card>
       <List>
-        {campaings.length === 0 ? (
+        {campaigns.length === 0 ? (
           <ListItem>
-            <Typography>No Campaings </Typography>
+            <Typography>No Campaigns </Typography>
           </ListItem>
         ) : null}
       </List>
     </Card>
   );
 }
-function SelectedScreen({ campaings = [] }) {
+function SelectedScreen({ campaigns = [] }) {
   return (
     <Card>
       <List>
-        {campaings.length === 0 ? (
+        {campaigns.length === 0 ? (
           <ListItem>
             <Typography>No Screens Selected </Typography>
           </ListItem>

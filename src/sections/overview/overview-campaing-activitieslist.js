@@ -17,21 +17,21 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
     <Card sx={sx}>
       <CardHeader title="Campaign activities" />
       <List sx={{ maxHeight: '50vh', overflow: 'auto' }}>
-        {activities.map((campaing, index) => {
+        {activities.map((campaign, index) => {
           const hasDivider = index < activities.length - 1;
-          const ago = formatDistanceToNow(new Date(campaing.timeAgo));
+          const ago = formatDistanceToNow(new Date(campaign.timeAgo));
           return (
-            <ListItem divider={hasDivider} key={campaing.id}>
+            <ListItem divider={hasDivider} key={campaign.id}>
               <ListItemAvatar>
                 <SvgIcon>
                   <Campaign />
                 </SvgIcon>
               </ListItemAvatar>
-              {console.log(new Date(campaing.timeAgo).getTime())}
+              {console.log(new Date(campaign.timeAgo).getTime())}
               <ListItemText
-                primary={campaing.activity}
+                primary={campaign.activity}
                 primaryTypographyProps={{ variant: 'subtitle1' }}
-                secondary={`${campaing.timeAgo} (${ago})`}
+                secondary={`${campaign.timeAgo} (${ago})`}
                 secondaryTypographyProps={{ variant: 'body2' }}
               />
             </ListItem>

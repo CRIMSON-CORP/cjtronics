@@ -30,7 +30,7 @@ const Page = ({}) => {
   const formik = useFormik({
     initialValues: {
       organization: '',
-      campaing_name: '',
+      campaign_name: '',
       screen_id: '',
       ad_account: '',
       start_date: '',
@@ -44,7 +44,7 @@ const Page = ({}) => {
     },
     validationSchema: Yup.object({
       organization: Yup.string().required('Organization is required'),
-      campaing_name: Yup.string().max(255).required('Campaing name is required'),
+      campaign_name: Yup.string().max(255).required('Campaign name is required'),
       screen_id: Yup.string().max(255).required('Screen ID is required'),
       company: Yup.string().max(255).required('Company is required'),
       ad_account: Yup.string().max(255).required('Ad Account name is required'),
@@ -68,7 +68,7 @@ const Page = ({}) => {
   return (
     <>
       <Head>
-        <title>Create Campaing | Dalukwa Admin</title>
+        <title>Create Campaign | Dalukwa Admin</title>
       </Head>
       <Box
         component="main"
@@ -79,7 +79,7 @@ const Page = ({}) => {
       >
         <Container maxWidth="xl">
           <Card>
-            <CardHeader title="Create Campaing" />
+            <CardHeader title="Create Campaign" />
             <CardContent>
               <form onSubmit={formik.handleSubmit}>
                 <Stack spacing={3}>
@@ -105,16 +105,16 @@ const Page = ({}) => {
                   </FormControl>
                   <FormControl variant="outlined">
                     <TextField
-                      error={!!(formik.touched.campaing_name && formik.errors.campaing_name)}
+                      error={!!(formik.touched.campaign_name && formik.errors.campaign_name)}
                       fullWidth
-                      helperText={formik.touched.campaing_name && formik.errors.campaing_name}
-                      label="Campaing Name"
-                      name="campaing_name"
-                      id="campaing_name"
+                      helperText={formik.touched.campaign_name && formik.errors.campaign_name}
+                      label="Campaign Name"
+                      name="campaign_name"
+                      id="campaign_name"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       type="text"
-                      value={formik.values.campaing_name}
+                      value={formik.values.campaign_name}
                     />
                   </FormControl>
                   <FormControl variant="outlined">

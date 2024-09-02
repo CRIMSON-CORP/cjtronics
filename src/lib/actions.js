@@ -98,3 +98,32 @@ export async function getCompanies(req, params) {
     throw error;
   }
 }
+
+export async function getAdAccounts(req) {
+  try {
+    const { data } = await axios.get('/ads-account', {
+      headers: {
+        Authorization: `Bearer ${getCookie(req)}`,
+      },
+      params,
+    });
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getResourse(req, url, params) {
+  try {
+    const { data } = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${getCookie(req)}`,
+      },
+      params,
+    });
+
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
+}
