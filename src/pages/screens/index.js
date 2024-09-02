@@ -422,7 +422,7 @@ function Screens({ screens }) {
 }
 
 export const screenLayoutToReferenceMap = {
-  VBSGTREW43: (formik, screenLayout) => (
+  VBSGTREW43: (formik, screenLayout, params) => (
     <Layout
       full
       landscape
@@ -430,9 +430,10 @@ export const screenLayoutToReferenceMap = {
       name="screenLayout"
       title={screenLayout.layout}
       value={screenLayout.reference}
+      {...params}
     />
   ),
-  JHSFER2763: (formik, screenLayout) => (
+  JHSFER2763: (formik, screenLayout, params) => (
     <Layout
       landscape
       horizontal
@@ -441,9 +442,10 @@ export const screenLayoutToReferenceMap = {
       name="screenLayout"
       title={screenLayout.layout}
       value={screenLayout.reference}
+      {...params}
     />
   ),
-  HDGTW5763: (formik, screenLayout) => (
+  HDGTW5763: (formik, screenLayout, params) => (
     <Layout
       full
       landscape={false}
@@ -451,9 +453,10 @@ export const screenLayoutToReferenceMap = {
       name="screenLayout"
       title={screenLayout.layout}
       value={screenLayout.reference}
+      {...params}
     />
   ),
-  SGDRWT5247: (formik, screenLayout) => (
+  SGDRWT5247: (formik, screenLayout, params) => (
     <Layout
       landscape
       horizontal
@@ -462,9 +465,10 @@ export const screenLayoutToReferenceMap = {
       name="screenLayout"
       title={screenLayout.layout}
       value={screenLayout.reference}
+      {...params}
     />
   ),
-  KJUYTE4352: (formik, screenLayout) => (
+  KJUYTE4352: (formik, screenLayout, params) => (
     <Layout
       landscape={false}
       split="80%,20%"
@@ -472,9 +476,10 @@ export const screenLayoutToReferenceMap = {
       name="screenLayout"
       title={screenLayout.layout}
       value={screenLayout.reference}
+      {...params}
     />
   ),
-  SGHY5438JH: (formik, screenLayout) => (
+  SGHY5438JH: (formik, screenLayout, params) => (
     <Layout
       landscape={false}
       split="50%,50%"
@@ -482,6 +487,7 @@ export const screenLayoutToReferenceMap = {
       name="screenLayout"
       title={screenLayout.layout}
       value={screenLayout.reference}
+      {...params}
     />
   ),
 };

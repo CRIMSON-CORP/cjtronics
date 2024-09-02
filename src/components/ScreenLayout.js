@@ -1,6 +1,17 @@
 import { Box, Radio, Stack, Typography } from '@mui/material';
 
-function ScreenLayout({ landscape, full, split = '', horizontal, title, name, value, formik }) {
+function ScreenLayout({
+  landscape,
+  full,
+  split = '',
+  horizontal,
+  title,
+  name,
+  value,
+  formik,
+  view_name,
+  view_value,
+}) {
   const [box1Split, box2Split] = split.split(',');
   return (
     <Stack alignItems="center">
@@ -20,12 +31,22 @@ function ScreenLayout({ landscape, full, split = '', horizontal, title, name, va
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
+            flexWrap: 'wrap',
             height: '100%',
             width: '100%',
             ...(split ? (!horizontal ? { height: box1Split } : { width: box1Split }) : {}),
           }}
         >
-          Box 1
+          {view_name && (
+            <Radio
+              name={view_name}
+              value="1"
+              color="secondary"
+              onChange={formik.handleChange}
+              checked={'1' === formik.values[view_name]}
+            />
+          )}
+          <Typography variant="caption">View 1</Typography>
         </Box>
         {full ? null : (
           <Box
@@ -33,16 +54,26 @@ function ScreenLayout({ landscape, full, split = '', horizontal, title, name, va
               bgcolor: 'primary.light',
               display: 'flex',
               justifyContent: 'center',
+              flexWrap: 'wrap',
               alignItems: 'center',
               ...(split ? (!horizontal ? { height: box2Split } : { width: box2Split }) : {}),
             }}
           >
-            Box 2
+            {view_name && (
+              <Radio
+                name={view_name}
+                value="2"
+                color="secondary"
+                onChange={formik.handleChange}
+                checked={'2' === formik.values[view_name]}
+              />
+            )}
+            <Typography variant="caption"> View 2</Typography>
           </Box>
         )}
       </Stack>
       <Typography>{title}</Typography>
-      {formik ? (
+      {formik && !view_name ? (
         <Radio
           checked={value === formik.values[name]}
           onChange={formik.handleChange}

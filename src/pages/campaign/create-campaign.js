@@ -5,6 +5,7 @@ import {
   CardContent,
   CardHeader,
   Checkbox,
+  CircularProgress,
   Container,
   FormControl,
   FormControlLabel,
@@ -20,51 +21,119 @@ import {
   Typography,
 } from '@mui/material';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
-import ScreenLayout from 'src/components/ScreenLayout';
+import { useCallback, useEffect, useMemo } from 'react';
+import toast from 'react-hot-toast';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import { getResourse } from 'src/lib/actions';
 import * as Yup from 'yup';
+import { screenLayoutToReferenceMap } from '../screens';
 
-const Page = ({}) => {
+const Page = ({ screens, organizations, adAccounts, layouts }) => {
   const formik = useFormik({
     initialValues: {
-      organization: '',
-      campaign_name: '',
-      screen_id: '',
-      ad_account: '',
-      start_date: '',
-      end_date: '',
-      start_time: '',
-      end_time: '',
-      screen_layout: '',
-      selected_days: [],
-      duration: 0,
-      submit: null,
+      organizationId: '',
+      name: '',
+      screenId: '',
+      accountId: '',
+      layoutId: '',
+      layoutView: '1',
+      startAt: null,
+      endAt: null,
+      playTimeAt: null,
+      endTimeAt: null,
+      playDays: '',
+      playDuration: 1,
     },
     validationSchema: Yup.object({
-      organization: Yup.string().required('Organization is required'),
-      campaign_name: Yup.string().max(255).required('Campaign name is required'),
-      screen_id: Yup.string().max(255).required('Screen ID is required'),
-      company: Yup.string().max(255).required('Company is required'),
-      ad_account: Yup.string().max(255).required('Ad Account name is required'),
-      start_date: Yup.string().max(255).required('Start Date is required'),
-      end_date: Yup.string().max(255).required('End Date name is required'),
-      start_time: Yup.string().max(255).required('Start time name is required'),
-      end_time: Yup.string().max(255).required('End Time name is required'),
-      screen_layout: Yup.string().max(255).required('Screen layout name is required'),
+      organizationId: Yup.string().required('Organization is required'),
+      name: Yup.string().max(255).required('Campaign name is required'),
+      screenId: Yup.string().max(255).required('Screen ID is required'),
+      accountId: Yup.string().max(255).required('Ad Account name is required'),
+      startAt: Yup.string().max(255).required('Start Date is required'),
+      endAt: Yup.string().max(255).required('End Date name is required'),
+      playTimeAt: Yup.string().max(255).required('Start time name is required'),
+      endTimeAt: Yup.string().max(255).required('End Time name is required'),
     }),
     onSubmit: async (values, helpers) => {
-      try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
-        helpers.setSubmitting(false);
-      }
+      const payload = { ...values };
+      payload.layoutView = +payload.layoutView;
+      payload.startAt = payload.startAt.toLocaleDateString();
+      payload.endAt = payload.endAt.toLocaleDateString();
+      payload.playTimeAt = payload.playTimeAt.toLocaleTimeString();
+      payload.endTimeAt = payload.endTimeAt.toLocaleTimeString();
+      helpers.setSubmitting(true);
+      await toast.promise(axios.post('/api/admin/campaigns/create', payload), {
+        loading: 'Creating Campaign, Hang on...',
+        success: (response) => {
+          helpers.resetForm();
+          return response.data.message || 'Campaign created successfully';
+        },
+        error: (error) => error.response?.data?.message || error.message,
+      });
+      helpers.setSubmitting(false);
     },
   });
+
+  const selectedScreenLayoutReference = useMemo(
+    () =>
+      screens.screen.find((screen) => screen.reference === formik.values.screenId)?.layoutReference,
+    [formik.values.screenId]
+  );
+
+  const screenLayout = useMemo(() => {
+    const selectedLyout = layouts.find(
+      (layout) => layout.reference === selectedScreenLayoutReference
+    );
+    return selectedLyout;
+  }, [selectedScreenLayoutReference]);
+
+  useEffect(() => {
+    formik.setFieldValue('layoutId', selectedScreenLayoutReference);
+  }, [selectedScreenLayoutReference]);
+
+  const handleDateTimeUpdate = useCallback((field, date) => (value) => {
+    formik.setFieldValue(field, value);
+  });
+
+  useEffect(() => {
+    const { startAt, endAt, playTimeAt, endTimeAt } = formik.values;
+
+    if (startAt && endAt && playTimeAt && endTimeAt) {
+      const startDateTime = new Date(
+        startAt.getFullYear(),
+        startAt.getMonth(),
+        startAt.getDate(),
+        playTimeAt.getHours(),
+        playTimeAt.getMinutes(),
+        playTimeAt.getSeconds()
+      );
+
+      const endDateTime = new Date(
+        endAt.getFullYear(),
+        endAt.getMonth(),
+        endAt.getDate(),
+        endTimeAt.getHours(),
+        endTimeAt.getMinutes(),
+        endTimeAt.getSeconds()
+      );
+
+      if (startDateTime > endDateTime) {
+        formik.setFieldValue('endAt', null);
+        formik.setFieldValue('endTimeAt', null);
+        toast.error('Start date cannot be greater than end date');
+      }
+    }
+  }, [
+    formik.values.startAt,
+    formik.values.endAt,
+    formik.values.playTimeAt,
+    formik.values.endTimeAt,
+  ]);
+
   return (
     <>
       <Head>
@@ -84,76 +153,88 @@ const Page = ({}) => {
               <form onSubmit={formik.handleSubmit}>
                 <Stack spacing={3}>
                   <FormControl variant="outlined">
-                    <InputLabel htmlFor="organization">Select Organization</InputLabel>
+                    <InputLabel htmlFor="organizationId">Select Organization</InputLabel>
                     <Select
-                      error={!!(formik.touched.organization && formik.errors.organization)}
+                      error={!!(formik.touched.organizationId && formik.errors.organizationId)}
                       fullWidth
-                      label="Organization"
-                      name="organization"
-                      id="organization"
+                      label="Select Organization"
+                      name="organizationId"
+                      id="organizationId"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
-                      value={formik.values.organization}
+                      value={formik.values.organizationId}
                     >
-                      <MenuItem value="Ajayi">Ajayi</MenuItem>
+                      {organizations.list.map((organization) => (
+                        <MenuItem key={organization.id} value={organization.reference}>
+                          {organization.name}
+                        </MenuItem>
+                      ))}
                     </Select>
-                    {!!(formik.touched.organization && formik.errors.organization) && (
+                    {!!(formik.touched.organizationId && formik.errors.organizationId) && (
                       <FormHelperText sx={{ color: 'error.main' }}>
-                        {formik.errors.organization}
+                        {formik.errors.organizationId}
                       </FormHelperText>
                     )}
                   </FormControl>
                   <FormControl variant="outlined">
                     <TextField
-                      error={!!(formik.touched.campaign_name && formik.errors.campaign_name)}
+                      error={!!(formik.touched.name && formik.errors.name)}
                       fullWidth
-                      helperText={formik.touched.campaign_name && formik.errors.campaign_name}
+                      helperText={formik.touched.name && formik.errors.name}
                       label="Campaign Name"
-                      name="campaign_name"
-                      id="campaign_name"
+                      name="name"
+                      id="name"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       type="text"
-                      value={formik.values.campaign_name}
+                      value={formik.values.name}
                     />
                   </FormControl>
-                  <FormControl variant="outlined">
-                    <InputLabel htmlFor="screen_id">Select Screen</InputLabel>
+                  <FormControl fullWidth>
+                    <InputLabel id="scrren-select-label">Select Screen</InputLabel>
                     <Select
-                      error={!!(formik.touched.screen_id && formik.errors.screen_id)}
-                      fullWidth
+                      error={!!(formik.touched.screenId && formik.errors.screenId)}
+                      labelId="scrren-select-label"
+                      id="screen-select"
+                      name="screenId"
+                      value={formik.values.screenId}
                       label="Select Screen"
-                      name="screen_id"
-                      id="screen_id"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
-                      value={formik.values.screen_id}
                     >
-                      <MenuItem value="Ajayi">Ajayi</MenuItem>
+                      {screens.screen.map((screen) => (
+                        <MenuItem value={screen.reference} key={screen.reference}>
+                          {screen.screenName}
+                        </MenuItem>
+                      ))}
                     </Select>
-                    {!!(formik.touched.screen_id && formik.errors.screen_id) && (
+                    {!!(formik.touched.screenId && formik.errors.screenId) && (
                       <FormHelperText sx={{ color: 'error.main' }}>
-                        {formik.errors.screen_id}
+                        {formik.errors.screenId}
                       </FormHelperText>
                     )}
                   </FormControl>
-                  <FormControl variant="outlined">
-                    <InputLabel htmlFor="company">Select Ad Account</InputLabel>
+                  <FormControl fullWidth>
+                    <InputLabel id="ad-account">Select Ad Account</InputLabel>
                     <Select
-                      error={!!(formik.touched.ad_account && formik.errors.ad_account)}
-                      fullWidth
-                      label="Account Officer"
-                      name="ad_account"
-                      id="ad_account"
+                      error={!!(formik.touched.accountId && formik.errors.accountId)}
+                      labelId="ad-account"
+                      id="screen-select"
+                      name="accountId"
+                      value={formik.values.accountId}
+                      label="Select Ad Account"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
-                      value={formik.values.ad_account}
                     >
-                      <MenuItem value="Ajayi">Ajayi</MenuItem>
+                      {adAccounts.list.map((adAccount) => (
+                        <MenuItem value={adAccount.reference} key={adAccount.reference}>
+                          {adAccount.name}
+                        </MenuItem>
+                      ))}
                     </Select>
-                    {!!(formik.touched.ad_account && formik.errors.ad_account) && (
+                    {!!(formik.touched.accountId && formik.errors.accountId) && (
                       <FormHelperText sx={{ color: 'error.main' }}>
-                        {formik.errors.ad_account}
+                        {formik.errors.accountId}
                       </FormHelperText>
                     )}
                   </FormControl>
@@ -161,16 +242,15 @@ const Page = ({}) => {
                     <Grid xs={12} md={6}>
                       <FormControl variant="outlined" fullWidth>
                         <DatePicker
-                          onChange={(date) => {
-                            formik.setFieldValue('start_date', date);
-                          }}
-                          name="start_date"
+                          onChange={handleDateTimeUpdate('startAt')}
+                          name="startAt"
                           label="Select Start date"
                           fullWidth
+                          value={formik.values.startAt}
                         />
-                        {!!(formik.touched.start_date && formik.errors.start_date) && (
+                        {!!(formik.touched.startAt && formik.errors.startAt) && (
                           <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.start_date}
+                            {formik.errors.startAt}
                           </FormHelperText>
                         )}
                       </FormControl>
@@ -178,16 +258,15 @@ const Page = ({}) => {
                     <Grid xs={12} md={6}>
                       <FormControl variant="outlined" fullWidth>
                         <DatePicker
-                          onChange={(date) => {
-                            formik.setFieldValue('end_date', date);
-                          }}
-                          name="end_date"
+                          onChange={handleDateTimeUpdate('endAt')}
+                          name="endAt"
                           label="Select End Date"
                           fullWidth
+                          value={formik.values.endAt}
                         />
-                        {!!(formik.touched.end_date && formik.errors.end_date) && (
+                        {!!(formik.touched.endAt && formik.errors.endAt) && (
                           <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.end_date}
+                            {formik.errors.endAt}
                           </FormHelperText>
                         )}
                       </FormControl>
@@ -195,16 +274,15 @@ const Page = ({}) => {
                     <Grid xs={12} md={6}>
                       <FormControl variant="outlined" fullWidth>
                         <TimePicker
-                          onChange={(date) => {
-                            formik.setFieldValue('start_time', date);
-                          }}
-                          name="start_time"
+                          onChange={handleDateTimeUpdate('playTimeAt')}
+                          name="playTimeAt"
                           label="Select Start Time"
                           fullWidth
+                          value={formik.values.playTimeAt}
                         />
-                        {!!(formik.touched.start_time && formik.errors.start_time) && (
+                        {!!(formik.touched.playTimeAt && formik.errors.playTimeAt) && (
                           <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.start_time}
+                            {formik.errors.playTimeAt}
                           </FormHelperText>
                         )}
                       </FormControl>
@@ -212,16 +290,15 @@ const Page = ({}) => {
                     <Grid xs={12} md={6}>
                       <FormControl variant="outlined" fullWidth>
                         <TimePicker
-                          onChange={(date) => {
-                            formik.setFieldValue('end_time', date);
-                          }}
-                          name="end_time"
+                          onChange={handleDateTimeUpdate('endTimeAt')}
+                          name="endTimeAt"
                           label="Select End Time"
                           fullWidth
+                          value={formik.values.endTimeAt}
                         />
-                        {!!(formik.touched.end_time && formik.errors.end_time) && (
+                        {!!(formik.touched.endTimeAt && formik.errors.endTimeAt) && (
                           <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.end_time}
+                            {formik.errors.endTimeAt}
                           </FormHelperText>
                         )}
                       </FormControl>
@@ -230,14 +307,11 @@ const Page = ({}) => {
                   <Stack spacing={1}>
                     <Typography variant="subtitle1">Layout Type</Typography>
                     <Box maxWidth={300}>
-                      <ScreenLayout
-                        formik={formik}
-                        full
-                        landscape
-                        name="screen_layout"
-                        title="Full"
-                        value="full"
-                      />
+                      {screenLayoutToReferenceMap[selectedScreenLayoutReference]?.(
+                        formik,
+                        screenLayout,
+                        { view_name: 'layoutView', view_value: formik.values.layoutView }
+                      ) || <Typography>Select Screen to view layout</Typography>}
                     </Box>
                   </Stack>
                   <Stack spacing={1}>
@@ -247,10 +321,10 @@ const Page = ({}) => {
                     </FormHelperText>
                     <FormGroup>
                       <DayCheck label="Sunday" formik={formik} value="sunday" />
-                      <DayCheck label="Monday" formik={formik} value="moday" />
-                      <DayCheck label="Teuday" formik={formik} value="teusday" />
+                      <DayCheck label="Monday" formik={formik} value="monday" />
+                      <DayCheck label="Teusday" formik={formik} value="teusday" />
                       <DayCheck label="Wednesday" formik={formik} value="wednesday" />
-                      <DayCheck label="Thursday" formik={formik} value="thurday" />
+                      <DayCheck label="Thursday" formik={formik} value="thursday" />
                       <DayCheck label="Friday" formik={formik} value="friday" />
                       <DayCheck label="Saturday" formik={formik} value="saturday" />
                     </FormGroup>
@@ -261,20 +335,27 @@ const Page = ({}) => {
                       duration
                     </FormHelperText>
                     <Slider
-                      name="duration"
+                      name="playDuration"
                       valueLabelDisplay="auto"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
-                      min={0}
+                      min={1}
                       max={60}
                     />
                   </Stack>
+
                   <Button
+                    type="submit"
+                    startIcon={
+                      formik.isSubmitting && (
+                        <CircularProgress size={16} sx={{ color: 'rgba(17,25,39,0.6)' }} />
+                      )
+                    }
                     variant="contained"
                     size="large"
-                    disabled={!(formik.isValid && formik.dirty)}
+                    disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
                   >
-                    Create Ad Account
+                    Create Campaing
                   </Button>
                 </Stack>
               </form>
@@ -293,24 +374,56 @@ export default Page;
 function DayCheck({ label, formik, value }) {
   const handleChange = (e) => {
     const { checked } = e.target;
-    let selected_days = [...formik.values.selected_days];
+    let selected_days = formik.values.playDays;
 
     if (checked) {
-      selected_days.push(value);
+      selected_days = [...selected_days.split(',').filter(Boolean), value].join(',');
     } else {
-      selected_days = selected_days.filter((day) => day !== value);
+      selected_days = selected_days
+        .split(',')
+        .filter((day) => day !== value)
+        .filter(Boolean)
+        .join(',');
     }
-    formik.setFieldValue('selected_days', selected_days);
+    formik.setFieldValue('playDays', selected_days);
   };
 
   return (
     <FormControlLabel
       onChange={handleChange}
       value={value}
-      name
       control={<Checkbox />}
       label={label}
-      checked={formik.values.selected_days.includes(value)}
+      checked={formik.values.playDays.includes(value)}
     />
   );
 }
+
+export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  try {
+    const [screens, organizations, adAccounts, layouts] = await Promise.all([
+      getResourse(ctx.req, '/screen'),
+      getResourse(ctx.req, '/organization'),
+      getResourse(ctx.req, '/ads-account'),
+      getResourse(ctx.req, 'screen/layout/all'),
+    ]);
+    return {
+      props: { screens, organizations, adAccounts, layouts },
+    };
+  } catch (error) {
+    console.log(error);
+
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});
