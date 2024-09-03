@@ -43,6 +43,7 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import {
   getAllOrganizations,
   getAllScreens,
+  getResourse,
   getScreen,
   getScreenCities,
   getScreenLayouts,
@@ -91,7 +92,7 @@ const campaigns = [
   },
 ];
 
-const Page = ({ screens, screen, organizations, cities, screen_layouts }) => {
+const Page = ({ screens, screen, organizations, cities, screen_layouts, screen_campaings }) => {
   const { query, replace } = useRouter();
 
   const handleScreenSelect = (event) => {
@@ -133,7 +134,7 @@ const Page = ({ screens, screen, organizations, cities, screen_layouts }) => {
                 </FormControl>
               </Grid>
             </Grid>
-            <ScreenCampaigns campaigns={campaigns} />
+            <ScreenCampaigns campaigns={screen_campaings} />
             <ScreenDetails
               cities={cities}
               screen={screen}
@@ -157,17 +158,21 @@ const columns = [
 ];
 
 function ScreenCampaigns({ campaigns }) {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { query, replace } = useRouter();
+  const handleRowsPerPageChange = useCallback((event) => {
+    const queryParams = new URLSearchParams(query);
+    queryParams.set('size', event.target.value);
+    queryParams.delete('screen_id');
+    replace(`/screens/${query.screen_id}?${queryParams.toString()}`);
+  }, []);
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+  const onPageChange = (_event, newPage) => {
+    const queryParams = new URLSearchParams(query);
+    queryParams.set('page', newPage + 1);
+    queryParams.delete('screen_id');
+    replace(`/screens/${query.screen_id}?${queryParams.toString()}`);
   };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
   return (
     <Card sx={{ width: '100%', overflow: 'hidden' }}>
       <TableContainer sx={{ maxHeight: 440 }}>
@@ -186,11 +191,11 @@ function ScreenCampaigns({ campaigns }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {campaigns.map((campaign) => {
+            {campaigns.list.map((campaign) => {
               return (
-                <TableRow hover role="checkbox" tabIndex={-1} key={campaign._id}>
+                <TableRow hover role="checkbox" tabIndex={-1} key={campaign.reference}>
                   <TableCell>{campaign.name}</TableCell>
-                  <TableCell>{campaign.adAccount.name}</TableCell>
+                  <TableCell>{campaign.adsAccountName}</TableCell>
                 </TableRow>
               );
             })}
@@ -198,13 +203,13 @@ function ScreenCampaigns({ campaigns }) {
         </Table>
       </TableContainer>
       <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
+        rowsPerPageOptions={[5, 10, 25, 100]}
         component="div"
-        count={campaigns.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
+        count={+campaigns.totalRows}
+        rowsPerPage={+campaigns.rowsPerPage}
+        page={+campaigns.currentPage - 1}
+        onPageChange={onPageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
       />
     </Card>
   );
@@ -684,16 +689,23 @@ function ToolTipContent() {
 }
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  const params = {
+    ...ctx.query,
+    page: ctx.query.page || 1,
+    size: ctx.query.size || 25,
+  };
   try {
-    const [screens, screen, organizations, cities, screen_layouts] = await Promise.all([
-      getAllScreens(ctx.req),
-      getScreen(ctx.req, ctx.query.screen_id),
-      getAllOrganizations(ctx.req),
-      getScreenCities(ctx.req),
-      getScreenLayouts(ctx.req),
-    ]);
+    const [screens, screen, organizations, cities, screen_layouts, screen_campaings] =
+      await Promise.all([
+        getAllScreens(ctx.req),
+        getScreen(ctx.req, ctx.query.screen_id),
+        getAllOrganizations(ctx.req),
+        getScreenCities(ctx.req),
+        getScreenLayouts(ctx.req),
+        getResourse(ctx.req, `/ads/campaign/screen/${ctx.query.screen_id}`, params),
+      ]);
     return {
-      props: { screens, screen, organizations, cities, screen_layouts },
+      props: { screens, screen, organizations, cities, screen_layouts, screen_campaings },
     };
   } catch (error) {
     console.log(error);

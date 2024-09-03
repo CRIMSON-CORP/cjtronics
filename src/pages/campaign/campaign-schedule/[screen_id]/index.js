@@ -20,17 +20,32 @@ import {
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import ScreenLayout from 'src/components/ScreenLayout';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import { getResourse } from 'src/lib/actions';
+import { screenLayoutToReferenceMap } from 'src/pages/screens';
 
-const Page = () => {
+const Page = ({ screens, layouts }) => {
   const { query } = useRouter();
   const [selectedScreen, setSelectedScreen] = useState(query.screen_id);
+  const { replace } = useRouter();
   const handleScreenSelect = (event) => {
     setSelectedScreen(event.target.value);
+    replace(`/campaign/campaign-schedule/${event.target.value}`);
   };
+
+  const screenLayoutReference = useMemo(
+    () => screens.screen.find((screen) => (screen.reference = selectedScreen))?.layoutReference,
+    [query.screen_id]
+  );
+
+  const layoutInfo = useMemo(
+    () => layouts.find((layout) => layout.reference === screenLayoutReference),
+    [screenLayoutReference]
+  );
+
   return (
     <>
       <Head>
@@ -56,15 +71,16 @@ const Page = () => {
                 <FormControl fullWidth>
                   <InputLabel id="scrren-select-label">Select Screen</InputLabel>
                   <Select
-                    labelId="scrren-select-label"
-                    id="screen-select"
-                    value={selectedScreen}
                     label="Select Screen"
+                    value={selectedScreen}
+                    labelId="scrren-select-label"
                     onChange={handleScreenSelect}
                   >
-                    <MenuItem value={10}>Ten</MenuItem>
-                    <MenuItem value={20}>Twenty</MenuItem>
-                    <MenuItem value={30}>Thirty</MenuItem>
+                    {screens.screen.map((screen) => (
+                      <MenuItem value={screen.reference} key={screen.reference}>
+                        {screen.screenName}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
@@ -72,7 +88,7 @@ const Page = () => {
             <Stack spacing={1}>
               <Typography variant="h6">Screen Layout</Typography>
               <Box maxWidth={200}>
-                <ScreenLayout full landscape horizontal />
+                {screenLayoutToReferenceMap[screenLayoutReference](undefined, layoutInfo)}
               </Box>
             </Stack>
 
@@ -210,3 +226,28 @@ function SequenceResult({ sequence }) {
     </Card>
   );
 }
+
+export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  try {
+    const [screens, layouts] = await Promise.all([
+      getResourse(ctx.req, '/screen'),
+      getResourse(ctx.req, '/screen/layout/all'),
+    ]);
+    return {
+      props: { screens, layouts },
+    };
+  } catch (error) {
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});

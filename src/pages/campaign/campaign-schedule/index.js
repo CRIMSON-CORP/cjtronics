@@ -10,13 +10,18 @@ import {
   Typography,
 } from '@mui/material';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import { getResourse } from 'src/lib/actions';
 
-const Page = () => {
+const Page = ({ screen }) => {
   const [selectedScreen, setSelectedScreen] = useState('');
+  const { replace } = useRouter();
   const handleScreenSelect = (event) => {
     setSelectedScreen(event.target.value);
+    replace(`/campaign/campaign-schedule/${event.target.value}`);
   };
   return (
     <>
@@ -38,15 +43,16 @@ const Page = () => {
                 <FormControl fullWidth>
                   <InputLabel id="scrren-select-label">Select Screen</InputLabel>
                   <Select
-                    labelId="scrren-select-label"
-                    id="screen-select"
-                    value={selectedScreen}
                     label="Select Screen"
+                    value={selectedScreen}
+                    labelId="scrren-select-label"
                     onChange={handleScreenSelect}
                   >
-                    <MenuItem value={10}>Ten</MenuItem>
-                    <MenuItem value={20}>Twenty</MenuItem>
-                    <MenuItem value={30}>Thirty</MenuItem>
+                    {screen.map((screen) => (
+                      <MenuItem value={screen.reference} key={screen.reference}>
+                        {screen.screenName}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
@@ -61,3 +67,27 @@ const Page = () => {
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
+
+export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  try {
+    const screens = await getResourse(ctx.req, '/screen');
+    return {
+      props: screens,
+    };
+  } catch (error) {
+    console.log(error);
+
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});
