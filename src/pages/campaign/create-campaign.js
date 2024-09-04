@@ -1,9 +1,11 @@
+import { DragIndicator } from '@mui/icons-material';
 import {
   Box,
   Button,
   Card,
   CardContent,
   CardHeader,
+  CardMedia,
   Checkbox,
   CircularProgress,
   Container,
@@ -15,6 +17,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Skeleton,
   Slider,
   Stack,
   TextField,
@@ -24,8 +27,10 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
+import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -47,6 +52,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
       endTimeAt: null,
       playDays: '',
       playDuration: 1,
+      selectedAdFiles: '',
     },
     validationSchema: Yup.object({
       organizationId: Yup.string().required('Organization is required'),
@@ -57,6 +63,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
       endAt: Yup.string().max(255).required('End Date name is required'),
       playTimeAt: Yup.string().max(255).required('Start time name is required'),
       endTimeAt: Yup.string().max(255).required('End Time name is required'),
+      selectedAdFiles: Yup.string().max(255).required('Select at Least one Ad File'),
     }),
     onSubmit: async (values, helpers) => {
       const payload = { ...values };
@@ -238,6 +245,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       </FormHelperText>
                     )}
                   </FormControl>
+                  <AdFilesSelectWrapper formik={formik} adAccountId={formik.values.accountId} />
                   <Grid container spacing={2}>
                     <Grid xs={12} md={6}>
                       <FormControl variant="outlined" fullWidth>
@@ -427,3 +435,199 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
     };
   }
 });
+
+function AdFilesSelectWrapper({ adAccountId, formik }) {
+  const [fetchingAds, setFetchingAds] = useState(false);
+  const [adFiles, setAdFiles] = useState([]);
+
+  const fetchAdFiles = async () => {
+    setAdFiles([]);
+    setFetchingAds(true);
+    try {
+      const { data } = await axios.get(
+        `/api/admin/ad-account/get-ads?ad_account_id=${adAccountId}`
+      );
+
+      setAdFiles(data.data?.adsUpload || data.data);
+    } catch (error) {
+      console.log(error);
+    }
+    setFetchingAds(false);
+  };
+
+  useEffect(() => {
+    if (adAccountId) fetchAdFiles();
+  }, [adAccountId]);
+
+  if (!adAccountId) {
+    return <Typography>Select Ad Account to select Ad files</Typography>;
+  }
+
+  if (fetchingAds) {
+    return (
+      <Stack spacing={1}>
+        <Typography variant="subtitle1">Select Ad Files</Typography>
+        <Grid container spacing={2}>
+          {Array(6)
+            .fill(0)
+            .map((_, index) => (
+              <Grid xs={12} sm={6} md={4} item key={index}>
+                <Skeleton variant="rounded" width="100%" animation="wave" height={140} />
+              </Grid>
+            ))}
+        </Grid>
+      </Stack>
+    );
+  }
+
+  if (adFiles.length === 0) {
+    return (
+      <>
+        <Stack spacing={1}>
+          <Typography variant="subtitle1">Select Ad Files</Typography>
+          <Typography>No Ad files found</Typography>
+        </Stack>
+      </>
+    );
+  }
+
+  return (
+    <Stack spacing={2}>
+      <Stack spacing={1}>
+        <Typography variant="subtitle1">Select Ad Files</Typography>
+        <Grid container spacing={2}>
+          {adFiles.map((file) => (
+            <Grid key={file.reference} xs={12} sm={6} md={4} item>
+              <AdFile {...file} formik={formik} />
+            </Grid>
+          ))}
+        </Grid>
+      </Stack>
+      {formik.values.selectedAdFiles && (
+        <Stack spacing={2}>
+          <Typography variant="subtitle1">Reorder Selected ad</Typography>
+          <ReorderSelectedAdFiles formik={formik} adFiles={adFiles} />
+        </Stack>
+      )}
+    </Stack>
+  );
+}
+
+function AdFile({ name, url, reference, type, formik }) {
+  const handleChange = (e) => {
+    const { checked } = e.target;
+    let selected_ads = formik.values.selectedAdFiles;
+
+    if (checked) {
+      selected_ads = [...selected_ads.split(',').filter(Boolean), reference].join(',');
+    } else {
+      selected_ads = selected_ads
+        .split(',')
+        .filter((day) => day !== reference)
+        .filter(Boolean)
+        .join(',');
+    }
+    formik.setFieldValue('selectedAdFiles', selected_ads);
+  };
+  return (
+    <Card>
+      <CardHeader
+        title={name}
+        subheader={type}
+        action={
+          <FormControlLabel
+            onChange={handleChange}
+            value={reference}
+            control={<Checkbox />}
+            checked={formik.values.selectedAdFiles.includes(reference)}
+          />
+        }
+      />
+      {type === 'html' ? (
+        <Iframe content={url} />
+      ) : (
+        <CardMedia component={adMediaTypeTagMap[type]} height="200" image={url} title={name} />
+      )}
+    </Card>
+  );
+}
+
+const adMediaTypeTagMap = {
+  image: 'img',
+  video: 'video',
+};
+
+const reorder = (list, startIndex, endIndex) => {
+  const result = Array.from(list);
+  const [removed] = result.splice(startIndex, 1);
+  result.splice(endIndex, 0, removed);
+
+  return result;
+};
+
+function ReorderSelectedAdFiles({ formik, adFiles }) {
+  const selectedAdFiles = useMemo(
+    () => adFiles.filter((adFile) => formik.values.selectedAdFiles.includes(adFile.reference)),
+    [formik.values.selectedAdFiles]
+  );
+
+  const sortedSelectedAdFiles = useMemo(
+    () =>
+      selectedAdFiles.sort(
+        (a, b) =>
+          formik.values.selectedAdFiles.indexOf(a.reference) -
+          formik.values.selectedAdFiles.indexOf(b.reference)
+      ),
+    [formik.values.selectedAdFiles]
+  );
+
+  const onDragEnd = (result) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const items = reorder(
+      formik.values.selectedAdFiles.split(','),
+      result.source.index,
+      result.destination.index
+    );
+
+    formik.setFieldValue('selectedAdFiles', items.join(','));
+  };
+
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable droppableId="campaigns">
+        {(provided, snapshot) => (
+          <Stack {...provided.droppableProps} ref={provided.innerRef}>
+            {sortedSelectedAdFiles.map((adFile, index) => (
+              <Draggable draggableId={adFile.reference} index={index} key={adFile.reference}>
+                {(_provided) => (
+                  <Card
+                    key={adFile.reference}
+                    ref={_provided.innerRef}
+                    {..._provided.draggableProps}
+                    {..._provided.dragHandleProps}
+                    sx={{
+                      py: 1,
+                      userSelect: 'none',
+                      ..._provided.draggableProps.style,
+                    }}
+                  >
+                    <CardHeader
+                      title={adFile.name}
+                      subheader={adFile.type}
+                      action={<DragIndicator />}
+                    />
+                    <CardMedia component="img" height="200" image={adFile.url} title={name} />
+                  </Card>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </Stack>
+        )}
+      </Droppable>
+    </DragDropContext>
+  );
+}

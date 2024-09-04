@@ -21,6 +21,7 @@ import {
   ListItemText,
   MenuItem,
   Select,
+  Skeleton,
   Stack,
   TextField,
   Typography,
@@ -28,12 +29,12 @@ import {
 import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllOrganizations, getAllScreens, getCompanies } from 'src/lib/actions';
-import { adAccountCampaigns } from 'src/utils/data';
 import * as Yup from 'yup';
 
 const Page = ({ organizations, companies, screens }) => {
@@ -234,20 +235,24 @@ function AdAccountForm({ organizations, companies, screens, setSelectedCompany }
 }
 
 function AdAccountsListWrapper() {
-  const [companyId, setCompanyId] = useState(null);
+  const [selectedAdCompanyReference, setSelectedAdCompanyReference] = useState('');
+  const [adAccounts, setAdAccounts] = useState([]);
+  const [fetchingAdAccounts, setFetchingAdAccounts] = useState(false);
 
   const fetchAdAccounts = async (reference) => {
     try {
       const response = await axios.get(
         '/api/admin/ad-account/get-by-company?reference=' + reference
       );
-      console.log(response);
+      setFetchingAdAccounts(false);
+      setAdAccounts(response.data.data.list);
     } catch (error) {}
   };
   useEffect(() => {
     const refetchAddAccounts = (e) => {
-      setCompanyId(e.detail);
+      setFetchingAdAccounts(true);
       fetchAdAccounts(e.detail);
+      setSelectedAdCompanyReference(e.detail);
     };
     window.addEventListener('refetch-ad-accounts', refetchAddAccounts);
 
@@ -256,7 +261,7 @@ function AdAccountsListWrapper() {
     };
   }, []);
 
-  if (!companyId) {
+  if (!selectedAdCompanyReference && !fetchingAdAccounts) {
     return (
       <Card>
         <CardContent>
@@ -265,10 +270,34 @@ function AdAccountsListWrapper() {
       </Card>
     );
   }
-  return <AdAccountList adAccountName={companyId} />;
+
+  if (fetchingAdAccounts) {
+    return (
+      <Card>
+        <CardContent>
+          <List>
+            {Array(5)
+              .fill(0)
+              .map((_, index) => (
+                <ListItem key={index}>
+                  <ListItemAvatar>
+                    <Avatar>
+                      <Skeleton variant="circular" animation="wave" width={40} height={40} />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <Skeleton variant="text" animation="wave" width="100%" />
+                </ListItem>
+              ))}
+          </List>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return <AdAccountList adAccounts={adAccounts} />;
 }
 
-function AdAccountList({ adAccountName }) {
+function AdAccountList({ adAccounts }) {
   return (
     <Card>
       <CardHeader
@@ -281,15 +310,15 @@ function AdAccountList({ adAccountName }) {
             justifyContent="space-between"
           >
             <Typography variant="h5">
-              Ad Accounts <Chip label="6" />
+              Ad Accounts <Chip label={adAccounts.length} />
             </Typography>
           </Stack>
         }
       />
       <CardContent>
         <List sx={{ maxHeight: '60vh', overflow: 'auto' }}>
-          {adAccountCampaigns.adAccountAndCampaigns.map((campaign) => (
-            <AdCampaignWrapper key={campaign.adAccountId} {...campaign} />
+          {adAccounts.map((adAccount) => (
+            <AdCampaignWrapper key={adAccount.reference} {...adAccount} />
           ))}
         </List>
       </CardContent>
@@ -297,7 +326,7 @@ function AdAccountList({ adAccountName }) {
   );
 }
 
-function AdCampaignWrapper({ adAccount, campaigns }) {
+function AdCampaignWrapper({ name, reference, listCampaigns }) {
   const [expanded, setExpanded] = useState(false);
 
   const toggleExpanded = () => {
@@ -314,6 +343,11 @@ function AdCampaignWrapper({ adAccount, campaigns }) {
             <IconButton onClick={toggleExpanded}>
               {expanded ? <ExpandLess /> : <ExpandMore />}
             </IconButton>
+            <Link href={`/ad-account/${reference}`}>
+              <IconButton>
+                <ChevronRight />
+              </IconButton>
+            </Link>
           </Stack>
         }
       >
@@ -322,21 +356,18 @@ function AdCampaignWrapper({ adAccount, campaigns }) {
             <Campaign />
           </Avatar>
         </ListItemAvatar>
-        <ListItemText primary={adAccount} secondary={`${campaigns.length} campaigns`} />
+        <ListItemText primary={name} secondary={`${listCampaigns.length} campaigns`} />
       </ListItem>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <List component="div" disablePadding>
-          {campaigns.map((campaign) => (
+          {listCampaigns.map((campaign) => (
             <ListItem
-              key={campaign._id}
+              key={campaign.reference}
               sx={{ pl: 4 }}
               secondaryAction={
                 <Stack direction="row" spacing={1}>
                   <IconButton>
                     <Delete color="error.main" />
-                  </IconButton>
-                  <IconButton>
-                    <ChevronRight />
                   </IconButton>
                 </Stack>
               }

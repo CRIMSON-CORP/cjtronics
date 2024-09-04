@@ -155,7 +155,7 @@ export const items = [
             <History />
           </SvgIcon>
         ),
-        matchers: ['screens'],
+        matchers: ['campaign-schedule'],
       },
     ],
   },

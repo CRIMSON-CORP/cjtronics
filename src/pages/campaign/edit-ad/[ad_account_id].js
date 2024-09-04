@@ -36,19 +36,25 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 import * as Yup from 'yup';
 
-const Page = ({ organizations, screens, adAccounts }) => {
+const Page = ({ organizations, screens, adAccounts, adAccount, ad }) => {
   const formik = useFormik({
     initialValues: {
-      organizationId: '',
-      screenId: '',
-      adsAccountId: '',
-      adFiles: [],
+      organizationId: adAccount.organizationReference,
+      screenId: adAccount.screenReference,
+      adsAccountId: adAccount.reference,
+      adFiles:
+        ad.adsUpload?.map((file) => ({
+          id: file.id,
+          name: file.name,
+          type: file.type,
+          url: file.url,
+          reference: file.reference,
+          urlName: file.urlName,
+        })) || ad,
       submit: null,
     },
     validationSchema: Yup.object({
-      organizationId: Yup.string().required('Organization is required'),
-      screenId: Yup.string().max(255).required('Screen ID is required'),
-      adsAccountId: Yup.string().max(255).required('Ad Account name is required'),
+      adFiles: Yup.array().min(1).required('At least on Ad file is required!'),
     }),
     onSubmit: async (values, helpers) => {
       try {
@@ -64,7 +70,7 @@ const Page = ({ organizations, screens, adAccounts }) => {
   return (
     <>
       <Head>
-        <title>Create Ad | Dalukwa Admin</title>
+        <title>Edit Ad | Dalukwa Admin</title>
       </Head>
       <Box
         component="main"
@@ -75,7 +81,7 @@ const Page = ({ organizations, screens, adAccounts }) => {
       >
         <Container maxWidth="xl">
           <Card>
-            <CardHeader title="Create Ad" />
+            <CardHeader title="Edit Ad" />
             <CardContent>
               <form onSubmit={formik.handleSubmit}>
                 <Stack spacing={3}>
@@ -90,6 +96,7 @@ const Page = ({ organizations, screens, adAccounts }) => {
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.organizationId}
+                      disabled
                     >
                       {organizations.list.map((organization) => (
                         <MenuItem value={organization.reference} key={organization.reference}>
@@ -114,6 +121,7 @@ const Page = ({ organizations, screens, adAccounts }) => {
                       onChange={formik.handleChange}
                       value={formik.values.screenId}
                       label="Select Screen"
+                      disabled
                     >
                       {screens.screen.map((screen) => (
                         <MenuItem value={screen.reference} key={screen.reference}>
@@ -133,6 +141,7 @@ const Page = ({ organizations, screens, adAccounts }) => {
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.adsAccountId}
+                      disabled
                     >
                       {adAccounts.list.map((adAccount) => (
                         <MenuItem value={adAccount.reference} key={adAccount.reference}>
@@ -147,7 +156,7 @@ const Page = ({ organizations, screens, adAccounts }) => {
                     )}
                   </FormControl>
                   <AdFiles formik={formik} />
-                  <UploadForm formik={formik} />
+                  <UploadForm formik={formik} adReference={ad.reference} />
                 </Stack>
               </form>
             </CardContent>
@@ -164,17 +173,17 @@ export default Page;
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [organizations, screens, adAccounts] = await Promise.all([
+    const [organizations, screens, adAccounts, adAccount, ad] = await Promise.all([
       getResourse(ctx.req, '/organization'),
       getResourse(ctx.req, '/screen'),
       getResourse(ctx.req, '/ads-account'),
+      getResourse(ctx.req, `/ads-account/${ctx.query.ad_account_id}`),
+      getResourse(ctx.req, `/ads/account/${ctx.query.ad_account_id}`),
     ]);
     return {
-      props: { organizations, screens, adAccounts },
+      props: { organizations, screens, adAccounts, adAccount, ad },
     };
   } catch (error) {
-    console.log(error);
-
     if (error?.response?.status === 401) {
       return {
         redirect: {
@@ -217,7 +226,7 @@ const videoStyle = {
   height: 40,
 };
 
-function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
+function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close, urlName, url }) {
   const [selectedAdFileType, setSelectedAdFileType] = useState(fileType || '');
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFileName, setSelectedFileName] = useState(fileName || '');
@@ -254,8 +263,10 @@ function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
     const newAdFile = {
       name: selectedFileName,
       type: selectedAdFileType,
-      file: iframeContent || selectedFile,
-      iframeContent,
+      file: selectedFile,
+      iframeContent: iframeContent,
+      urlName: urlName,
+      url: url,
     };
     if (id) {
       const index = existingAdFiles.findIndex((adFile) => adFile.id === id);
@@ -322,6 +333,9 @@ function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
               )}
               {selectedAdFileType === 'video' && (
                 <video style={videoStyle} src={fileObjectUrl} alt="preview" />
+              )}
+              {selectedAdFileType === 'html' && (
+                <Typography variant="body">{iframeContent}</Typography>
               )}
               <Button
                 component="label"
@@ -401,6 +415,7 @@ function AddedFiles({ formik }) {
 
     formik.setFieldValue('adFiles', items);
   };
+
   return (
     formik.values.adFiles.length > 0 && (
       <DragDropContext onDragEnd={onDragEnd}>
@@ -408,7 +423,7 @@ function AddedFiles({ formik }) {
           {(provided, snapshot) => (
             <Stack {...provided.droppableProps} ref={provided.innerRef}>
               {formik.values.adFiles.map((file, index) => (
-                <Draggable draggableId={file.id} index={index} key={file.id}>
+                <Draggable draggableId={file.id.toString()} index={index} key={file.id}>
                   {(_provided) => (
                     <Box
                       ref={_provided.innerRef}
@@ -421,12 +436,15 @@ function AddedFiles({ formik }) {
                       }}
                     >
                       <AddedFile
+                        index={index}
                         key={index}
                         id={file.id}
                         name={file.name}
                         type={file.type}
                         file={file.file}
                         formik={formik}
+                        url={file.url}
+                        urlName={file.urlName}
                         iframeContent={file.iframeContent}
                       />
                     </Box>
@@ -442,9 +460,9 @@ function AddedFiles({ formik }) {
   );
 }
 
-function AddedFile({ id, name, type, file, iframeContent, formik }) {
+function AddedFile({ id, name, type, file, iframeContent, formik, index, url, urlName }) {
   const fileObjectUrl = useMemo(
-    () => (file instanceof File ? URL.createObjectURL(file) : null),
+    () => (file instanceof File ? URL.createObjectURL(file) : url),
     [file]
   );
 
@@ -457,30 +475,56 @@ function AddedFile({ id, name, type, file, iframeContent, formik }) {
   };
   return (
     <Paper sx={{ p: 2 }} elevation={5}>
-      <Stack spacing={1} direction="row" alignItems="center" flexWrap="wrap">
-        {file && type === 'image' && (
-          <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
-        )}
-        {file && type === 'video' && <video style={videoStyle} src={fileObjectUrl} alt="preview" />}
-        {type === 'html' && <Iframe content={iframeContent} styles={videoStyle} />}
-        <Stack>
-          <Typography variant="h6">{name}</Typography>
-          {['image', 'video'].includes(type) && (
-            <Typography variant="subtitle1">{file && formatFileSize(file.size)}</Typography>
+      <Stack
+        spacing={1}
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        flexWrap="wrap"
+      >
+        <Stack direction="row" alignItems="center" overflow="auto" spacing={1}>
+          {fileObjectUrl && type === 'image' && (
+            <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
           )}
+          {fileObjectUrl && type === 'video' && (
+            <video style={videoStyle} src={fileObjectUrl} alt="preview" />
+          )}
+          {type === 'html' && <Iframe content={iframeContent || url} styles={videoStyle} />}
+          <Stack maxWidth="100%" overflow="auto">
+            <Typography
+              width="100%"
+              whiteSpace="nowrap"
+              overflow="hidden"
+              textOverflow="ellipsis"
+              variant="h6"
+            >
+              {name}
+            </Typography>
+            {['image', 'video'].includes(type) && file instanceof File && (
+              <Typography variant="subtitle1">{file && formatFileSize(file.size)}</Typography>
+            )}
+          </Stack>
         </Stack>
-        <Stack spacing={0.5} flex={1} justifyContent="flex-end" alignItems="center" direction="row">
+        <Stack
+          spacing={0.5}
+          alignItems="center"
+          direction="row"
+          alignSelf="flex-end"
+          sx={{ ml: 'auto' }}
+        >
           <EditFile fileId={id} formik={formik} />
-          <ConfirmAction
-            color="error"
-            buttonProps={{ color: 'error', variant: 'text' }}
-            content="Are you sure you want to remove this Ad?"
-            proceedText="Yes, Remove"
-            title="Remove Ad?"
-            action={handleRemoveFile}
-          >
-            Remove
-          </ConfirmAction>
+          {index !== 0 && (
+            <ConfirmAction
+              color="error"
+              buttonProps={{ color: 'error', variant: 'text' }}
+              content="Are you sure you want to remove this Ad?"
+              proceedText="Yes, Remove"
+              title="Remove Ad?"
+              action={handleRemoveFile}
+            >
+              Remove
+            </ConfirmAction>
+          )}
           <DragIndicator />
         </Stack>
       </Stack>
@@ -514,9 +558,9 @@ const cardStyles = {
 function EditFile({ formik, fileId }) {
   const { state, open, close } = useToggle(false);
 
-  const { id, name, type, iframeContent } = useMemo(
+  const { id, name, type, iframeContent, urlName, url } = useMemo(
     () => formik.values.adFiles.find((file) => file.id === fileId),
-    [fileId]
+    [fileId, formik.values.adFiles]
   );
 
   return (
@@ -544,6 +588,8 @@ function EditFile({ formik, fileId }) {
                   fileName: name,
                   ifrmContent: iframeContent,
                   close,
+                  urlName,
+                  url,
                 }}
               />
             </CardContent>
@@ -570,28 +616,25 @@ const progressSpanStyles = {
   transition: 'width 0.3s ease-out',
 };
 
-function UploadForm({ formik }) {
+function UploadForm({ formik, adReference }) {
   const [uploadProgress, setuploadProgress] = useState(0);
   const [requestProcessing, setRequestProcessing] = useState(false);
   const { user } = useAuth();
 
   const hanldeUpload = () => {
     const formData = new FormData();
-    const { organizationId, screenId, adsAccountId, adFiles } = formik.values;
-    formData.append('organizationId', organizationId);
-    formData.append('screenId', screenId);
-    formData.append('adsAccountId', adsAccountId);
+    const { adFiles } = formik.values;
 
     adFiles.forEach((file) => {
       formData.append(`adsType[]`, file.type);
-      formData.append(`adsUpload[]`, file.iframeContent || file.file);
+      formData.append(`adsUpload[]`, file.iframeContent || file.file || file.urlName);
       formData.append(`adsName[]`, file.name);
+      formData.append(`adsReference[]`, file.reference || '');
     });
 
     setRequestProcessing(true);
-
     toast.promise(
-      axios.post('https://cjtronics.tushcode.com/v1/ads/create', formData, {
+      axios.post(`https://cjtronics.tushcode.com/v1/ads/edit/${adReference}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${user.token}`,
@@ -602,9 +645,8 @@ function UploadForm({ formik }) {
         },
       }),
       {
-        loading: 'Uploading Ads, Hang on...',
+        loading: 'Updating Ads, Hang on...',
         success: (response) => {
-          formik.resetForm();
           setuploadProgress(0);
           setRequestProcessing(false);
           return response.data.message || 'Ads uploaded successfully';

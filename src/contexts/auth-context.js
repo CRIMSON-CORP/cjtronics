@@ -113,7 +113,7 @@ export const AuthProvider = (props) => {
       if (status === 200 && data.status) {
         const payload = {
           token: data.token,
-          ...JSON.parse(data.data),
+          ...data.data,
         };
         window.sessionStorage.setItem('authenticated', 'true');
         window.sessionStorage.setItem('user', JSON.stringify(payload));

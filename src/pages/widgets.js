@@ -16,25 +16,16 @@ import {
 } from '@mui/material';
 import Head from 'next/head';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import { getResourse } from 'src/lib/actions';
 
-const Page = () => {
+const Page = ({ screens }) => {
   const [selectedScreen, setSelectedScreen] = useState('');
   const [selectedAdAccount, setSelectedAdAccount] = useState('');
 
-  const handleScreenSelect = (event) => {
+  const handleSelectChange = (event) => {
     setSelectedScreen(event.target.value);
-  };
-
-  const handleAdAccountSelect = (event) => {
-    setSelectedAdAccount(event.target.value);
-  };
-
-  const exportAsCSV = () => {
-    if (!selectedScreen) {
-      return toast.error('Please select a screen!');
-    }
   };
 
   return (
@@ -55,15 +46,17 @@ const Page = () => {
             <FormControl fullWidth>
               <InputLabel id="scrren-select-label">Select Screen</InputLabel>
               <Select
-                labelId="scrren-select-label"
                 id="screen-select"
-                value={selectedScreen}
+                labelId="scrren-select-label"
                 label="Select Screen"
-                onChange={handleScreenSelect}
+                value={selectedScreen}
+                onChange={handleSelectChange}
               >
-                <MenuItem value={10}>Ten</MenuItem>
-                <MenuItem value={20}>Twenty</MenuItem>
-                <MenuItem value={30}>Thirty</MenuItem>
+                {screens.screen.map((item) => (
+                  <MenuItem key={item.reference} value={item.reference}>
+                    {item.screenName}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             {selectedScreen ? (
@@ -105,3 +98,27 @@ function Widget() {
     </Card>
   );
 }
+
+export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  try {
+    const [screens] = await Promise.all([getResourse(ctx.req, '/screen')]);
+    return {
+      props: { screens },
+    };
+  } catch (error) {
+    console.log(error);
+
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});
