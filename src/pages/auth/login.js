@@ -6,6 +6,7 @@ import {
   FormControl,
   IconButton,
   InputAdornment,
+  Link,
   Stack,
   TextField,
   Typography,
@@ -13,7 +14,7 @@ import {
 } from '@mui/material';
 import { useFormik } from 'formik';
 import Head from 'next/head';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -97,8 +98,16 @@ const Page = () => {
               <Typography variant="h3" color="white">
                 Welcome back!
               </Typography>
-              <Typography variant="p" color="white">
-                Enter the form below to log in to your account
+              <Typography color="text.secondary" variant="body2">
+                Dont have an account? &nbsp;
+                <Link
+                  component={NextLink}
+                  href="/auth/register"
+                  underline="hover"
+                  variant="subtitle2"
+                >
+                  Register
+                </Link>
               </Typography>
             </Stack>
             <form noValidate onSubmit={formik.handleSubmit}>
@@ -155,6 +164,7 @@ const Page = () => {
                   />
                 </FormControl>
                 <Link
+                  component={NextLink}
                   style={{ textDecoration: 'none' }}
                   href={`/auth/forgot-password${
                     formik.values.email ? `?email=${formik.values.email}` : ''

@@ -170,7 +170,22 @@ export const AuthProvider = (props) => {
     } catch (err) {
       throw new Error(err?.response?.data?.message ?? err.message);
     }
-  });
+  }, []);
+
+  const createAdvertizer = useCallback(async (payload) => {
+    try {
+      const { data, status } = await axios.post('/api/auth/create-advertizer', payload);
+      if (status === 200) {
+        return data.message;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      console.log(err);
+
+      throw new Error(err?.response?.data?.message ?? err.message);
+    }
+  }, []);
 
   const contextValues = useMemo(
     () => ({
@@ -179,8 +194,9 @@ export const AuthProvider = (props) => {
       signOut,
       forgotPassword,
       resetPassword,
+      createAdvertizer,
     }),
-    [signIn, signOut, forgotPassword, resetPassword, state]
+    [signIn, signOut, forgotPassword, resetPassword, createAdvertizer, state]
   );
 
   return <AuthContext.Provider value={contextValues}>{children}</AuthContext.Provider>;
