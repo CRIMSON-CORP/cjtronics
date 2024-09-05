@@ -1,8 +1,8 @@
 import { Box, Divider, Drawer, Stack, useMediaQuery } from '@mui/material';
+import Image from 'next/image';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import PropTypes from 'prop-types';
-import { Logo } from 'src/components/logo';
 import { useAuth } from 'src/hooks/use-auth';
 import { items } from './config';
 import { SideNavItem } from './side-nav-item';
@@ -24,17 +24,15 @@ export const SideNav = (props) => {
         background: 'neutral.400',
       }}
     >
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ px: 3 }}>
         <Box
           component={NextLink}
           href="/"
           sx={{
             display: 'inline-flex',
-            height: 32,
-            width: 32,
           }}
         >
-          <Logo />
+          <Image src="/assets/logo-cjtronics.png" alt="Logo" width="200" height="120" />
         </Box>
       </Box>
       <Divider sx={{ borderColor: 'neutral.700' }} />

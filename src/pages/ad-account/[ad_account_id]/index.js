@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Card,
-  CardActions,
   CardContent,
   CardHeader,
   CardMedia,
@@ -18,7 +17,7 @@ import {
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useMemo } from 'react';
+import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -30,7 +29,7 @@ const Page = ({ adAccounts, adAccount, ads }) => {
     replace(`/ad-account/${event.target.value}`);
   };
 
-  const adFiles = useMemo(() => ads.reduce((acc, item) => [...acc, ...item.adsUpload], []), [ads]);
+  const adsList = ads.adsUpload || [];
 
   return (
     <>
@@ -68,23 +67,36 @@ const Page = ({ adAccounts, adAccount, ads }) => {
               </Grid>
               <Grid xs={12}>
                 <Card>
-                  <CardHeader title="Ads" />
+                  <CardHeader
+                    title="Ads"
+                    action={
+                      <Stack spacing={1} direction="row">
+                        <Link href={`/campaign/edit-ad/${adAccount.reference}`}>
+                          <Button size="small">Edit Ads</Button>
+                        </Link>
+                        <Link href="/campaign/edit-campaign">
+                          <Button>Edit Campaign</Button>
+                        </Link>
+                      </Stack>
+                    }
+                  />
                   <CardContent>
+                    {adsList.length === 0 && <Typography>No ads</Typography>}
                     <Grid container spacing={3}>
-                      {adFiles.map((adFile) => (
+                      {adsList.map((adFile) => (
                         <Grid xs={12} sm={6} lg={4} key={adFile.reference}>
                           <Card>
-                            <CardMedia
-                              sx={{ height: 140 }}
-                              image={adFile.url}
-                              title={adFile.name}
-                            />
-                            <CardActions sx={{ justifyContent: 'flex-end' }}>
-                              <Link href={`/campaign/edit-ad/${adAccount.reference}`}>
-                                <Button size="small">Edit</Button>
-                              </Link>
-                              <Button size="small">Delete</Button>
-                            </CardActions>
+                            <CardHeader title={adFile.name} />
+                            {adFile.type === 'html' ? (
+                              <Iframe content={adFile.url} />
+                            ) : (
+                              <CardMedia
+                                sx={{ height: 140 }}
+                                image={adFile.url}
+                                title={adFile.name}
+                                component={componentToAdTypeMap[adFile.type]}
+                              />
+                            )}
                           </Card>
                         </Grid>
                       ))}
@@ -98,6 +110,12 @@ const Page = ({ adAccounts, adAccount, ads }) => {
       </Box>
     </>
   );
+};
+
+const componentToAdTypeMap = {
+  image: 'img',
+  video: 'video',
+  html: 'iframe',
 };
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;

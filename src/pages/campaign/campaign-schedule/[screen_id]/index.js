@@ -1,4 +1,4 @@
-import { Add, PlayCircleFilledRounded, Save, SendToMobile } from '@mui/icons-material';
+import { Add, PlayCircleFilledRounded, Save } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -65,8 +65,11 @@ const Page = ({ screens, screen, layouts, campaingSquence }) => {
           <Stack spacing={3}>
             <Stack justifyContent="space-between" direction="row" gap={3} flexWrap="wrap">
               <Typography variant="h5">Campaign schedule</Typography>
-              <Button startIcon={<SendToMobile />} variant="outlined">
+              {/* <Button startIcon={<SendToMobile />} variant="outlined">
                 Send to Device
+              </Button> */}
+              <Button startIcon={<PlayCircleFilledRounded />} variant="outlined">
+                Play
               </Button>
             </Stack>
             <Grid container>
@@ -274,7 +277,10 @@ function SequenceResult({ sequence, screen }) {
                 userSelect: 'none',
               }}
             >
-              <Link style={{ textDecoration: 'none' }} href={`/ad-account/${campaign.reference}`}>
+              <Link
+                style={{ textDecoration: 'none', width: '100%' }}
+                href={`/ad-account/${campaign.reference}`}
+              >
                 <Paper elevation={3} sx={{ padding: 2, width: '100%' }}>
                   {campaign.name}
                 </Paper>

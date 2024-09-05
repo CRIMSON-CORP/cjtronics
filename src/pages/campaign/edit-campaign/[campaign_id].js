@@ -1,4 +1,4 @@
-import { DragIndicator } from '@mui/icons-material';
+import { AddPhotoAlternate, DragIndicator } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -27,6 +27,7 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
@@ -34,25 +35,54 @@ import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
+import { screenLayoutToReferenceMap } from 'src/pages/screens';
 import * as Yup from 'yup';
-import { screenLayoutToReferenceMap } from '../screens';
 
-const Page = ({ screens, organizations, adAccounts, layouts }) => {
+function createDateFromTimeString(timeString) {
+  // Split the string into time and AM/PM
+  const [time, modifier] = timeString.split(' '); // ['07:30', 'AM']
+  let [hours, minutes] = time.split(':'); // ['07', '30']
+
+  hours = parseInt(hours, 10);
+
+  // Adjust hours for AM/PM
+  if (modifier === 'PM' && hours !== 12) {
+    hours += 12;
+  } else if (modifier === 'AM' && hours === 12) {
+    hours = 0; // Midnight case
+  }
+
+  // Create a new Date object for today
+  const date = new Date();
+
+  // Set the hours and minutes
+  date.setHours(hours, minutes);
+
+  return date;
+}
+
+const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
+  console.log(campaign);
+
   const formik = useFormik({
     initialValues: {
-      organizationId: '',
-      name: '',
-      screenId: '',
-      accountId: '',
-      layoutId: '',
-      layoutView: '1',
-      startAt: null,
-      endAt: null,
-      playTimeAt: null,
-      endTimeAt: null,
-      playDays: '',
-      playDuration: 1,
-      playFiles: '',
+      organizationId: campaign.organizationReference,
+      name: campaign.name,
+      screenId: campaign.screenReference,
+      accountId: campaign.accountReference,
+      layoutId: campaign.layoutReference,
+      layoutView: campaign.layoutView.toString(),
+      startAt: new Date(campaign.startAt),
+      endAt: new Date(campaign.endAt),
+      playTimeAt: createDateFromTimeString(campaign.playTimeAt),
+      endTimeAt: createDateFromTimeString(campaign.endTimeAt),
+      playDays: campaign.playDays || '',
+      playDuration: campaign.playDuration,
+      playFiles:
+        campaign.playUploads
+          .map((file) => file.reference)
+          .filter(Boolean)
+          .join(',') || '',
     },
     validationSchema: Yup.object({
       organizationId: Yup.string().required('Organization is required'),
@@ -73,12 +103,25 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
       payload.endAt = payload.endAt.toLocaleDateString();
       payload.playTimeAt = payload.playTimeAt.toLocaleTimeString();
       payload.endTimeAt = payload.endTimeAt.toLocaleTimeString();
+
+      const newPayload = {
+        campaign_id: campaign.reference,
+        name: values.name,
+        layoutView: +values.layoutView,
+        startAt: values.startAt.toLocaleDateString(),
+        endAt: values.endAt.toLocaleDateString(),
+        playTimeAt: values.playTimeAt.toLocaleTimeString(),
+        endTimeAt: values.endTimeAt.toLocaleTimeString(),
+        playDuration: +values.playDuration,
+        playDays: values.playDays || '',
+        playFiles: values.playFiles || '',
+      };
       helpers.setSubmitting(true);
-      await toast.promise(axios.post('/api/admin/campaigns/create', payload), {
-        loading: 'Creating Campaign, Hang on...',
+      await toast.promise(axios.post('/api/admin/campaigns/update', newPayload), {
+        loading: 'Updating Campaign, Hang on...',
         success: (response) => {
           helpers.resetForm();
-          return response.data.message || 'Campaign created successfully';
+          return response.data.message || 'Campaign created Updated Successfully!';
         },
         error: (error) => error.response?.data?.message || error.message,
       });
@@ -145,7 +188,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
   return (
     <>
       <Head>
-        <title>Create Campaign | Dalukwa Admin</title>
+        <title>Edit Campaign | Cjtronics Admin</title>
       </Head>
       <Box
         component="main"
@@ -156,12 +199,12 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
       >
         <Container maxWidth="xl">
           <Card>
-            <CardHeader title="Create Campaign" />
+            <CardHeader title="Edit Campaign" />
             <CardContent>
               <form onSubmit={formik.handleSubmit}>
                 <Stack spacing={3}>
                   <FormControl variant="outlined">
-                    <InputLabel htmlFor="organizationId">Select Organization</InputLabel>
+                    <InputLabel htmlFor="organizationId">Edit Organization</InputLabel>
                     <Select
                       error={!!(formik.touched.organizationId && formik.errors.organizationId)}
                       fullWidth
@@ -171,6 +214,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.organizationId}
+                      disabled
                     >
                       {organizations.list.map((organization) => (
                         <MenuItem key={organization.id} value={organization.reference}>
@@ -209,6 +253,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       label="Select Screen"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
+                      disabled
                     >
                       {screens.screen.map((screen) => (
                         <MenuItem value={screen.reference} key={screen.reference}>
@@ -233,6 +278,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       label="Select Ad Account"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
+                      disabled
                     >
                       {adAccounts.list.map((adAccount) => (
                         <MenuItem value={adAccount.reference} key={adAccount.reference}>
@@ -365,7 +411,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                     size="large"
                     disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
                   >
-                    Create Campaing
+                    Update Campaign
                   </Button>
                 </Stack>
               </form>
@@ -411,14 +457,15 @@ function DayCheck({ label, formik, value }) {
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [screens, organizations, adAccounts, layouts] = await Promise.all([
+    const [screens, organizations, adAccounts, layouts, campaign] = await Promise.all([
       getResourse(ctx.req, '/screen'),
       getResourse(ctx.req, '/organization'),
       getResourse(ctx.req, '/ads-account'),
       getResourse(ctx.req, 'screen/layout/all'),
+      getResourse(ctx.req, `/ads/campaign/${ctx.query.campaign_id}`),
     ]);
     return {
-      props: { screens, organizations, adAccounts, layouts },
+      props: { screens, organizations, adAccounts, layouts, campaign },
     };
   } catch (error) {
     console.log(error);
@@ -488,7 +535,14 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
       <>
         <Stack spacing={1}>
           <Typography variant="subtitle1">Select Ad Files</Typography>
-          <Typography>No Ad files found</Typography>
+          <Typography>
+            No Ad files found{' '}
+            <Link href={`/campaign/edit-ad/${formik.values.accountId}`}>
+              <Button startIcon={<AddPhotoAlternate />} variant="text">
+                Add new Ad Files
+              </Button>
+            </Link>
+          </Typography>
         </Stack>
       </>
     );
