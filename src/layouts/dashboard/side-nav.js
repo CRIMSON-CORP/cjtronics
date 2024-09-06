@@ -32,7 +32,7 @@ export const SideNav = (props) => {
             display: 'inline-flex',
           }}
         >
-          <Image src="/assets/logo-cjtronics.png" alt="Logo" width="100" height="60" />
+          <Image src="/assets/logo-cjtronics.png" alt="Logo" width="200" height="60" />
         </Box>
       </Box>
       <Divider sx={{ borderColor: 'neutral.700' }} />

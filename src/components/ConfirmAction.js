@@ -1,5 +1,6 @@
 import { Close } from '@mui/icons-material';
 import {
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -22,6 +23,7 @@ function ConfirmAction({
   content,
   color,
   buttonProps,
+  trigger,
 }) {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [requestProcessing, setRequestProcessing] = useState(false);
@@ -46,9 +48,13 @@ function ConfirmAction({
 
   return (
     <>
-      <Button variant="contained" color={color} onClick={openConfirmModal} {...buttonProps}>
-        {children}
-      </Button>
+      {trigger ? (
+        <Box onClick={openConfirmModal}>{trigger}</Box>
+      ) : (
+        <Button variant="contained" color={color} onClick={openConfirmModal} {...buttonProps}>
+          {children}
+        </Button>
+      )}
       <Dialog
         sx={{ '& .MuiDialog-paper': { width: '80%', maxHeight: 435 } }}
         maxWidth="xs"

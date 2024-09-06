@@ -3,7 +3,7 @@ import { Box, Button, Container, Unstable_Grid2 as Grid, Stack } from '@mui/mate
 import Head from 'next/head';
 import Link from 'next/link';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
-import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-campaign-activitieslist';
+import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-campaing-activitieslist';
 import { OverViewItem } from 'src/sections/overview/overview-item';
 import { OverviewScreensList } from 'src/sections/overview/overview-screens-list';
 

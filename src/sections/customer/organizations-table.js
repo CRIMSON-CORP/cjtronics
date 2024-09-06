@@ -1,4 +1,13 @@
-import { AddBusiness, DeleteForever, DeleteSweep } from '@mui/icons-material';
+import {
+  Campaign,
+  Delete,
+  DeleteForever,
+  DeleteSweep,
+  Edit,
+  Monitor,
+  MoreVert,
+  People,
+} from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -11,6 +20,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  MenuList,
   Stack,
   Table,
   TableBody,
@@ -21,7 +36,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { color } from '@mui/system';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/router';
@@ -30,6 +44,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
 import { Scrollbar } from 'src/components/scrollbar';
+import { usePopover } from 'src/hooks/use-popover';
 import { getInitials } from 'src/utils/get-initials';
 
 export const OrganizationsTable = (props) => {
@@ -51,26 +66,6 @@ export const OrganizationsTable = (props) => {
 
   const selectedSome = selected.length > 0 && selected.length < items.length;
   const selectedAll = items.length > 0 && selected.length === items.length;
-
-  const deleteOrganization = (reference) => async (e) => {
-    try {
-      await toast.promise(
-        axios.post('/api/admin/organizations/delete', {
-          reference,
-        }),
-        {
-          loading: 'Deleteing Organization...',
-          success: (response) => {
-            replace(asPath);
-            return response.data.message;
-          },
-          error: 'Failed to delete Organization, Please try again',
-        }
-      );
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   const deleteSelectedOrganizations = (references) => async (e) => {
     try {
@@ -191,20 +186,7 @@ export const OrganizationsTable = (props) => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" gap={1}>
-                        <EditOrganizationForm
-                          name={organization.name}
-                          reference={organization.reference}
-                        />
-                        <ConfirmAction
-                          color="error"
-                          title="Delete Organization?"
-                          proceedText="Delete Organization"
-                          buttonProps={{ startIcon: <DeleteForever /> }}
-                          action={deleteOrganization(organization.reference)}
-                          content="Are you sure you want to delete this Organization?"
-                        >
-                          Delete
-                        </ConfirmAction>
+                        <Options name={organization.name} reference={organization.reference} />
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -280,9 +262,12 @@ function EditOrganizationForm({ reference, name }) {
   }
   return (
     <>
-      <Button onClick={handleClickOpen} startIcon={<AddBusiness />} variant="contained">
-        Edit
-      </Button>
+      <MenuItem onClick={handleClickOpen}>
+        <ListItemIcon>
+          <Edit fontSize="small" />
+        </ListItemIcon>
+        <ListItemText>Edit Organization</ListItemText>
+      </MenuItem>
       <Dialog
         open={open}
         onClose={handleClose}
@@ -321,6 +306,104 @@ function EditOrganizationForm({ reference, name }) {
           </Button>
         </DialogActions>
       </Dialog>
+    </>
+  );
+}
+
+function Options({ reference, name }) {
+  const { anchorRef, handleClose, handleOpen, open } = usePopover();
+
+  const { push } = useRouter();
+  const deleteOrganization = (reference) => async (e) => {
+    try {
+      await toast.promise(
+        axios.post('/api/admin/organizations/delete', {
+          reference,
+        }),
+        {
+          loading: 'Deleteing Organization...',
+          success: (response) => {
+            replace(asPath);
+            return response.data.message;
+          },
+          error: 'Failed to delete Organization, Please try again',
+        }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const goToScreens = () => push(`/users/organizations/${reference}/screens`);
+  const goToUsers = () => push(`/users/organizations/${reference}/users`);
+  const goToCampaigns = () => push(`/users/organizations/${reference}/campaigns`);
+  return (
+    <>
+      <IconButton
+        id="options-button"
+        aria-controls={open ? 'options-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? 'true' : undefined}
+        onClick={handleOpen}
+        ref={anchorRef}
+      >
+        <MoreVert />
+      </IconButton>
+      <Menu
+        open={open}
+        onClose={handleClose}
+        id="options-button"
+        anchorEl={anchorRef.current}
+        MenuListProps={{
+          'aria-labelledby': 'basic-button',
+        }}
+        anchorOrigin={{
+          horizontal: 'right',
+          vertical: 'bottom',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuList>
+          <EditOrganizationForm name={name} reference={reference} />
+          <ConfirmAction
+            color="error"
+            title="Delete Organization?"
+            proceedText="Delete Organization"
+            buttonProps={{ startIcon: <DeleteForever /> }}
+            action={deleteOrganization(reference)}
+            content="Are you sure you want to delete this Organization?"
+            trigger={
+              <MenuItem>
+                <ListItemIcon>
+                  <Delete fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Delete Organization</ListItemText>
+              </MenuItem>
+            }
+          />
+          <MenuItem onClick={goToUsers}>
+            <ListItemIcon>
+              <People fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>View Users in Organization</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={goToScreens}>
+            <ListItemIcon>
+              <Monitor fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>View Screens in Organization</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={goToCampaigns}>
+            <ListItemIcon>
+              <Campaign fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>View Campaings in Organization</ListItemText>
+          </MenuItem>
+        </MenuList>
+      </Menu>
     </>
   );
 }
