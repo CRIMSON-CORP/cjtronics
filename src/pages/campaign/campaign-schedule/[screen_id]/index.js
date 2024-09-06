@@ -30,7 +30,7 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 import { screenLayoutToReferenceMap } from 'src/pages/screens';
 
-const Page = ({ screens, screen, layouts, campaingSquence }) => {
+const Page = ({ screens, screen, layouts, campaignSquence }) => {
   const { query } = useRouter();
   const [selectedScreen, setSelectedScreen] = useState(query.screen_id);
   const { replace } = useRouter();
@@ -98,7 +98,7 @@ const Page = ({ screens, screen, layouts, campaingSquence }) => {
               </Box>
             </Stack>
 
-            <CampaignSquencing screen={screen} campaingSquence={campaingSquence} />
+            <CampaignSquencing screen={screen} campaignSquence={campaignSquence} />
           </Stack>
         </Container>
       </Box>
@@ -110,9 +110,9 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function CampaignSquencing({ screen, campaingSquence }) {
+function CampaignSquencing({ screen, campaignSquence }) {
   const [sequence, setSequence] = useState(
-    campaingSquence.map((item, index) => {
+    campaignSquence.map((item, index) => {
       item.orderIndex = index;
       return item;
     })
@@ -295,14 +295,14 @@ function SequenceResult({ sequence, screen }) {
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [screens, screen, layouts, campaingSquence] = await Promise.all([
+    const [screens, screen, layouts, campaignSquence] = await Promise.all([
       getResourse(ctx.req, '/screen'),
       getResourse(ctx.req, `/screen/${ctx.query.screen_id}`),
       getResourse(ctx.req, '/screen/layout/all'),
       getResourse(ctx.req, `/ads/sequence/${ctx.query.screen_id}`),
     ]);
     return {
-      props: { screens, screen, layouts, campaingSquence },
+      props: { screens, screen, layouts, campaignSquence },
     };
   } catch (error) {
     if (error?.response?.status === 401) {

@@ -77,13 +77,7 @@ const Page = ({ users }) => {
       <Head>
         <title>Add Ad Company | Dalukwa Admin</title>
       </Head>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          py: 8,
-        }}
-      >
+      <Box component="main" flexGrow={1} py={2}>
         <Container maxWidth="xl">
           <Card>
             <CardHeader title="Add Ad Company" />

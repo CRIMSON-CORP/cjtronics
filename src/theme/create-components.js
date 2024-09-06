@@ -104,6 +104,14 @@ export function createComponents(config) {
           minHeight: '100%',
           width: '100%',
         },
+        'body::-webkit-scrollbar': {
+          width: '6px',
+        },
+        'body::-webkit-scrollbar-thumb': {
+          width: '6px',
+          borderRadius: '10px',
+          backgroundColor: 'rgba(0,0,0,0.2)',
+        },
         '#__next': {
           display: 'flex',
           flex: '1 1 auto',
@@ -288,6 +296,20 @@ export function createComponents(config) {
           [`& .${tableCellClasses.paddingCheckbox}`]: {
             paddingTop: 4,
             paddingBottom: 4,
+          },
+        },
+      },
+    },
+    MuiList: {
+      styleOverrides: {
+        root: {
+          '::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '::-webkit-scrollbar-thumb': {
+            width: '6px',
+            borderRadius: '10px',
+            backgroundColor: 'rgba(0,0,0,0.2)',
           },
         },
       },

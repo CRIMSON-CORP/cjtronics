@@ -50,13 +50,7 @@ const Page = ({}) => {
       <Head>
         <title>Support | Dalukwa Admin</title>
       </Head>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          py: 8,
-        }}
-      >
+      <Box component="main" flexGrow={1} py={3}>
         <Container maxWidth="xl">
           <Card>
             <CardHeader title="Support" />

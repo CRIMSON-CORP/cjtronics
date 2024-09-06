@@ -177,13 +177,7 @@ const Page = () => {
       <Head>
         <title>Generate Report | Devias Kit</title>
       </Head>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          py: 8,
-        }}
-      >
+      <Box component="main" flexGrow={1} py={2}>
         <Container maxWidth="xl">
           <Grid container spacing={3}>
             <Grid xs={12} sm={6} lg={4}>

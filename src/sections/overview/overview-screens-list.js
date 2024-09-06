@@ -33,9 +33,9 @@ export const OverviewScreensList = ({ screens = [], sx }) => {
               </ListItemAvatar>
               <ListItemText
                 primary={screen.name}
-                primaryTypographyProps={{ variant: 'h6' }}
+                primaryTypographyProps={{ variant: 'caption', fontWeight: 'bold' }}
                 secondary={screen.location}
-                secondaryTypographyProps={{ variant: 'body2' }}
+                secondaryTypographyProps={{ variant: 'caption' }}
               />
               <SeverityPill color={statusMap[screen.status]}>{screen.status}</SeverityPill>
             </ListItem>

@@ -138,14 +138,24 @@ export const items = [
         matchers: ['campaign'],
       },
       {
-        title: 'Create Campaign',
+        title: 'Active Campaigns',
+        path: '/campaign/active-campaigns',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Campaign />
+          </SvgIcon>
+        ),
+        matchers: ['active-campaigns'],
+      },
+      {
+        title: 'Create campaign',
         path: '/campaign/create-campaign',
         icon: (
           <SvgIcon fontSize="small">
             <Campaign />
           </SvgIcon>
         ),
-        matchers: ['create-campaign'],
+        matchers: ['create-campaigng'],
       },
       {
         title: 'Campaign Shedule',

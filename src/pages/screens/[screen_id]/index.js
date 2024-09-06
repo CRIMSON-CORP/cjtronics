@@ -92,7 +92,7 @@ const campaigns = [
   },
 ];
 
-const Page = ({ screens, screen, organizations, cities, screen_layouts, screen_campaings }) => {
+const Page = ({ screens, screen, organizations, cities, screen_layouts, screen_campaigns }) => {
   const { query, replace } = useRouter();
 
   const handleScreenSelect = (event) => {
@@ -134,7 +134,7 @@ const Page = ({ screens, screen, organizations, cities, screen_layouts, screen_c
                 </FormControl>
               </Grid>
             </Grid>
-            <ScreenCampaigns campaigns={screen_campaings} />
+            <ScreenCampaigns campaigns={screen_campaigns} />
             <ScreenDetails
               cities={cities}
               screen={screen}
@@ -695,7 +695,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
     size: ctx.query.size || 25,
   };
   try {
-    const [screens, screen, organizations, cities, screen_layouts, screen_campaings] =
+    const [screens, screen, organizations, cities, screen_layouts, screen_campaigns] =
       await Promise.all([
         getAllScreens(ctx.req),
         getScreen(ctx.req, ctx.query.screen_id),
@@ -705,7 +705,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
         getResourse(ctx.req, `/ads/campaign/screen/${ctx.query.screen_id}`, params),
       ]);
     return {
-      props: { screens, screen, organizations, cities, screen_layouts, screen_campaings },
+      props: { screens, screen, organizations, cities, screen_layouts, screen_campaigns },
     };
   } catch (error) {
     console.log(error);

@@ -151,7 +151,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          py: 8,
+          py: 1,
         }}
       >
         <Container maxWidth="xl">
@@ -365,7 +365,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                     size="large"
                     disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
                   >
-                    Create Campaing
+                    Create campaign
                   </Button>
                 </Stack>
               </form>

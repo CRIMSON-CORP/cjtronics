@@ -28,7 +28,7 @@ const Page = ({ campaign }) => {
   return (
     <>
       <Head>
-        <title>Edit Campaing | Devias Kit</title>
+        <title>Edit campaign | Devias Kit</title>
       </Head>
       <Box
         component="main"
