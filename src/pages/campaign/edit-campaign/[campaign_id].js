@@ -1,4 +1,4 @@
-import { AddPhotoAlternate, DragIndicator } from '@mui/icons-material';
+import { AddPhotoAlternate, Delete, DragIndicator } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -14,6 +14,7 @@ import {
   FormGroup,
   FormHelperText,
   Unstable_Grid2 as Grid,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -32,6 +33,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
+import ConfirmAction from 'src/components/ConfirmAction';
 import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -571,6 +573,7 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
 }
 
 function AdFile({ name, url, reference, type, formik }) {
+  const { replace, asPath } = useRouter();
   const handleChange = (e) => {
     const { checked } = e.target;
     let selected_ads = formik.values.playFiles;
@@ -586,18 +589,57 @@ function AdFile({ name, url, reference, type, formik }) {
     }
     formik.setFieldValue('playFiles', selected_ads);
   };
+
+  const deleteAdFile = async () => {
+    await toast.promise(axios.post('/api/admin/campaigns/ads/delete', { reference }), {
+      loading: 'Deleting Ad File...',
+      success: () => {
+        formik.setFieldValue(
+          'playFiles',
+          formik.values.playFiles
+            .split(',')
+            .filter((file) => file !== reference)
+            .filter(Boolean)
+            .join(',')
+        );
+        replace(asPath);
+        return 'Ad File deleted';
+      },
+      error: (error) => error.response?.data?.message || error.response?.data || error.message,
+    });
+  };
   return (
     <Card>
       <CardHeader
         title={name}
         subheader={type}
+        sx={{
+          py: 1,
+          '.MuiCardHeader-action': {
+            alignSelf: 'center',
+          },
+        }}
         action={
-          <FormControlLabel
-            onChange={handleChange}
-            value={reference}
-            control={<Checkbox />}
-            checked={formik.values.playFiles.includes(reference)}
-          />
+          <Stack gap={1} direction="row" alignItems="center">
+            <FormControlLabel
+              onChange={handleChange}
+              value={reference}
+              control={<Checkbox />}
+              checked={formik.values.playFiles.includes(reference)}
+            />
+            <ConfirmAction
+              action={deleteAdFile}
+              trigger={
+                <IconButton color="error">
+                  <Delete />
+                </IconButton>
+              }
+              color="error"
+              content="Are you sure you want to delete this Ad File?"
+              title="Delete Ad File?"
+              proceedText="Yes, delete it"
+            />
+          </Stack>
         }
       />
       {type === 'html' ? (

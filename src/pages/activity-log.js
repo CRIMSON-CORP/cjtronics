@@ -165,6 +165,7 @@ function ActivityHistory({ logs }) {
 
   const groupedLogs = groupLogsByDate(logs.list);
 
+  const count = Math.ceil(+logs.totalRows / +logs.rowsPerPage);
   return (
     <Stack spacing={3}>
       <Card>
@@ -200,13 +201,15 @@ function ActivityHistory({ logs }) {
         </List>
         <Divider />
       </Card>
-      <Pagination
-        sx={{ ul: { justifyContent: 'space-between' } }}
-        count={Math.ceil(+logs.totalRows / +logs.rowsPerPage)}
-        siblingCount={4}
-        page={parseInt(logs.currentPage)}
-        onChange={handleRowsPerPageChange}
-      />
+      {count !== 0 && (
+        <Pagination
+          sx={{ ul: { justifyContent: 'space-between' } }}
+          count={count}
+          siblingCount={4}
+          page={parseInt(logs.currentPage)}
+          onChange={handleRowsPerPageChange}
+        />
+      )}
     </Stack>
   );
 }

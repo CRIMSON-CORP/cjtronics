@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
 import {
   createContext,
@@ -65,10 +66,13 @@ const reducer = (state, action) =>
 
 export const AuthContext = createContext({ undefined });
 
+const securedRoutes = ['users'];
+
 export const AuthProvider = (props) => {
   const { children } = props;
   const [state, dispatch] = useReducer(reducer, initialState);
   const initialized = useRef(false);
+  const { pathname, push } = useRouter();
 
   const initialize = async () => {
     // Prevent from calling twice in development mode with React.StrictMode enabled
@@ -198,6 +202,18 @@ export const AuthProvider = (props) => {
     }),
     [signIn, signOut, forgotPassword, resetPassword, createAdvertizer, state]
   );
+
+  if (
+    state.user &&
+    state.user?.account_type !== 'admin' &&
+    securedRoutes.includes(pathname.split('/')[1])
+  ) {
+    // redirect to dashboard nextjs 13 pages directory
+    push('/');
+    return <></>;
+  }
+
+  console.log(state.user);
 
   return <AuthContext.Provider value={contextValues}>{children}</AuthContext.Provider>;
 };

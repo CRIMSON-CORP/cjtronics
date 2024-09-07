@@ -43,6 +43,7 @@ export const items = [
       </SvgIcon>
     ),
     matchers: ['users'],
+    roles: ['admin'],
     links: [
       {
         title: 'All Users',

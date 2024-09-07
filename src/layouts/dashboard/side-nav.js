@@ -13,7 +13,7 @@ export const SideNav = (props) => {
   const pathname = usePathname();
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
   const { user } = useAuth();
-  const userRoles = user?.user?.role?.meta || [];
+  const userAccountType = user?.account_type;
 
   const content = (
     <Box
@@ -54,6 +54,9 @@ export const SideNav = (props) => {
           }}
         >
           {items.map((item, index) => {
+            if (item.roles && !item.roles.includes(userAccountType)) {
+              return null;
+            }
             if (item.type === 'drop-down') {
               return (
                 <SideNavDropList

@@ -55,18 +55,20 @@ export const TopNav = (props) => {
               Dashboard
             </Typography>
           </Stack>
-          <Stack alignItems="center" direction="row" spacing={2}>
-            <Avatar
-              onClick={accountPopover.handleOpen}
-              ref={accountPopover.anchorRef}
-              sx={{
-                cursor: 'pointer',
-                height: 40,
-                width: 40,
-              }}
-              src={user.avatar}
-            />
-          </Stack>
+          {user && (
+            <Stack alignItems="center" direction="row" spacing={2}>
+              <Avatar
+                onClick={accountPopover.handleOpen}
+                ref={accountPopover.anchorRef}
+                sx={{
+                  cursor: 'pointer',
+                  height: 40,
+                  width: 40,
+                }}
+                src={user.avatar}
+              />
+            </Stack>
+          )}
         </Stack>
       </Box>
       <AccountPopover
