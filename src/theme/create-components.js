@@ -318,8 +318,12 @@ export function createComponents(config) {
       styleOverrides: {
         root: {
           color: 'rgba(17,25,39,0.6)',
-          size: 16,
+          width: 16,
+          height: 16,
         },
+      },
+      defaultProps: {
+        size: 16,
       },
     },
   };

@@ -1,4 +1,3 @@
-import { DragIndicator } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -27,8 +26,8 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
@@ -40,6 +39,7 @@ import { screenLayoutToReferenceMap } from '../screens';
 
 const Page = ({ screens, organizations, adAccounts, layouts }) => {
   const { user } = useAuth();
+  const { push } = useRouter();
   const defaultOrganizationReference = user?.organizationReference || '';
   const formik = useFormik({
     initialValues: {
@@ -81,6 +81,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
         loading: 'Creating Campaign, Hang on...',
         success: (response) => {
           helpers.resetForm();
+          push(`/campaign/campaign-schedule/${values.screenId}`);
           return response.data.message || 'Campaign created successfully';
         },
         error: (error) => error.response?.data?.message || error.message,
@@ -510,23 +511,15 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
   }
 
   return (
-    <Stack spacing={2}>
-      <Stack spacing={1}>
-        <Typography variant="subtitle1">Select Ad Files</Typography>
-        <Grid container spacing={2}>
-          {adFiles.map((file) => (
-            <Grid key={file.reference} xs={12} sm={6} md={4} item>
-              <AdFile {...file} formik={formik} />
-            </Grid>
-          ))}
-        </Grid>
-      </Stack>
-      {formik.values.playFiles && (
-        <Stack spacing={2}>
-          <Typography variant="subtitle1">Reorder Selected ad</Typography>
-          <ReorderSelectedAdFiles formik={formik} adFiles={adFiles} />
-        </Stack>
-      )}
+    <Stack spacing={1}>
+      <Typography variant="subtitle1">Select Ad Files</Typography>
+      <Grid container spacing={2}>
+        {adFiles.map((file) => (
+          <Grid key={file.reference} xs={12} sm={6} md={4} item>
+            <AdFile {...file} formik={formik} />
+          </Grid>
+        ))}
+      </Grid>
     </Stack>
   );
 }
@@ -575,89 +568,3 @@ const adMediaTypeTagMap = {
   video: 'video',
   html: 'iframe',
 };
-
-const reorder = (list, startIndex, endIndex) => {
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
-  result.splice(endIndex, 0, removed);
-
-  return result;
-};
-
-function ReorderSelectedAdFiles({ formik, adFiles }) {
-  const playFiles = useMemo(
-    () => adFiles.filter((adFile) => formik.values.playFiles.includes(adFile.reference)),
-    [formik.values.playFiles]
-  );
-
-  const sortedSelectedAdFiles = useMemo(
-    () =>
-      playFiles.sort(
-        (a, b) =>
-          formik.values.playFiles.indexOf(a.reference) -
-          formik.values.playFiles.indexOf(b.reference)
-      ),
-    [formik.values.playFiles]
-  );
-
-  const onDragEnd = (result) => {
-    if (!result.destination) {
-      return;
-    }
-
-    const items = reorder(
-      formik.values.playFiles.split(','),
-      result.source.index,
-      result.destination.index
-    );
-
-    formik.setFieldValue('playFiles', items.join(','));
-  };
-
-  return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="campaigns">
-        {(provided, snapshot) => (
-          <Stack {...provided.droppableProps} ref={provided.innerRef}>
-            {sortedSelectedAdFiles.map((adFile, index) => (
-              <Draggable draggableId={adFile.reference} index={index} key={adFile.reference}>
-                {(_provided) => (
-                  <Card
-                    key={adFile.reference}
-                    ref={_provided.innerRef}
-                    {..._provided.draggableProps}
-                    {..._provided.dragHandleProps}
-                    sx={{
-                      my: 1,
-                      userSelect: 'none',
-                      ..._provided.draggableProps.style,
-                    }}
-                  >
-                    <CardHeader
-                      title={adFile.name}
-                      subheader={adFile.type}
-                      action={<DragIndicator />}
-                    />
-                    <Box sx={{ pointerEvents: 'none' }}>
-                      {adFile.type === 'html' ? (
-                        <Iframe content={adFile.url} />
-                      ) : (
-                        <CardMedia
-                          component={adMediaTypeTagMap[adFile.type]}
-                          height="200"
-                          image={adFile.url}
-                          title={adFile.name}
-                        />
-                      )}
-                    </Box>
-                  </Card>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </Stack>
-        )}
-      </Droppable>
-    </DragDropContext>
-  );
-}

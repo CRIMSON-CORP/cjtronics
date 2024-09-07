@@ -1,4 +1,4 @@
-import { Add, PlayCircleFilledRounded, Save } from '@mui/icons-material';
+import { Add, Close, PlayCircleFilledRounded, Save } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -7,8 +7,12 @@ import {
   CardHeader,
   CircularProgress,
   Container,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   FormControl,
   Unstable_Grid2 as Grid,
+  IconButton,
   InputLabel,
   List,
   ListItem,
@@ -20,12 +24,16 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import Head from 'next/head';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import Script from 'next/script';
 import { useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
+import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 import { screenLayoutToReferenceMap } from 'src/pages/screens';
@@ -65,12 +73,7 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
           <Stack spacing={3}>
             <Stack justifyContent="space-between" direction="row" gap={3} flexWrap="wrap">
               <Typography variant="h5">Campaign schedule</Typography>
-              {/* <Button startIcon={<SendToMobile />} variant="outlined">
-                Send to Device
-              </Button> */}
-              <Button startIcon={<PlayCircleFilledRounded />} variant="outlined">
-                Play
-              </Button>
+              <SendCampaingToDevice reference={screen.reference} />
             </Stack>
             <Grid container>
               <Grid xs={12} sm={6} lg={4}>
@@ -102,6 +105,7 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
           </Stack>
         </Container>
       </Box>
+      <Script src="https://www.youtube.com/iframe_api" />
     </>
   );
 };
@@ -261,9 +265,7 @@ function SequenceResult({ sequence, screen }) {
             justifyContent="space-between"
           >
             <Typography variant="h6">Sequence Ad Accounts</Typography>
-            <Button startIcon={<PlayCircleFilledRounded />} variant="outlined">
-              Play
-            </Button>
+            <PlayAds sequence={sequence} screenName={screen.displayName} />
           </Stack>
         }
       />
@@ -319,3 +321,194 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
     };
   }
 });
+
+function SendCampaingToDevice({ reference }) {
+  const [requestProcessing, setRequestProcessing] = useState(false);
+  const sendCampaingToDevice = async () => {
+    setRequestProcessing(true);
+    try {
+      await toast.promise(
+        axios.post('/api/admin/campaigns/set-campaign-status', { status: true, reference }),
+        {
+          loading: 'Sending request, hold on a moment...',
+          success: (response) => {
+            return response.data.message;
+          },
+          error: (err) => {
+            return err.response?.data?.message || err.message;
+          },
+        }
+      );
+    } catch (error) {}
+    setRequestProcessing(false);
+  };
+  return (
+    <Button
+      disabled={requestProcessing}
+      onClick={sendCampaingToDevice}
+      startIcon={requestProcessing ? <CircularProgress /> : <PlayCircleFilledRounded />}
+      variant="outlined"
+    >
+      Play
+    </Button>
+  );
+}
+
+function PlayAds({ sequence, screenName }) {
+  const [requestProcessing, setRequestProcessing] = useState(false);
+  const [ads, setAds] = useState([]);
+  const { open, close, state } = useToggle();
+  const loadAds = async () => {
+    setRequestProcessing(true);
+
+    try {
+      const campaings = await Promise.all(
+        sequence.map(({ reference }) =>
+          axios.get(`/api/admin/campaigns/get-campaign-by-ad-account?reference=${reference}`)
+        )
+      );
+      const campaignsLists = campaings.map((campaign) => campaign.data.data.list).flat();
+      const campaingUploads = campaignsLists
+        .map((campaing) =>
+          campaing.playUploads.map((file) => {
+            file.duration = campaing.playDuration;
+            return file;
+          })
+        )
+        .flat();
+
+      // const maxLength = Math.max(...campaignsLists.map((arr) => arr.length));
+      // const mergedCampaigns = Array.from({ length: maxLength }).flatMap((_, i) =>
+      //   campaignsLists.map((arr) => arr[i]).filter((val) => val !== undefined)
+      // );
+      setAds(campaingUploads);
+      open();
+    } catch (error) {
+      toast.error(error.response.data.message);
+      console.log(error);
+    } finally {
+      setRequestProcessing(false);
+    }
+  };
+
+  const onComplete = () => {
+    close();
+    setAds([]);
+  };
+
+  return (
+    <>
+      <Button
+        onClick={loadAds}
+        variant="outlined"
+        disabled={requestProcessing}
+        startIcon={requestProcessing ? <CircularProgress /> : <PlayCircleFilledRounded />}
+      >
+        Play
+      </Button>
+      <Dialog maxWidth="md" fullWidth onClose={close} open={state}>
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography>{screenName}</Typography>
+            <IconButton onClick={close}>
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ overflow: 'hidden', p: 0, display: 'flex', backgroundColor: 'black' }}>
+          <SequenceAds sequence={ads} onComplete={onComplete} />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function SequenceAds({ sequence, onComplete }) {
+  const [currentAdIndex, setCurrentAdIndex] = useState(1);
+
+  // useEffect(() => {
+  //   if (currentAdIndex < sequence.length) {
+  //     const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
+  //     const timer = setTimeout(() => {
+  //       setCurrentAdIndex((prevIndex) => prevIndex + 1);
+  //     }, adDuration);
+
+  //     return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
+  //   } else if (onComplete) {
+  //     onComplete(); // Call the callback when all ads have finished
+  //   }
+  // }, [currentAdIndex, sequence, onComplete]);
+
+  if (currentAdIndex >= sequence.length) {
+    return null; // No more ads to show
+  }
+
+  const currentAd = sequence[currentAdIndex];
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      style={{
+        width: '100%',
+        flex: 1,
+        transition: 'transform 1s ease-out',
+        transform: `translateX(-${currentAdIndex * 100}%)`,
+      }}
+    >
+      {sequence.map((file, index) => {
+        return (
+          <Box key={file.reference} width="100%" height="100%" flex="none">
+            {file.uploadType === 'image' ? (
+              <Image
+                src={file.uploadFile}
+                alt={file.uploadName}
+                width={500}
+                height={400}
+                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+              />
+            ) : file.uploadType === 'video' ? (
+              <video
+                controls
+                src={file.uploadFile}
+                alt={file.uploadName}
+                autoPlay={index === currentAdIndex}
+                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+              />
+            ) : file.uploadType === 'html' ? (
+              index === currentAdIndex && (
+                <Iframe content={file.uploadFile} styles={{ width: '100%', height: '100%' }} />
+              )
+            ) : null}
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+
+  // return (
+  //   <Stack direction="row">
+  //     {currentAd.uploadType === 'image' ? (
+  //       <Image
+  //         src={currentAd.uploadFile}
+  //         alt={currentAd.uploadName}
+  //         width={500}
+  //         height={400}
+  //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
+  //       />
+  //     ) : currentAd.uploadType === 'video' ? (
+  //       <video
+  //         src={currentAd.uploadFile}
+  //         alt={currentAd.uploadName}
+  //         width={500}
+  //         height={400}
+  //         controls
+  //         autoPlay
+  //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
+  //       />
+  //     ) : currentAd.uploadType === 'html' ? (
+  //       <Iframe content={currentAd.uploadFile} styles={{ width: '100%', height: 'auto' }} />
+  //     ) : null}
+  //   </Stack>
+  // );
+}

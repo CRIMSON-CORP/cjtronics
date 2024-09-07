@@ -213,8 +213,6 @@ export const AuthProvider = (props) => {
     return <></>;
   }
 
-  console.log(state.user);
-
   return <AuthContext.Provider value={contextValues}>{children}</AuthContext.Provider>;
 };
 

@@ -37,8 +37,8 @@ import { getResourse } from 'src/lib/actions';
 import * as Yup from 'yup';
 
 const Page = ({ organizations, screens, adAccounts }) => {
-  const defaultOrganizationReference = user?.organizationReference || '';
   const { user } = useAuth();
+  const defaultOrganizationReference = user?.organizationReference || '';
   const formik = useFormik({
     initialValues: {
       organizationId: defaultOrganizationReference,
