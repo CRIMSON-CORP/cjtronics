@@ -35,6 +35,7 @@ import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import { useAuth } from 'src/hooks/use-auth';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllOrganizations, getAllScreens, getCompanies } from 'src/lib/actions';
@@ -73,9 +74,11 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 export default Page;
 
 function AdAccountForm({ organizations, companies, screens }) {
+  const { user } = useAuth();
+  const defaultOrganizationReference = user?.organizationReference || '';
   const formik = useFormik({
     initialValues: {
-      organizationId: '',
+      organizationId: defaultOrganizationReference,
       companyId: '',
       screenId: '',
       name: '',
@@ -142,6 +145,7 @@ function AdAccountForm({ organizations, companies, screens }) {
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.organizationId}
+                disabled={!!defaultOrganizationReference}
               >
                 {organizations.list.map((organization) => (
                   <MenuItem key={organization.id} value={organization.reference}>

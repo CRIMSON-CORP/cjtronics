@@ -38,6 +38,7 @@ import { useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import Layout from 'src/components/ScreenLayout';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import { useAuth } from 'src/hooks/use-auth';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import {
   getAllOrganizations,
@@ -99,9 +100,11 @@ function ToolTipContent() {
 
 function Form({ organizations, cities, screenLayouts }) {
   const { replace, asPath } = useRouter();
+  const { user } = useAuth();
+  const defaultOrganizationReference = user?.organizationReference || '';
   const formik = useFormik({
     initialValues: {
-      organizationId: '',
+      organizationId: defaultOrganizationReference,
       screenName: '',
       screenId: '',
       screenHeight: '',
@@ -184,6 +187,7 @@ function Form({ organizations, cities, screenLayouts }) {
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.organizationId}
+                disabled={!!defaultOrganizationReference}
               >
                 {organizations.list.map((organization) => (
                   <MenuItem key={organization.id} value={organization.reference}>

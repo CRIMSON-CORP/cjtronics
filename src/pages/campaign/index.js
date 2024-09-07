@@ -37,9 +37,11 @@ import { getResourse } from 'src/lib/actions';
 import * as Yup from 'yup';
 
 const Page = ({ organizations, screens, adAccounts }) => {
+  const defaultOrganizationReference = user?.organizationReference || '';
+  const { user } = useAuth();
   const formik = useFormik({
     initialValues: {
-      organizationId: '',
+      organizationId: defaultOrganizationReference,
       screenId: '',
       adsAccountId: '',
       adFiles: [],
@@ -90,6 +92,7 @@ const Page = ({ organizations, screens, adAccounts }) => {
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.organizationId}
+                      disabled={!!defaultOrganizationReference}
                     >
                       {organizations.list.map((organization) => (
                         <MenuItem value={organization.reference} key={organization.reference}>

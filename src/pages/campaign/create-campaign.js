@@ -32,15 +32,18 @@ import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import { useAuth } from 'src/hooks/use-auth';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 import * as Yup from 'yup';
 import { screenLayoutToReferenceMap } from '../screens';
 
 const Page = ({ screens, organizations, adAccounts, layouts }) => {
+  const { user } = useAuth();
+  const defaultOrganizationReference = user?.organizationReference || '';
   const formik = useFormik({
     initialValues: {
-      organizationId: '',
+      organizationId: defaultOrganizationReference,
       name: '',
       screenId: '',
       accountId: '',
@@ -171,6 +174,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.organizationId}
+                      disabled={!!defaultOrganizationReference}
                     >
                       {organizations.list.map((organization) => (
                         <MenuItem key={organization.id} value={organization.reference}>
