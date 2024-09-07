@@ -28,6 +28,7 @@ import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
@@ -62,8 +63,7 @@ function createDateFromTimeString(timeString) {
 }
 
 const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
-  console.log(campaign);
-
+  const { back } = useRouter();
   const formik = useFormik({
     initialValues: {
       organizationId: campaign.organizationReference,
@@ -117,10 +117,10 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
         playFiles: values.playFiles || '',
       };
       helpers.setSubmitting(true);
-      await toast.promise(axios.post('/api/admin/campaigns/update', newPayload), {
+      await toast.promise(axios.post('/api/admin/campaigns/edit', newPayload), {
         loading: 'Updating Campaign, Hang on...',
         success: (response) => {
-          helpers.resetForm();
+          back();
           return response.data.message || 'Campaign created Updated Successfully!';
         },
         error: (error) => error.response?.data?.message || error.message,
@@ -362,7 +362,7 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
                   <Stack spacing={1}>
                     <Typography variant="subtitle1">Layout Type</Typography>
                     <Box maxWidth={300}>
-                      {screenLayoutToReferenceMap[selectedScreenLayoutReference]?.(
+                      {screenLayoutToReferenceMap[campaign.layoutReference]?.(
                         formik,
                         screenLayout,
                         { view_name: 'layoutView', view_value: formik.values.layoutView }
@@ -462,7 +462,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       getResourse(ctx.req, '/organization'),
       getResourse(ctx.req, '/ads-account'),
       getResourse(ctx.req, 'screen/layout/all'),
-      getResourse(ctx.req, `/ads/campaign/${ctx.query.campaign_id}`),
+      getResourse(ctx.req, `/campaign/${ctx.query.campaign_id}`),
     ]);
     return {
       props: { screens, organizations, adAccounts, layouts, campaign },

@@ -3,7 +3,7 @@ import getCookie from 'src/utils/get-cookie';
 
 export default async function handler(req, res) {
   try {
-    const response = await axios.post('/campaign/create', req.body, {
+    const response = await axios.put(`/campaign/edit/${req.body.campaign_id}`, req.body, {
       headers: {
         Authorization: `Bearer ${getCookie(req)}`,
       },

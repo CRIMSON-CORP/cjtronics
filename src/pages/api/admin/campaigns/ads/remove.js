@@ -3,10 +3,11 @@ import getCookie from 'src/utils/get-cookie';
 
 export default async function handler(req, res) {
   try {
-    const response = await axios.post('/campaign/create', req.body, {
+    const response = await axios.delete(`/campaign/remove/${req.body.campaign_id}`, {
       headers: {
         Authorization: `Bearer ${getCookie(req)}`,
       },
+      data: req.body,
     });
     if (response.data.status && response.status === 200)
       res.status(response.status).json(response.data);

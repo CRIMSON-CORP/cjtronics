@@ -1,3 +1,4 @@
+import { RemoveFromQueue } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -15,9 +16,12 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
+import ConfirmAction from 'src/components/ConfirmAction';
 import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -25,12 +29,9 @@ import { getResourse } from 'src/lib/actions';
 
 const Page = ({ adAccounts, adAccount, ads }) => {
   const { query, replace } = useRouter();
-
   const handleSelectChange = (event) => {
     replace(`/ad-account/${event.target.value}`);
   };
-
-  const adsList = ads.adsUpload || [];
 
   return (
     <>
@@ -68,41 +69,12 @@ const Page = ({ adAccounts, adAccount, ads }) => {
               </Grid>
               <Grid xs={12}>
                 <Card>
-                  <CardHeader
-                    title="Ads"
-                    action={
-                      <Stack spacing={1} direction="row">
-                        <Link href="/campaign/edit-campaign">
-                          <Button>Edit Campaign</Button>
-                        </Link>
-                      </Stack>
-                    }
-                  />
+                  <CardHeader title="Campaings" />
                   <CardContent>
-                    {adsList.length === 0 && <Typography>No ads</Typography>}
+                    {ads.length === 0 && <Typography>No Campaings</Typography>}
                     <Grid container spacing={3}>
-                      {adsList.map((adFile) => (
-                        <Grid xs={12} sm={6} lg={4} key={adFile.reference}>
-                          <Card>
-                            {adFile.type === 'html' ? (
-                              <Iframe content={adFile.url} />
-                            ) : (
-                              <CardMedia
-                                sx={{ height: 140 }}
-                                image={adFile.url}
-                                title={adFile.name}
-                                component={componentToAdTypeMap[adFile.type]}
-                              />
-                            )}
-                            <CardHeader sx={{ py: 1 }} title={adFile.name} />
-                            <CardActions>
-                              <Link href={`/campaign/edit-ad/${adAccount.reference}`}>
-                                <Button>Edit</Button>
-                              </Link>
-                              <Button color="error">Delete</Button>
-                            </CardActions>
-                          </Card>
-                        </Grid>
+                      {ads.map((adFile) => (
+                        <AdFileCard key={adFile.reference + adFile.campaignReference} {...adFile} />
                       ))}
                     </Grid>
                   </CardContent>
@@ -128,11 +100,20 @@ export default Page;
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [adAccounts, adAccount, ads] = await Promise.all([
+    const [adAccounts, adAccount, campaings] = await Promise.all([
       getResourse(ctx.req, '/ads-account'),
       getResourse(ctx.req, `/ads-account/${ctx.query.ad_account_id}`),
-      getResourse(ctx.req, `/ads/account/${ctx.query.ad_account_id}`),
+      getResourse(ctx.req, `/campaign/account/${ctx.query.ad_account_id}`),
     ]);
+
+    const ads = campaings.list.reduce((acc, item) => {
+      const uploads = item.playUploads.map((upload) => {
+        upload.campaingName = item.name;
+        upload.campaignReference = item.reference;
+        return upload;
+      });
+      return item.playUploads ? [...acc, ...uploads] : acc;
+    }, []);
 
     return {
       props: {
@@ -158,3 +139,64 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
     };
   }
 });
+
+function AdFileCard({
+  uploadType,
+  reference,
+  uploadFile,
+  uploadName,
+  campaingName,
+  campaignReference,
+}) {
+  const { replace, asPath } = useRouter();
+  const handleRemove = async () => {
+    try {
+      toast.promise(
+        axios.post(`/api/admin/campaigns/ads/remove`, {
+          campaign_id: campaignReference,
+          uploadRef: reference,
+        }),
+        {
+          loading: 'Removing Ad, Hang on...',
+          success: (response) => {
+            replace(asPath);
+            return response.data.message;
+          },
+          error: (error) => error.response?.data?.message || error.message,
+        }
+      );
+    } catch (error) {}
+  };
+  return (
+    <Grid xs={6} sm={4} lg={3} key={reference}>
+      <Card sx={{ height: '100%', flexDirection: 'column', display: 'flex' }}>
+        {uploadType === 'html' ? (
+          <Iframe content={uploadFile} />
+        ) : (
+          <CardMedia
+            sx={{ height: 140 }}
+            image={uploadFile}
+            title={uploadName}
+            component={componentToAdTypeMap[uploadType]}
+          />
+        )}
+        <CardHeader sx={{ pt: 1, pb: 0 }} title={campaingName} />
+        <CardActions sx={{ py: 1, mt: 'auto' }}>
+          <Link href={`/campaign/edit-campaign/${campaignReference}`}>
+            <Button>Edit</Button>
+          </Link>
+          <ConfirmAction
+            action={handleRemove}
+            color="error"
+            buttonProps={{ color: 'error', variant: 'text', startIcon: <RemoveFromQueue /> }}
+            proceedText="Remove Ad"
+            title="Are you sure?"
+            content="Are you sure you want to remove this ad?"
+          >
+            Remove
+          </ConfirmAction>
+        </CardActions>
+      </Card>
+    </Grid>
+  );
+}

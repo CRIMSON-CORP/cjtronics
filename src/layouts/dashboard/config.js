@@ -155,7 +155,7 @@ export const items = [
             <Campaign />
           </SvgIcon>
         ),
-        matchers: ['create-campaigng'],
+        matchers: ['create-campaign'],
       },
       {
         title: 'Campaign Shedule',
