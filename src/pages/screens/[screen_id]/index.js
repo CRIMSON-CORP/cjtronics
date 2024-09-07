@@ -51,47 +51,6 @@ import {
 import * as Yup from 'yup';
 import { screenLayoutToReferenceMap } from '..';
 
-const campaigns = [
-  {
-    _id: '64b64ca8bae11621a2433fda',
-    adAccount: {
-      _id: '64b646dbbae11621a243387a',
-      name: 'Mysogi for Bishop Aboyade',
-      adCompany: '63c5075b0e0feeed9fc893bb',
-      adScreen: '64b6469bbae11621a243380c',
-      adAccountName: 'MYSOGI-Mysogi for Bishop Aboyade | BISHOP ABOYADE',
-      order: 1,
-      organizationId: '64b646dbbae11621a2433879',
-      createdAt: '2023-07-18T08:01:31.407Z',
-      updatedAt: '2023-11-04T10:17:32.450Z',
-      __v: 0,
-    },
-    adScreen: '64b6469bbae11621a243380c',
-    name: 'Suzuki Grand Vitara',
-    startDate: '2023-12-21T00:00:00.000Z',
-    endDate: '2023-12-25T00:00:00.000Z',
-    videoAndImageDuration: 10,
-    startTime: '00:00',
-    endTime: '23:59',
-    campaignScheduleDays: [
-      'Sunday',
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-    ],
-    campaignActiveStatus: 0,
-    adFiles: ['6583f86dc1084a70af47709e'],
-    organizationId: '64b646dbbae11621a2433879',
-    createdAt: '2023-07-18T08:26:16.443Z',
-    updatedAt: '2024-01-26T17:36:41.256Z',
-    __v: 0,
-    screenViewPort: 1,
-  },
-];
-
 const Page = ({ screens, screen, organizations, cities, screen_layouts, screen_campaigns }) => {
   const { query, replace } = useRouter();
 
@@ -317,7 +276,7 @@ function ScreenDetails({ screen, organizations, cities, screenLayouts }) {
               </TableRow>
               <TableRow>
                 <TableCell>
-                  <Typography>Screen Output Size(W x H):</Typography>
+                  <Typography>Screen Output Size (W x H):</Typography>
                 </TableCell>
                 <TableCell>
                   <Typography>
@@ -503,6 +462,7 @@ const EditScreenForm = ({ screen, organizations, cities, screenLayouts, closeMod
               <Select
                 error={!!(formik.touched.organizationId && formik.errors.organizationId)}
                 fullWidth
+                label="Select Organization"
                 name="organizationId"
                 id="organizationId"
                 onBlur={formik.handleBlur}

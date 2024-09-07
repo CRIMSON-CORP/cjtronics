@@ -98,7 +98,7 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
               </Box>
             </Stack>
 
-            <CampaignSquencing screen={screen} campaignSquence={campaignSquence} />
+            <CampaignSquencing screen={screen} campaignSquence={campaignSquence.list} />
           </Stack>
         </Container>
       </Box>
@@ -154,7 +154,7 @@ function CampaignSequence({ screen, sequence, setSequence }) {
     try {
       await toast.promise(
         axios.post(`/api/admin/ad-account/set-ads-sequence?screen_id=${screen.reference}`, {
-          reorder: sequence.map((item) => item.orderIndex).join(','),
+          reorder: sequence.map((item) => item.reference).join(','),
         }),
         {
           loading: 'Saving Order, hold on a moment...',
@@ -299,7 +299,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       getResourse(ctx.req, '/screen'),
       getResourse(ctx.req, `/screen/${ctx.query.screen_id}`),
       getResourse(ctx.req, '/screen/layout/all'),
-      getResourse(ctx.req, `/ads/sequence/${ctx.query.screen_id}`),
+      getResourse(ctx.req, `/ads-account/sequence/${ctx.query.screen_id}`),
     ]);
     return {
       props: { screens, screen, layouts, campaignSquence },

@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Card,
+  CardActions,
   CardContent,
   CardHeader,
   CardMedia,
@@ -71,9 +72,6 @@ const Page = ({ adAccounts, adAccount, ads }) => {
                     title="Ads"
                     action={
                       <Stack spacing={1} direction="row">
-                        <Link href={`/campaign/edit-ad/${adAccount.reference}`}>
-                          <Button size="small">Edit Ads</Button>
-                        </Link>
                         <Link href="/campaign/edit-campaign">
                           <Button>Edit Campaign</Button>
                         </Link>
@@ -86,7 +84,6 @@ const Page = ({ adAccounts, adAccount, ads }) => {
                       {adsList.map((adFile) => (
                         <Grid xs={12} sm={6} lg={4} key={adFile.reference}>
                           <Card>
-                            <CardHeader title={adFile.name} />
                             {adFile.type === 'html' ? (
                               <Iframe content={adFile.url} />
                             ) : (
@@ -97,6 +94,13 @@ const Page = ({ adAccounts, adAccount, ads }) => {
                                 component={componentToAdTypeMap[adFile.type]}
                               />
                             )}
+                            <CardHeader sx={{ py: 1 }} title={adFile.name} />
+                            <CardActions>
+                              <Link href={`/campaign/edit-ad/${adAccount.reference}`}>
+                                <Button>Edit</Button>
+                              </Link>
+                              <Button color="error">Delete</Button>
+                            </CardActions>
                           </Card>
                         </Grid>
                       ))}

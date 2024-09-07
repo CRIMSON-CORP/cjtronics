@@ -287,6 +287,9 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                           name="playTimeAt"
                           label="Select Start Time"
                           fullWidth
+                          timeSteps={{
+                            minutes: 1,
+                          }}
                           value={formik.values.playTimeAt}
                         />
                         {!!(formik.touched.playTimeAt && formik.errors.playTimeAt) && (
@@ -303,7 +306,15 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                           name="endTimeAt"
                           label="Select End Time"
                           fullWidth
+                          timeSteps={{
+                            minutes: 1,
+                          }}
                           value={formik.values.endTimeAt}
+                          sx={{
+                            'li:hover': {
+                              backgroundColor: 'rgb(168 201 86 / 33%)',
+                            },
+                          }}
                         />
                         {!!(formik.touched.endTimeAt && formik.errors.endTimeAt) && (
                           <FormHelperText sx={{ color: 'error.main' }}>
@@ -328,7 +339,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       Play Campaign (Sunday - Saturday) choose to show campaign everyday or select
                       specific days.
                     </FormHelperText>
-                    <FormGroup>
+                    <FormGroup row>
                       <DayCheck label="Sunday" formik={formik} value="sunday" />
                       <DayCheck label="Monday" formik={formik} value="monday" />
                       <DayCheck label="Tuesday" formik={formik} value="tuesday" />

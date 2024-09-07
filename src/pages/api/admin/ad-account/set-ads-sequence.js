@@ -3,7 +3,7 @@ import getCookie from 'src/utils/get-cookie';
 
 export default async function handler(req, res) {
   try {
-    const response = await axios.put(`/ads/sequence/${req.query.screen_id}`, req.body, {
+    const response = await axios.put(`/ads-account/reorder/${req.query.screen_id}`, req.body, {
       headers: {
         Authorization: `Bearer ${getCookie(req)}`,
       },

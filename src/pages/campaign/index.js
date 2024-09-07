@@ -457,19 +457,50 @@ function AddedFile({ id, name, type, file, iframeContent, formik }) {
   };
   return (
     <Paper sx={{ p: 2 }} elevation={5}>
-      <Stack spacing={1} direction="row" alignItems="center" flexWrap="wrap">
-        {file && type === 'image' && (
-          <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
-        )}
-        {file && type === 'video' && <video style={videoStyle} src={fileObjectUrl} alt="preview" />}
-        {type === 'html' && <Iframe content={iframeContent} styles={videoStyle} />}
-        <Stack>
-          <Typography variant="h6">{name}</Typography>
-          {['image', 'video'].includes(type) && (
-            <Typography variant="subtitle1">{file && formatFileSize(file.size)}</Typography>
-          )}
+      <Stack
+        spacing={1}
+        direction="row"
+        alignItems="center"
+        flexWrap="wrap"
+        justifyContent="space-between"
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          sx={{ overflowY: 'hidden', overflowX: 'auto' }}
+          spacing={1}
+        >
+          <Box flex="none">
+            {file && type === 'image' && (
+              <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
+            )}
+            {file && type === 'video' && (
+              <video style={videoStyle} src={fileObjectUrl} alt="preview" />
+            )}
+            {type === 'html' && <Iframe content={iframeContent} styles={videoStyle} />}
+          </Box>
+          <Stack maxWidth="100%" overflow="auto">
+            <Typography
+              variant="h6"
+              width="100%"
+              whiteSpace="nowrap"
+              overflow="hidden"
+              textOverflow="ellipsis"
+            >
+              {name}
+            </Typography>
+            {['image', 'video'].includes(type) && (
+              <Typography variant="subtitle1">{file && formatFileSize(file.size)}</Typography>
+            )}
+          </Stack>
         </Stack>
-        <Stack spacing={0.5} flex={1} justifyContent="flex-end" alignItems="center" direction="row">
+        <Stack
+          spacing={0.5}
+          alignItems="center"
+          direction="row"
+          alignSelf="flex-end"
+          sx={{ ml: 'auto !important' }}
+        >
           <EditFile fileId={id} formik={formik} />
           <ConfirmAction
             color="error"

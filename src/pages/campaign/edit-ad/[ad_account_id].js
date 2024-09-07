@@ -482,14 +482,21 @@ function AddedFile({ id, name, type, file, iframeContent, formik, index, url, ur
         justifyContent="space-between"
         flexWrap="wrap"
       >
-        <Stack direction="row" alignItems="center" overflow="auto" spacing={1}>
-          {fileObjectUrl && type === 'image' && (
-            <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
-          )}
-          {fileObjectUrl && type === 'video' && (
-            <video style={videoStyle} src={fileObjectUrl} alt="preview" />
-          )}
-          {type === 'html' && <Iframe content={iframeContent || url} styles={videoStyle} />}
+        <Stack
+          direction="row"
+          alignItems="center"
+          sx={{ overflowY: 'hidden', overflowX: 'auto' }}
+          spacing={1}
+        >
+          <Box flex="none">
+            {fileObjectUrl && type === 'image' && (
+              <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
+            )}
+            {fileObjectUrl && type === 'video' && (
+              <video style={videoStyle} src={fileObjectUrl} alt="preview" />
+            )}
+            {type === 'html' && <Iframe content={iframeContent || url} styles={videoStyle} />}
+          </Box>
           <Stack maxWidth="100%" overflow="auto">
             <Typography
               width="100%"
@@ -510,7 +517,7 @@ function AddedFile({ id, name, type, file, iframeContent, formik, index, url, ur
           alignItems="center"
           direction="row"
           alignSelf="flex-end"
-          sx={{ ml: 'auto' }}
+          sx={{ ml: 'auto !important' }}
         >
           <EditFile fileId={id} formik={formik} />
           {index !== 0 && (

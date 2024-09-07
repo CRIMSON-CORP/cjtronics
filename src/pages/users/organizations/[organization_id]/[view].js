@@ -133,6 +133,7 @@ export default Page;
 const viewToApiUrlMap = {
   screens: 'screen/organization',
   users: 'users/organization',
+  // TODO fetch campaigns by organiazation id
   campaigns: 'ads/campaign',
 };
 
