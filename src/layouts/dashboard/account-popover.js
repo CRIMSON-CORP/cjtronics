@@ -26,7 +26,8 @@ export const AccountPopover = (props) => {
     onClose?.();
   }, [onClose, signOut, router]);
 
-  const { firstname, lastname } = user?.user || {};
+  const goToResetPassword = () => router.push('/reset-password');
+  const { firstName, lastName } = user || {};
 
   return (
     <Popover
@@ -47,7 +48,7 @@ export const AccountPopover = (props) => {
       >
         <Typography variant="overline">Account</Typography>
         <Typography color="text.secondary" variant="body2">
-          {firstname} {lastname}
+          {firstName} {lastName}
         </Typography>
       </Box>
       <Divider />
@@ -62,6 +63,7 @@ export const AccountPopover = (props) => {
         }}
       >
         <MenuItem onClick={handleSignOut}>Sign out</MenuItem>
+        <MenuItem onClick={goToResetPassword}>Reset Password</MenuItem>
       </MenuList>
     </Popover>
   );

@@ -2,6 +2,7 @@ import Bars3Icon from '@heroicons/react/24/solid/Bars3Icon';
 import { Avatar, Box, IconButton, Stack, SvgIcon, Typography, useMediaQuery } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import PropTypes from 'prop-types';
+import { useAuth } from 'src/hooks/use-auth';
 import { usePopover } from 'src/hooks/use-popover';
 import { AccountPopover } from './account-popover';
 
@@ -12,6 +13,7 @@ export const TopNav = (props) => {
   const { onNavOpen } = props;
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
   const accountPopover = usePopover();
+  const { user } = useAuth();
 
   return (
     <>
@@ -62,7 +64,7 @@ export const TopNav = (props) => {
                 height: 40,
                 width: 40,
               }}
-              src="/assets/avatars/avatar-anika-visser.png"
+              src={user.avatar}
             />
           </Stack>
         </Stack>
