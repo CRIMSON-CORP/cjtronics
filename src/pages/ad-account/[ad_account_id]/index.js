@@ -27,7 +27,7 @@ import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
-const Page = ({ adAccounts, adAccount, ads }) => {
+const Page = ({ adAccounts, adAccount, ads, campaingsLength }) => {
   const { query, replace } = useRouter();
   const handleSelectChange = (event) => {
     replace(`/ad-account/${event.target.value}`);
@@ -71,7 +71,10 @@ const Page = ({ adAccounts, adAccount, ads }) => {
                 <Card>
                   <CardHeader title="Campaings" />
                   <CardContent>
-                    {ads.length === 0 && <Typography>No Campaings</Typography>}
+                    {campaingsLength === 0 && <Typography>No Campaings in Ad Account</Typography>}
+                    {ads.length === 0 && campaingsLength > 0 && (
+                      <Typography>No Ads in {campaingsLength} Campaings</Typography>
+                    )}
                     <Grid container spacing={3}>
                       {ads.map((adFile) => (
                         <AdFileCard key={adFile.reference + adFile.campaignReference} {...adFile} />
@@ -120,6 +123,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
         adAccounts,
         adAccount,
         ads,
+        campaingsLength: campaings.list.length,
       },
     };
   } catch (error) {

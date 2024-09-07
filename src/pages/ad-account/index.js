@@ -30,9 +30,12 @@ import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import ConfirmAction from 'src/components/ConfirmAction';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllOrganizations, getAllScreens, getCompanies } from 'src/lib/actions';
 import * as Yup from 'yup';
@@ -69,7 +72,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function AdAccountForm({ organizations, companies, screens, setSelectedCompany }) {
+function AdAccountForm({ organizations, companies, screens }) {
   const formik = useFormik({
     initialValues: {
       organizationId: '',
@@ -327,22 +330,55 @@ function AdAccountList({ adAccounts }) {
 }
 
 function AdCampaignWrapper({ name, reference, listCampaigns }) {
-  const [expanded, setExpanded] = useState(false);
+  const { state, toggle } = useToggle(false);
+  const { push } = useRouter();
 
-  const toggleExpanded = () => {
-    setExpanded((prev) => !prev);
+  const deleteAdAccount = async () => {
+    await toast.promise(axios.post('/api/admin/ad-account/delete', { reference }), {
+      loading: 'Deleting Campaign, hold on a moment...',
+      success: (response) => {
+        return response.data.message;
+      },
+      error: (err) => {
+        return err.response?.data?.message || err.message;
+      },
+    });
   };
+
+  const deleteCampaing = (reference) => async () => {
+    await toast.promise(axios.post('/api/admin/campaigns/delete', { reference }), {
+      loading: 'Deleting Campaign, hold on a moment...',
+      success: (response) => {
+        return response.data.message;
+      },
+      error: (err) => {
+        return err.response?.data?.message || err.message;
+      },
+    });
+  };
+
+  const goToAdAccount = () => push(`/ad-account/${reference}`);
+
+  const goToCampaing = (reference) => () => push(`/campaign/edit-campaign/${reference}`);
+
   return (
     <>
       <ListItem
         secondaryAction={
           <Stack direction="row" spacing={1}>
-            <IconButton>
-              <Delete color="error.main" />
-            </IconButton>
-            <IconButton onClick={toggleExpanded}>
-              {expanded ? <ExpandLess /> : <ExpandMore />}
-            </IconButton>
+            <ConfirmAction
+              action={deleteAdAccount}
+              title={`Delete Ad Account -  ${name}`}
+              content="Are you sure you want to delete this Ad Account?"
+              proceedText="Yes, Delete"
+              color="error"
+              trigger={
+                <IconButton>
+                  <Delete color="error.main" />
+                </IconButton>
+              }
+            />
+            <IconButton onClick={toggle}>{state ? <ExpandLess /> : <ExpandMore />}</IconButton>
             <Link href={`/ad-account/${reference}`}>
               <IconButton>
                 <ChevronRight />
@@ -356,19 +392,33 @@ function AdCampaignWrapper({ name, reference, listCampaigns }) {
             <Campaign />
           </Avatar>
         </ListItemAvatar>
-        <ListItemText primary={name} secondary={`${listCampaigns.length} campaigns`} />
+        <ListItemText
+          primary={name}
+          onClick={goToAdAccount}
+          sx={{ cursor: 'pointer' }}
+          secondary={`${listCampaigns.length} campaigns`}
+        />
       </ListItem>
-      <Collapse in={expanded} timeout="auto" unmountOnExit>
+      <Collapse in={state} timeout="auto" unmountOnExit>
         <List component="div" disablePadding>
           {listCampaigns.map((campaign) => (
             <ListItem
-              key={campaign.reference}
               sx={{ pl: 4 }}
+              key={campaign.reference}
               secondaryAction={
                 <Stack direction="row" spacing={1}>
-                  <IconButton>
-                    <Delete color="error.main" />
-                  </IconButton>
+                  <ConfirmAction
+                    action={deleteCampaing(campaign.reference)}
+                    title={`Delete Camaping -  ${campaign.name}`}
+                    content="Are you sure you want to delete this Campaign?"
+                    proceedText="Yes, Delete"
+                    color="error"
+                    trigger={
+                      <IconButton>
+                        <Delete color="error.main" />
+                      </IconButton>
+                    }
+                  />
                 </Stack>
               }
             >
@@ -377,7 +427,11 @@ function AdCampaignWrapper({ name, reference, listCampaigns }) {
                   <Campaign />
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText primary={campaign.name} />
+              <ListItemText
+                sx={{ cursor: 'pointer' }}
+                onClick={goToCampaing(campaign.reference)}
+                primary={campaign.name}
+              />
             </ListItem>
           ))}
         </List>

@@ -314,5 +314,13 @@ export function createComponents(config) {
         },
       },
     },
+    MuiCircularProgress: {
+      styleOverrides: {
+        root: {
+          color: 'rgba(17,25,39,0.6)',
+          size: 16,
+        },
+      },
+    },
   };
 }

@@ -13,7 +13,12 @@ function useToggle(defaultState = false) {
     setState(false);
   }
 
-  return { state, open, close };
+  function toggle(e) {
+    e?.stopPropagation();
+    setState((prev) => !prev);
+  }
+
+  return { state, open, close, toggle };
 }
 
 export default useToggle;
