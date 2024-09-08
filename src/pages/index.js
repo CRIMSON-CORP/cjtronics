@@ -2,17 +2,20 @@ import { Campaign, Download, Monitor } from '@mui/icons-material';
 import { Box, Button, Container, Unstable_Grid2 as Grid, Stack } from '@mui/material';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
+import { getResourse } from 'src/lib/actions';
 import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-campaing-activitieslist';
 import { OverViewItem } from 'src/sections/overview/overview-item';
 import { OverviewScreensList } from 'src/sections/overview/overview-screens-list';
 
 const now = new Date();
 
-const Page = () => (
+const Page = ({ stats, screens }) => (
   <>
     <Head>
-      <title>Overview | Devias Kit</title>
+      <title>Dashboard | Cjtronimcs</title>
     </Head>
     <Box component="main" flexGrow={1}>
       <Container maxWidth="xl">
@@ -29,7 +32,7 @@ const Page = () => (
               title="online screens"
               icon={<Monitor />}
               sx={{ height: '100%' }}
-              value="4"
+              value={<OnlineScreensSocket defaultValue={stats.activeScreens} />}
               theme="warning.main"
             />
           </Grid>
@@ -38,7 +41,7 @@ const Page = () => (
               title="total screens"
               icon={<Monitor />}
               sx={{ height: '100%' }}
-              value="4"
+              value={stats.totalScreens}
               theme="success.main"
             />
           </Grid>
@@ -48,7 +51,7 @@ const Page = () => (
               icon={<Campaign />}
               sx={{ height: '100%' }}
               value="4"
-              theme="primary.main"
+              theme={stats.activeCampaigns}
             />
           </Grid>
           <Grid xs={12} sm={6} lg={3}>
@@ -56,51 +59,11 @@ const Page = () => (
               title="total campaigns"
               icon={<Campaign />}
               sx={{ height: '100%' }}
-              value="4"
+              value={stats.totalCampaigns}
             />
           </Grid>
           <Grid xs={12} md={6} lg={5}>
-            <OverviewScreensList
-              screens={[
-                {
-                  id: '5ece2c077e39da27658aa8a9',
-                  name: 'FIWASAYE',
-                  location: '(FOL-AKURE)',
-                  status: 'offline',
-                },
-                {
-                  id: '5ece2c077e39da27658aa8a2',
-                  name: 'EKO HOTEL',
-                  location: '(FOL-EKO)',
-                  status: 'online',
-                },
-                {
-                  id: '5ece2c077e39da27658aa8a3',
-                  name: 'AKIN ADESOLA',
-                  location: '(FOL-AKIN)',
-                  status: 'offline',
-                },
-                {
-                  id: '5ece2c077e39da27658aa8a4',
-                  name: 'BROAD STREET',
-                  location: '(FOL-BROAD)',
-                  status: 'offline',
-                },
-                {
-                  id: '5ece2c077e39da27658aa8a8',
-                  name: 'BISHOP ABOYADE',
-                  location: '(FOL-ABO)',
-                  status: 'online',
-                },
-                {
-                  id: '5ece2c077e39da27658aa8a6',
-                  name: 'ADMIRALTY',
-                  location: '(EKNT-LEKKI)',
-                  status: 'online',
-                },
-              ]}
-              sx={{ height: '100%' }}
-            />
+            <OverviewScreensList screens={screens.screen} sx={{ height: '100%' }} />
           </Grid>
           <Grid xs={12} md={12} lg={7}>
             <OverviewCampaignActivitieList
@@ -133,3 +96,57 @@ const Page = () => (
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
+
+export const getServerSideProps = ProtectDashboard(async (ctx) => {
+  try {
+    const [stats, screens] = await Promise.all([
+      getResourse(ctx.req, `/stats/dashboard`),
+      getResourse(ctx.req, `/screen`),
+    ]);
+    return {
+      props: {
+        stats,
+        screens,
+      },
+    };
+  } catch (error) {
+    console.log(error);
+
+    if (error?.response?.status === 401) {
+      return {
+        redirect: {
+          destination: '/auth/login?auth=false',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      notFound: true,
+    };
+  }
+});
+
+function OnlineScreensSocket({ defaultValue }) {
+  const [connectedScreens, setConnectedScreens] = useState(defaultValue);
+  useEffect(() => {
+    const socket = new WebSocket('ws://localhost:8080?type=device&id=5ece2c077e39da27658aa8a9');
+
+    socket.onopen = () => {
+      console.log('connected');
+
+      socket.send(JSON.stringify({ message: 'Hello Server!' }));
+    };
+
+    socket.onmessage = (event) => {
+      console.log(event.data);
+    };
+
+    socket.onclose = () => {
+      console.log('Socket Closed Connection');
+    };
+
+    return () => socket.close();
+  }, []);
+  return <div>{connectedScreens}</div>;
+}

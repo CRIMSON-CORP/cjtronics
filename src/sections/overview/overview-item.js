@@ -48,7 +48,7 @@ OverViewItem.prototypes = {
   difference: PropTypes.number,
   positive: PropTypes.bool,
   sx: PropTypes.object,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.element]).isRequired,
   icon: PropTypes.element,
   title: PropTypes.string.isRequired,
   theme: PropTypes.string,
