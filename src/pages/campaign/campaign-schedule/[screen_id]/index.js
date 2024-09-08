@@ -28,7 +28,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import Iframe from 'src/components/Iframe';
@@ -424,20 +424,20 @@ function PlayAds({ sequence, screenName }) {
 }
 
 function SequenceAds({ sequence, onComplete }) {
-  const [currentAdIndex, setCurrentAdIndex] = useState(1);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
-  // useEffect(() => {
-  //   if (currentAdIndex < sequence.length) {
-  //     const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
-  //     const timer = setTimeout(() => {
-  //       setCurrentAdIndex((prevIndex) => prevIndex + 1);
-  //     }, adDuration);
+  useEffect(() => {
+    if (currentAdIndex < sequence.length) {
+      const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
+      const timer = setTimeout(() => {
+        setCurrentAdIndex((prevIndex) => prevIndex + 1);
+      }, adDuration);
 
-  //     return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
-  //   } else if (onComplete) {
-  //     onComplete(); // Call the callback when all ads have finished
-  //   }
-  // }, [currentAdIndex, sequence, onComplete]);
+      return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
+    } else if (onComplete) {
+      onComplete(); // Call the callback when all ads have finished
+    }
+  }, [currentAdIndex, sequence, onComplete]);
 
   if (currentAdIndex >= sequence.length) {
     return null; // No more ads to show

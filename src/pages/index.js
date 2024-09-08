@@ -12,86 +12,89 @@ import { OverviewScreensList } from 'src/sections/overview/overview-screens-list
 
 const now = new Date();
 
-const Page = ({ stats, screens }) => (
-  <>
-    <Head>
-      <title>Dashboard | Cjtronimcs</title>
-    </Head>
-    <Box component="main" flexGrow={1}>
-      <Container maxWidth="xl">
-        <Stack direction="row" justifyContent="flex-end" my={1.5}>
-          <Link href="generate-report">
-            <Button startIcon={<Download />} variant="contained">
-              Generate Report
-            </Button>
-          </Link>
-        </Stack>
-        <Grid container spacing={3}>
-          <Grid xs={12} sm={6} lg={3}>
-            <OverViewItem
-              title="online screens"
-              icon={<Monitor />}
-              sx={{ height: '100%' }}
-              value={<OnlineScreensCountSocket screens={screens.screen} />}
-              theme="warning.main"
-            />
+const Page = ({ stats, screens: { screen } }) => {
+  const { connectedScreens, screens } = useSocketScreens({ defaultScreens: screen });
+  return (
+    <>
+      <Head>
+        <title>Dashboard | Cjtronimcs</title>
+      </Head>
+      <Box component="main" flexGrow={1}>
+        <Container maxWidth="xl">
+          <Stack direction="row" justifyContent="flex-end" my={1.5}>
+            <Link href="generate-report">
+              <Button startIcon={<Download />} variant="contained">
+                Generate Report
+              </Button>
+            </Link>
+          </Stack>
+          <Grid container spacing={3}>
+            <Grid xs={12} sm={6} lg={3}>
+              <OverViewItem
+                title="online screens"
+                icon={<Monitor />}
+                sx={{ height: '100%' }}
+                value={connectedScreens}
+                theme="warning.main"
+              />
+            </Grid>
+            <Grid xs={12} sm={6} lg={3}>
+              <OverViewItem
+                title="total screens"
+                icon={<Monitor />}
+                sx={{ height: '100%' }}
+                value={stats.totalScreens}
+                theme="success.main"
+              />
+            </Grid>
+            <Grid xs={12} sm={6} lg={3}>
+              <OverViewItem
+                title="active campaigns"
+                icon={<Campaign />}
+                sx={{ height: '100%' }}
+                value="4"
+                theme={stats.activeCampaigns}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} lg={3}>
+              <OverViewItem
+                title="total campaigns"
+                icon={<Campaign />}
+                sx={{ height: '100%' }}
+                value={stats.totalCampaigns}
+              />
+            </Grid>
+            <Grid xs={12} md={6} lg={5}>
+              <OverviewScreensList screens={screens} sx={{ height: '100%' }} />
+            </Grid>
+            <Grid xs={12} md={12} lg={7}>
+              <OverviewCampaignActivitieList
+                activities={[
+                  {
+                    id: 'f69f88012978187a6c12897f',
+                    activity: 'Danjuma Created new campaign: MTN Champion',
+                    timeAgo: '2024-08-13,08:20',
+                  },
+                  {
+                    id: 'f69f88012978187a6c12892f',
+                    activity: 'Danjuma Created new campaign: Realtor',
+                    timeAgo: '2024-08-13,05:24',
+                  },
+                  {
+                    id: 'f69f88012978187a6c16897f',
+                    activity: 'Abdulwahab Updated campaign: Petite Talk Show',
+                    timeAgo: '2024-08-12,11:00',
+                  },
+                ]}
+                sx={{ height: '100%' }}
+              />
+            </Grid>
           </Grid>
-          <Grid xs={12} sm={6} lg={3}>
-            <OverViewItem
-              title="total screens"
-              icon={<Monitor />}
-              sx={{ height: '100%' }}
-              value={stats.totalScreens}
-              theme="success.main"
-            />
-          </Grid>
-          <Grid xs={12} sm={6} lg={3}>
-            <OverViewItem
-              title="active campaigns"
-              icon={<Campaign />}
-              sx={{ height: '100%' }}
-              value="4"
-              theme={stats.activeCampaigns}
-            />
-          </Grid>
-          <Grid xs={12} sm={6} lg={3}>
-            <OverViewItem
-              title="total campaigns"
-              icon={<Campaign />}
-              sx={{ height: '100%' }}
-              value={stats.totalCampaigns}
-            />
-          </Grid>
-          <Grid xs={12} md={6} lg={5}>
-            <OverviewScreensList screens={screens.screen} sx={{ height: '100%' }} />
-          </Grid>
-          <Grid xs={12} md={12} lg={7}>
-            <OverviewCampaignActivitieList
-              activities={[
-                {
-                  id: 'f69f88012978187a6c12897f',
-                  activity: 'Danjuma Created new campaign: MTN Champion',
-                  timeAgo: '2024-08-13,08:20',
-                },
-                {
-                  id: 'f69f88012978187a6c12892f',
-                  activity: 'Danjuma Created new campaign: Realtor',
-                  timeAgo: '2024-08-13,05:24',
-                },
-                {
-                  id: 'f69f88012978187a6c16897f',
-                  activity: 'Abdulwahab Updated campaign: Petite Talk Show',
-                  timeAgo: '2024-08-12,11:00',
-                },
-              ]}
-              sx={{ height: '100%' }}
-            />
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
-  </>
-);
+        </Container>
+      </Box>
+    </>
+  );
+};
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
@@ -130,15 +133,15 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
 function useSocketScreens({ defaultScreens }) {
   const [screens, setScreens] = useState(defaultScreens);
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8080');
+    const socket = new WebSocket('wss://cjtronics-websocket-server.onrender.com');
 
     socket.onopen = () => {
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
 
         if (data.event === 'device-connection')
-          if (data.screen) {
-            setScreens(data.screen);
+          if (data.screens) {
+            setScreens(data.screens);
           }
       };
     };
@@ -151,9 +154,4 @@ function useSocketScreens({ defaultScreens }) {
     screens,
     connectedScreens,
   };
-}
-
-function OnlineScreensCountSocket({ screens }) {
-  const { connectedScreens } = useSocketScreens({ defaultScreens: screens });
-  return connectedScreens;
 }
