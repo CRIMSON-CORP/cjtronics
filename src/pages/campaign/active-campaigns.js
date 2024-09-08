@@ -116,7 +116,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
   };
 
   try {
-    const campaigns = await getResourse(ctx.req, `/ads/campaign`, params);
+    const campaigns = await getResourse(ctx.req, `/campaign/active`, params);
     console.log(campaigns);
 
     return {
