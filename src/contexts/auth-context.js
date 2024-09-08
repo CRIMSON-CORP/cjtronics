@@ -134,7 +134,8 @@ export const AuthProvider = (props) => {
 
   const signOut = useCallback(async () => {
     try {
-      const { data, status } = await axios.post('/api/auth/logout');
+      const response = await axios.post('/api/auth/logout');
+      const { data, status } = response;
       if (status === 200) {
         window.sessionStorage.setItem('authenticated', 'false');
         window.sessionStorage.setItem('user', null);
@@ -143,10 +144,10 @@ export const AuthProvider = (props) => {
         });
         return data.message;
       } else {
-        throw new Error(data.message);
+        throw response;
       }
     } catch (err) {
-      throw new Error(err?.response?.data?.message ?? err.message);
+      throw err;
     }
   }, []);
 

@@ -19,7 +19,10 @@ export const AccountPopover = (props) => {
           return 'Sign out successfull';
         },
         error: (error) => {
-          return error.message;
+          if (error.response.data.message === 'Sorry, you are not logged in') {
+            router.push('/auth/login');
+          }
+          return error?.response?.data?.message ?? error.message;
         },
       });
     } catch (erro) {}
