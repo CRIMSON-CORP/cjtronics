@@ -32,7 +32,7 @@ const Page = ({ stats, screens }) => (
               title="online screens"
               icon={<Monitor />}
               sx={{ height: '100%' }}
-              value={<OnlineScreensSocket defaultValue={stats.activeScreens} />}
+              value={<OnlineScreensCountSocket screens={screens.screen} />}
               theme="warning.main"
             />
           </Grid>
@@ -127,26 +127,33 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
   }
 });
 
-function OnlineScreensSocket({ defaultValue }) {
-  const [connectedScreens, setConnectedScreens] = useState(defaultValue);
+function useSocketScreens({ defaultScreens }) {
+  const [screens, setScreens] = useState(defaultScreens);
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8080?type=device&id=5ece2c077e39da27658aa8a9');
+    const socket = new WebSocket('ws://localhost:8080');
 
     socket.onopen = () => {
-      console.log('connected');
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
 
-      socket.send(JSON.stringify({ message: 'Hello Server!' }));
-    };
-
-    socket.onmessage = (event) => {
-      console.log(event.data);
-    };
-
-    socket.onclose = () => {
-      console.log('Socket Closed Connection');
+        if (data.event === 'device-connection')
+          if (data.screen) {
+            setScreens(data.screen);
+          }
+      };
     };
 
     return () => socket.close();
   }, []);
-  return <div>{connectedScreens}</div>;
+
+  const connectedScreens = screens.filter((screen) => screen.isOnline).length;
+  return {
+    screens,
+    connectedScreens,
+  };
+}
+
+function OnlineScreensCountSocket({ screens }) {
+  const { connectedScreens } = useSocketScreens({ defaultScreens: screens });
+  return connectedScreens;
 }
