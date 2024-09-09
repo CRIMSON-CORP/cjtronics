@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
-import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-campaing-activitieslist';
+import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-campaign-activitieslist';
 import { OverViewItem } from 'src/sections/overview/overview-item';
 import { OverviewScreensList } from 'src/sections/overview/overview-screens-list';
 

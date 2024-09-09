@@ -27,7 +27,7 @@ import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
-const Page = ({ adAccounts, adAccount, ads, campaingsLength }) => {
+const Page = ({ adAccounts, adAccount, ads, campaignsLength }) => {
   const { query, replace } = useRouter();
   const handleSelectChange = (event) => {
     replace(`/ad-account/${event.target.value}`);
@@ -69,11 +69,11 @@ const Page = ({ adAccounts, adAccount, ads, campaingsLength }) => {
               </Grid>
               <Grid xs={12}>
                 <Card>
-                  <CardHeader title="Campaings" />
+                  <CardHeader title="campaigns" />
                   <CardContent>
-                    {campaingsLength === 0 && <Typography>No Campaings in Ad Account</Typography>}
-                    {ads.length === 0 && campaingsLength > 0 && (
-                      <Typography>No Ads in {campaingsLength} Campaings</Typography>
+                    {campaignsLength === 0 && <Typography>No campaigns in Ad Account</Typography>}
+                    {ads.length === 0 && campaignsLength > 0 && (
+                      <Typography>No Ads in {campaignsLength} campaigns</Typography>
                     )}
                     <Grid container spacing={3}>
                       {ads.map((adFile) => (
@@ -103,15 +103,15 @@ export default Page;
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [adAccounts, adAccount, campaings] = await Promise.all([
+    const [adAccounts, adAccount, campaigns] = await Promise.all([
       getResourse(ctx.req, '/ads-account'),
       getResourse(ctx.req, `/ads-account/${ctx.query.ad_account_id}`),
       getResourse(ctx.req, `/campaign/account/${ctx.query.ad_account_id}`),
     ]);
 
-    const ads = campaings.list.reduce((acc, item) => {
+    const ads = campaigns.list.reduce((acc, item) => {
       const uploads = item.playUploads.map((upload) => {
-        upload.campaingName = item.name;
+        upload.campaignName = item.name;
         upload.campaignReference = item.reference;
         return upload;
       });
@@ -123,7 +123,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
         adAccounts,
         adAccount,
         ads,
-        campaingsLength: campaings.list.length,
+        campaignsLength: campaigns.list.length,
       },
     };
   } catch (error) {
@@ -149,7 +149,7 @@ function AdFileCard({
   reference,
   uploadFile,
   uploadName,
-  campaingName,
+  campaignName,
   campaignReference,
 }) {
   const { replace, asPath } = useRouter();
@@ -184,7 +184,7 @@ function AdFileCard({
             component={componentToAdTypeMap[uploadType]}
           />
         )}
-        <CardHeader sx={{ pt: 1, pb: 0 }} title={campaingName} />
+        <CardHeader sx={{ pt: 1, pb: 0 }} title={campaignName} />
         <CardActions sx={{ py: 1, mt: 'auto' }}>
           <Link href={`/campaign/edit-campaign/${campaignReference}`}>
             <Button>Edit</Button>

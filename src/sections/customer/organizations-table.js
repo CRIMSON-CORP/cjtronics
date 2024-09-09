@@ -400,7 +400,7 @@ function Options({ reference, name }) {
             <ListItemIcon>
               <Campaign fontSize="small" />
             </ListItemIcon>
-            <ListItemText>View Campaings in Organization</ListItemText>
+            <ListItemText>View Campaigns in Organization</ListItemText>
           </MenuItem>
         </MenuList>
       </Menu>

@@ -136,6 +136,7 @@ function Form({ organizations, cities, screenLayouts }) {
         success: () => {
           helpers.setStatus({ success: true });
           helpers.setSubmitting(false);
+          helpers.resetForm();
           replace(asPath);
           return 'Screen Created';
         },

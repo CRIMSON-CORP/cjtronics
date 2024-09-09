@@ -73,7 +73,7 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
           <Stack spacing={3}>
             <Stack justifyContent="space-between" direction="row" gap={3} flexWrap="wrap">
               <Typography variant="h5">Campaign schedule</Typography>
-              <SendCampaingToDevice reference={screen.reference} />
+              <SendCampaignToDevice reference={screen.reference} />
             </Stack>
             <Grid container>
               <Grid xs={12} sm={6} lg={4}>
@@ -322,9 +322,9 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
   }
 });
 
-function SendCampaingToDevice({ reference }) {
+function SendCampaignToDevice({ reference }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
-  const sendCampaingToDevice = async () => {
+  const sendCampaignToDevice = async () => {
     setRequestProcessing(true);
     try {
       await toast.promise(
@@ -345,7 +345,7 @@ function SendCampaingToDevice({ reference }) {
   return (
     <Button
       disabled={requestProcessing}
-      onClick={sendCampaingToDevice}
+      onClick={sendCampaignToDevice}
       startIcon={requestProcessing ? <CircularProgress /> : <PlayCircleFilledRounded />}
       variant="outlined"
     >
@@ -362,16 +362,16 @@ function PlayAds({ sequence, screenName }) {
     setRequestProcessing(true);
 
     try {
-      const campaings = await Promise.all(
+      const campaigns = await Promise.all(
         sequence.map(({ reference }) =>
           axios.get(`/api/admin/campaigns/get-campaign-by-ad-account?reference=${reference}`)
         )
       );
-      const campaignsLists = campaings.map((campaign) => campaign.data.data.list).flat();
-      const campaingUploads = campaignsLists
-        .map((campaing) =>
-          campaing.playUploads.map((file) => {
-            file.duration = campaing.playDuration;
+      const campaignsLists = campaigns.map((campaign) => campaign.data.data.list).flat();
+      const campaignUploads = campaignsLists
+        .map((campaign) =>
+          campaign.playUploads.map((file) => {
+            file.duration = campaign.playDuration;
             return file;
           })
         )
@@ -381,7 +381,7 @@ function PlayAds({ sequence, screenName }) {
       // const mergedCampaigns = Array.from({ length: maxLength }).flatMap((_, i) =>
       //   campaignsLists.map((arr) => arr[i]).filter((val) => val !== undefined)
       // );
-      setAds(campaingUploads);
+      setAds(campaignUploads);
       open();
     } catch (error) {
       toast.error(error.response.data.message);

@@ -53,6 +53,7 @@ import { screenLayoutToReferenceMap } from '..';
 
 const Page = ({ screens, screen, organizations, cities, screen_layouts, screen_campaigns }) => {
   const { query, replace } = useRouter();
+  console.log(screen_campaigns);
 
   const handleScreenSelect = (event) => {
     replace(`/screens/${event.target.value}`);
@@ -158,6 +159,15 @@ function ScreenCampaigns({ campaigns }) {
                 </TableRow>
               );
             })}
+            {campaigns.list.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  <Typography variant="h6" py={3}>
+                    No campaigns found
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -662,7 +672,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
         getAllOrganizations(ctx.req),
         getScreenCities(ctx.req),
         getScreenLayouts(ctx.req),
-        getResourse(ctx.req, `/ads/campaign/screen/${ctx.query.screen_id}`, params),
+        getResourse(ctx.req, `/campaign/screen/${ctx.query.screen_id}`, params),
       ]);
     return {
       props: { screens, screen, organizations, cities, screen_layouts, screen_campaigns },

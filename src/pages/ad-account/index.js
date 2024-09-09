@@ -349,7 +349,7 @@ function AdCampaignWrapper({ name, reference, listCampaigns }) {
     });
   };
 
-  const deleteCampaing = (reference) => async () => {
+  const deleteCampaign = (reference) => async () => {
     await toast.promise(axios.post('/api/admin/campaigns/delete', { reference }), {
       loading: 'Deleting Campaign, hold on a moment...',
       success: (response) => {
@@ -363,7 +363,7 @@ function AdCampaignWrapper({ name, reference, listCampaigns }) {
 
   const goToAdAccount = () => push(`/ad-account/${reference}`);
 
-  const goToCampaing = (reference) => () => push(`/campaign/edit-campaign/${reference}`);
+  const goToCampaign = (reference) => () => push(`/campaign/edit-campaign/${reference}`);
 
   return (
     <>
@@ -412,7 +412,7 @@ function AdCampaignWrapper({ name, reference, listCampaigns }) {
               secondaryAction={
                 <Stack direction="row" spacing={1}>
                   <ConfirmAction
-                    action={deleteCampaing(campaign.reference)}
+                    action={deleteCampaign(campaign.reference)}
                     title={`Delete Camaping -  ${campaign.name}`}
                     content="Are you sure you want to delete this Campaign?"
                     proceedText="Yes, Delete"
@@ -433,7 +433,7 @@ function AdCampaignWrapper({ name, reference, listCampaigns }) {
               </ListItemAvatar>
               <ListItemText
                 sx={{ cursor: 'pointer' }}
-                onClick={goToCampaing(campaign.reference)}
+                onClick={goToCampaign(campaign.reference)}
                 primary={campaign.name}
               />
             </ListItem>
