@@ -407,7 +407,12 @@ function Screens({ screens }) {
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={`${screen.screenId} - ${screen.screenName}`}
+                  primary={
+                    <Stack alignItems="center" direction="row" gap={1}>
+                      <Typography>{screen.screenName}</Typography>
+                      <Chip label={screen.screenId} />
+                    </Stack>
+                  }
                   secondary={`${screen.screenWidth} x ${screen.screenHeight}`}
                 />
               </ListItem>
