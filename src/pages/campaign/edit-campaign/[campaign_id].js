@@ -505,6 +505,10 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
     setFetchingAds(false);
   };
 
+  const removeFile = (reference) => {
+    setAdFiles(adFiles.filter((file) => file.reference !== reference));
+  };
+
   useEffect(() => {
     if (adAccountId) fetchAdFiles();
   }, [adAccountId]);
@@ -550,21 +554,20 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
   }
 
   return (
-      <Stack spacing={1}>
-        <Typography variant="subtitle1">Select Ad Files</Typography>
-        <Grid container spacing={2}>
-          {adFiles.map((file) => (
-            <Grid key={file.reference} xs={12} sm={6} md={4} item>
-              <AdFile {...file} formik={formik} />
-            </Grid>
-          ))}
-        </Grid>
-      </Stack>
+    <Stack spacing={1}>
+      <Typography variant="subtitle1">Select Ad Files</Typography>
+      <Grid container spacing={2}>
+        {adFiles.map((file) => (
+          <Grid key={file.reference} xs={12} sm={6} md={4} item>
+            <AdFile {...file} formik={formik} removeFile={removeFile} />
+          </Grid>
+        ))}
+      </Grid>
+    </Stack>
   );
 }
 
-function AdFile({ name, url, reference, type, formik }) {
-  const { replace, asPath } = useRouter();
+function AdFile({ name, url, reference, type, formik, removeFile }) {
   const handleChange = (e) => {
     const { checked } = e.target;
     let selected_ads = formik.values.playFiles;
@@ -585,6 +588,8 @@ function AdFile({ name, url, reference, type, formik }) {
     await toast.promise(axios.post('/api/admin/campaigns/ads/delete', { reference }), {
       loading: 'Deleting Ad File...',
       success: () => {
+        removeFile(reference);
+
         formik.setFieldValue(
           'playFiles',
           formik.values.playFiles
@@ -593,7 +598,6 @@ function AdFile({ name, url, reference, type, formik }) {
             .filter(Boolean)
             .join(',')
         );
-        replace(asPath);
         return 'Ad File deleted';
       },
       error: (error) => error.response?.data?.message || error.response?.data || error.message,
