@@ -29,7 +29,7 @@ const Page = ({ campaigns }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          py: 8,
+          py: 3,
         }}
       >
         <Container maxWidth="xl">
@@ -46,6 +46,7 @@ const Page = ({ campaigns }) => {
 const columns = [
   { id: 'campaigns', label: 'Campaigns', minWidth: 170 },
   { id: 'ad_accounts', label: 'Ad Accounts', minWidth: 100 },
+  { id: 'screen_name', label: 'Screen Name', minWidth: 100 },
 ];
 
 function Activecampaigns({ campaigns }) {
@@ -66,7 +67,7 @@ function Activecampaigns({ campaigns }) {
 
   return (
     <Card sx={{ width: '100%', overflow: 'hidden' }}>
-      <TableContainer sx={{ maxHeight: 440 }}>
+      <TableContainer sx={{ maxHeight: '60vh' }}>
         <Table stickyHeader aria-label="sticky table">
           <TableHead>
             <TableRow>
@@ -87,6 +88,7 @@ function Activecampaigns({ campaigns }) {
                 <TableRow hover role="checkbox" tabIndex={-1} key={campaign.reference}>
                   <TableCell>{campaign.name}</TableCell>
                   <TableCell>{campaign.accountName}</TableCell>
+                  <TableCell>{campaign.screenName}</TableCell>
                 </TableRow>
               );
             })}
@@ -117,7 +119,6 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
 
   try {
     const campaigns = await getResourse(ctx.req, `/campaign/active`, params);
-    console.log(campaigns);
 
     return {
       props: {
