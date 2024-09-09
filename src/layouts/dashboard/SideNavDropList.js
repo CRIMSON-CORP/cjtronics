@@ -63,12 +63,12 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
                 component="span"
                 sx={{
                   alignItems: 'center',
-                  color: 'neutral.400',
+                  color: 'neutral.500',
                   display: 'inline-flex',
                   justifyContent: 'center',
                   mr: 2,
                   ...(active && {
-                    color: 'primary.main',
+                    color: 'neutral.800',
                   }),
                 }}
               >
@@ -78,14 +78,14 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
             <Box
               component="span"
               sx={{
-                color: 'neutral.400',
+                color: 'neutral.500',
                 flexGrow: 1,
                 fontFamily: (theme) => theme.typography.fontFamily,
                 fontSize: 14,
                 fontWeight: 600,
                 lineHeight: '24px',
                 ...(active && {
-                  color: 'common.white',
+                  color: 'neutral.800',
                 }),
                 ...(disabled && {
                   color: 'neutral.500',

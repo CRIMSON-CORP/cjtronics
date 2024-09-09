@@ -25,7 +25,9 @@ export const SideNav = (props) => {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: 'neutral.400',
+        background: 'neutral.50',
+        py: 3,
+        gap: 2,
       }}
     >
       <Box sx={{ px: 3 }}>
@@ -36,16 +38,22 @@ export const SideNav = (props) => {
             display: 'inline-flex',
           }}
         >
-          <Image src="/assets/logo-cjtronics.png" alt="Logo" width="200" height="60" priority />
+          <Image
+            src="/assets/logo-cjtronics.png"
+            alt="Logo"
+            width="200"
+            height="60"
+            priority
+            style={{ width: '100%', height: 'auto' }}
+          />
         </Box>
       </Box>
-      <Divider sx={{ borderColor: 'neutral.700' }} />
+      <Divider sx={{ borderColor: 'neutral.50' }} />
       <Box
         component="nav"
         sx={{
           flexGrow: 1,
           px: 2,
-          py: 3,
         }}
       >
         <Stack
@@ -91,7 +99,6 @@ export const SideNav = (props) => {
           <LogoutButton />
         </Stack>
       </Box>
-      <Divider sx={{ borderColor: 'neutral.700' }} />
     </Box>
   );
 
@@ -102,8 +109,8 @@ export const SideNav = (props) => {
         open
         PaperProps={{
           sx: {
-            backgroundColor: 'neutral.800',
-            color: 'common.white',
+            backgroundColor: 'neutral.50',
+            color: 'neutral.800',
             width: 280,
           },
         }}
@@ -121,8 +128,8 @@ export const SideNav = (props) => {
       open={open}
       PaperProps={{
         sx: {
-          backgroundColor: 'neutral.800',
-          color: 'common.white',
+          backgroundColor: 'neutral.50',
+          color: 'neutral.800',
           width: 280,
         },
       }}

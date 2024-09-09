@@ -1,6 +1,6 @@
+import { Box, ButtonBase } from '@mui/material';
 import NextLink from 'next/link';
 import PropTypes from 'prop-types';
-import { Box, ButtonBase } from '@mui/material';
 
 export const SideNavItem = (props) => {
   const { active = false, disabled, external, icon, path, title } = props;
@@ -35,7 +35,7 @@ export const SideNavItem = (props) => {
             backgroundColor: 'rgba(255, 255, 255, 0.04)',
           }),
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
           },
         }}
         {...linkProps}
@@ -45,12 +45,12 @@ export const SideNavItem = (props) => {
             component="span"
             sx={{
               alignItems: 'center',
-              color: 'neutral.400',
+              color: 'neutral.500',
               display: 'inline-flex',
               justifyContent: 'center',
               mr: 2,
               ...(active && {
-                color: 'primary.main',
+                color: 'neutral.800',
               }),
             }}
           >
@@ -60,7 +60,7 @@ export const SideNavItem = (props) => {
         <Box
           component="span"
           sx={{
-            color: 'neutral.400',
+            color: 'neutral.500',
             flexGrow: 1,
             fontFamily: (theme) => theme.typography.fontFamily,
             fontSize: 14,
@@ -68,7 +68,7 @@ export const SideNavItem = (props) => {
             lineHeight: '24px',
             whiteSpace: 'nowrap',
             ...(active && {
-              color: 'common.white',
+              color: 'neutral.800',
             }),
             ...(disabled && {
               color: 'neutral.500',
