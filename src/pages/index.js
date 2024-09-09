@@ -22,7 +22,7 @@ const Page = ({ stats, screens: { screen } }) => {
       <Box component="main" flexGrow={1}>
         <Container maxWidth="xl">
           <Stack direction="row" justifyContent="flex-end" my={1.5}>
-            <Link href="generate-report">
+            <Link href="device-log">
               <Button startIcon={<Download />} variant="contained">
                 Generate Report
               </Button>

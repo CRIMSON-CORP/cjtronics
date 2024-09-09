@@ -190,7 +190,7 @@ export const items = [
   },
   {
     title: 'Device Log',
-    path: '/generate-report',
+    path: '/device-log',
     icon: (
       <SvgIcon fontSize="small">
         <Dvr />
