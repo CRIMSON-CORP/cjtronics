@@ -1,10 +1,12 @@
 import Bars3Icon from '@heroicons/react/24/solid/Bars3Icon';
 import { Avatar, Box, IconButton, Stack, SvgIcon, Typography, useMediaQuery } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
 import { useAuth } from 'src/hooks/use-auth';
 import { usePopover } from 'src/hooks/use-popover';
 import { AccountPopover } from './account-popover';
+import { items } from './config';
 
 const SIDE_NAV_WIDTH = 280;
 const TOP_NAV_HEIGHT = 64;
@@ -14,6 +16,13 @@ export const TopNav = (props) => {
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
   const accountPopover = usePopover();
   const { user } = useAuth();
+  const { pathname } = useRouter();
+
+  const pageTitle = items.find((item) =>
+    item.matchers
+      ? item.matchers.includes(pathname.split('/')[1])
+      : item.path === `/${pathname.split('/')[1]}`
+  )?.title;
 
   return (
     <>
@@ -52,7 +61,7 @@ export const TopNav = (props) => {
               </IconButton>
             )}
             <Typography variant="h4" sx={{ typography: { sm: 'h4', xs: 'body1' } }}>
-              Dashboard
+              {pageTitle}
             </Typography>
           </Stack>
           {user && (
