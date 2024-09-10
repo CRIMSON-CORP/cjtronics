@@ -1,7 +1,6 @@
-import Head from 'next/head';
-import NextLink from 'next/link';
 import ArrowLeftIcon from '@heroicons/react/24/solid/ArrowLeftIcon';
 import { Box, Button, Container, SvgIcon, Typography } from '@mui/material';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 const Page = () => {
@@ -9,7 +8,7 @@ const Page = () => {
   return (
     <>
       <Head>
-        <title>500 | Devias Kit</title>
+        <title>500 | Cjtronics Admin</title>
       </Head>
       <Box
         component="main"

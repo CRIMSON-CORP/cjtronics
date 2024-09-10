@@ -75,7 +75,7 @@ const Page = ({ users }) => {
   return (
     <>
       <Head>
-        <title>Add Ad Company | Dalukwa Admin</title>
+        <title>Add Ad Company | Cjtronics Admin</title>
       </Head>
       <Box component="main" flexGrow={1} py={2}>
         <Container maxWidth="xl">
