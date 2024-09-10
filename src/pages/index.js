@@ -12,7 +12,7 @@ import { OverviewScreensList } from 'src/sections/overview/overview-screens-list
 
 const now = new Date();
 
-const Page = ({ stats, screens: { screen } }) => {
+const Page = ({ stats, screens: { screen }, campaingActivity }) => {
   const { connectedScreens, screens } = useSocketScreens({ defaultScreens: screen });
   return (
     <>
@@ -69,24 +69,8 @@ const Page = ({ stats, screens: { screen } }) => {
             </Grid>
             <Grid xs={12} md={12} lg={7}>
               <OverviewCampaignActivitieList
-                activities={[
-                  {
-                    id: 'f69f88012978187a6c12897f',
-                    activity: 'Danjuma Created new campaign: MTN Champion',
-                    timeAgo: '2024-08-13,08:20',
-                  },
-                  {
-                    id: 'f69f88012978187a6c12892f',
-                    activity: 'Danjuma Created new campaign: Realtor',
-                    timeAgo: '2024-08-13,05:24',
-                  },
-                  {
-                    id: 'f69f88012978187a6c16897f',
-                    activity: 'Abdulwahab Updated campaign: Petite Talk Show',
-                    timeAgo: '2024-08-12,11:00',
-                  },
-                ]}
                 sx={{ height: '100%' }}
+                activities={campaingActivity}
               />
             </Grid>
           </Grid>
@@ -102,14 +86,16 @@ export default Page;
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [stats, screens] = await Promise.all([
+    const [stats, screens, campaingActivity] = await Promise.all([
       getResourse(ctx.req, `/stats/dashboard`),
       getResourse(ctx.req, `/screen`),
+      getResourse(ctx.req, `/activity/campaign`, { page: 1, size: 25 }),
     ]);
     return {
       props: {
         stats,
         screens,
+        campaingActivity,
       },
     };
   } catch (error) {

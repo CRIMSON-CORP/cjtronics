@@ -7,19 +7,73 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  Skeleton,
   SvgIcon,
 } from '@mui/material';
-import { formatDistanceToNow } from 'date-fns';
+import axios from 'axios';
 import PropTypes from 'prop-types';
+import { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import { formatRelativeTime } from 'src/utils/fromRelativeTime';
+
+let nextPage = 2;
+const itemCount = 25;
 
 export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
+  const [logs, setLogs] = useState(activities);
+  const [isFetching, setIsFetching] = useState(false);
+  const [hasMore, setHasMore] = useState((activities.length = itemCount));
+  const observerRef = useRef();
+  const containerRef = useRef();
+  const isFirstLoad = useRef(true); // This flag ensures no fetch on first load.
+
+  const fetchMoreActivities = async () => {
+    setIsFetching(true);
+    try {
+      const response = await axios.get(`/api/campaigns?page=${nextPage}&size=${itemCount}`);
+
+      if (response.data.data.length === 0) {
+        setHasMore(false); // Stop fetching when no more data is returned
+      } else {
+        setLogs((prevLogs) => [...prevLogs, ...newActivities]);
+        nextPage += 1;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (elements) => {
+        if (elements[0].isIntersecting && !isFetching && hasMore) {
+          if (isFirstLoad.current) {
+            isFirstLoad.current = false; // Skip the first fetch on mount
+          } else {
+            fetchMoreActivities();
+          }
+        }
+      },
+      {
+        root: containerRef.current,
+        rootMargin: '200px',
+      }
+    );
+
+    observer.observe(observerRef.current);
+
+    return () => observer.disconnect();
+  }, [isFetching, hasMore]);
+
   return (
     <Card sx={sx}>
       <CardHeader title="Campaign activities" />
-      <List sx={{ maxHeight: '50vh', overflow: 'auto' }}>
-        {activities.map((campaign, index) => {
-          const hasDivider = index < activities.length - 1;
-          const ago = formatDistanceToNow(new Date(campaign.timeAgo));
+      <List ref={containerRef} sx={{ maxHeight: '50vh', overflow: 'auto', overflowAnchor: 'none' }}>
+        {logs.map((campaign, index) => {
+          const hasDivider = index < logs.length - 1;
+          const ago = formatRelativeTime(new Date(campaign.createdAt));
           return (
             <ListItem divider={hasDivider} key={campaign.id}>
               <ListItemAvatar>
@@ -27,16 +81,28 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
                   <Campaign />
                 </SvgIcon>
               </ListItemAvatar>
-              {console.log(new Date(campaign.timeAgo).getTime())}
               <ListItemText
-                primary={campaign.activity}
+                primary={campaign.message}
                 primaryTypographyProps={{ variant: 'subtitle1' }}
-                secondary={`${campaign.timeAgo} (${ago})`}
+                secondary={`${campaign.createdAt} (${ago})`}
                 secondaryTypographyProps={{ variant: 'body2' }}
               />
             </ListItem>
           );
         })}
+        <ListItem ref={observerRef}>
+          {isFetching && (
+            <>
+              <ListItemAvatar>
+                <Skeleton variant="circular" width={24} height={24} />
+              </ListItemAvatar>
+              <ListItemText
+                primary={<Skeleton variant="text" />}
+                secondary={<Skeleton variant="text" />}
+              />
+            </>
+          )}
+        </ListItem>
       </List>
       <Divider />
     </Card>
@@ -44,6 +110,6 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
 };
 
 OverviewCampaignActivitieList.propTypes = {
-  products: PropTypes.array,
+  activities: PropTypes.array,
   sx: PropTypes.object,
 };
