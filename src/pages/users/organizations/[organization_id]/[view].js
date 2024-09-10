@@ -93,7 +93,6 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
   const params = {
-    ...ctx.query,
     page: ctx.query.page || 1,
     size: ctx.query.size || 25,
   };
@@ -133,8 +132,7 @@ export default Page;
 const viewToApiUrlMap = {
   screens: 'screen/organization',
   users: 'users/organization',
-  // TODO fetch campaigns by organiazation id
-  campaigns: 'ads/campaign',
+  campaigns: 'campaign/organization',
 };
 
 const statusMap = {
