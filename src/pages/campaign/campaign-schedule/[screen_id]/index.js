@@ -431,8 +431,8 @@ function PlayAds({ sequence, screen }) {
         </DialogTitle>
         <DialogContent sx={{ overflow: 'hidden', p: 0, display: 'flex', backgroundColor: 'black' }}>
           <Screen screenLayoutRef={screen.layoutReference}>
-            {campaignsLists.map((campaignsList) => (
-              <View campaignsList={campaignsList} />
+            {campaignsLists.map((campaignsList, index) => (
+              <View campaignsList={campaignsList} key={index} />
             ))}
           </Screen>
         </DialogContent>
@@ -471,12 +471,10 @@ function Screen({ children, screenLayoutRef }) {
   return <Box sx={screenStyle}>{children}</Box>;
 }
 
-function View({ campaignsList, onComplete }) {
+function View({ campaignsList }) {
   const sequence = campaignsList.reduce((acc, item) => {
     return item.playUploads ? [...acc, ...item.playUploads] : [];
   }, []);
-
-  console.log(sequence);
 
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
@@ -491,61 +489,65 @@ function View({ campaignsList, onComplete }) {
     } else {
       setCurrentAdIndex(0);
     }
-  }, [currentAdIndex, sequence, onComplete]);
-
-  if (currentAdIndex >= sequence.length) {
-    return null; // No more ads to show
-  }
-
-  const currentAd = sequence[currentAdIndex];
+  }, [currentAdIndex, sequence]);
 
   return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      style={{
-        width: '100%',
-        flex: 1,
-        position: 'relative',
-        transition: 'transform 1s ease-out',
-        transform: `translateX(-${currentAdIndex * 100}%)`,
-      }}
-    >
-      {sequence.map((file, index) => {
-        return (
-          <Box
-            key={file.reference}
-            width="100%"
-            height="100%"
-            flex="none"
-            position="absolute"
-            sx={{ transform: `translateX(${index * 100}%)` }}
-          >
-            {file.uploadType === 'image' ? (
-              <Image
-                src={file.uploadFile}
-                alt={file.uploadName}
-                width={500}
-                height={400}
-                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-              />
-            ) : file.uploadType === 'video' ? (
-              <video
-                controls
-                src={file.uploadFile}
-                alt={file.uploadName}
-                autoPlay={index === currentAdIndex}
-                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-              />
-            ) : file.uploadType === 'html' ? (
-              index === currentAdIndex && (
-                <Iframe content={file.uploadFile} styles={{ width: '100%', height: '100%' }} />
-              )
-            ) : null}
-          </Box>
-        );
-      })}
-    </Stack>
+    <Box overflow="hidden">
+      <Stack
+        direction="row"
+        alignItems="center"
+        style={{
+          width: '100%',
+          height: '100%',
+          flex: 1,
+          position: 'relative',
+          transition: currentAdIndex === 0 ? 'none' : 'transform 1s ease-out',
+          transform: `translateX(-${currentAdIndex * 100}%)`,
+        }}
+      >
+        {sequence.map((file, index) => {
+          return (
+            <Box
+              key={file.reference + index}
+              width="100%"
+              height="100%"
+              flex="none"
+              position="absolute"
+              sx={{ transform: `translateX(${index * 100}%)` }}
+            >
+              {file.uploadType === 'image' ? (
+                <Image
+                  src={file.uploadFile}
+                  alt={file.uploadName}
+                  width={500}
+                  height={400}
+                  key={currentAdIndex}
+                  style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+                />
+              ) : file.uploadType === 'video' ? (
+                <video
+                  loop
+                  key={currentAdIndex}
+                  controls={false}
+                  src={file.uploadFile}
+                  alt={file.uploadName}
+                  autoPlay={index === currentAdIndex}
+                  style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+                />
+              ) : file.uploadType === 'html' ? (
+                index === currentAdIndex && (
+                  <Iframe
+                    key={currentAdIndex}
+                    content={file.uploadFile}
+                    styles={{ width: '100%', height: '100%' }}
+                  />
+                )
+              ) : null}
+            </Box>
+          );
+        })}
+      </Stack>
+    </Box>
   );
 }
 
