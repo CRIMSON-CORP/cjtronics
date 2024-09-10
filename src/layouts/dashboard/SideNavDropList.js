@@ -11,7 +11,7 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
       sx={{
         p: 0,
         my: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        backgroundColor: 'rgba(0, 0, 0, 0.04)',
         '&:before': {
           content: 'none',
         },
