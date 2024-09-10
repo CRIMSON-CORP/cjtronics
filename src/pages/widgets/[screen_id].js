@@ -27,11 +27,12 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
 const Page = ({ screens, widgets, screenWidgets }) => {
-  const { query } = useRouter();
+  const { query, push } = useRouter();
   const [selectedScreen, setSelectedScreen] = useState(query.screen_id);
 
   const handleSelectChange = (event) => {
     setSelectedScreen(event.target.value);
+    push('/widgets/' + event.target.value);
   };
 
   const addedScreenWidgets = screenWidgets.map((widget) => widget.widgetReference);
