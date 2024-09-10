@@ -152,7 +152,11 @@ function Widget({ widgetName, widgetSource, added, widgetRef, screenRef }) {
       <CardHeader title={widgetName} />
       <CardActionArea>
         <Link href={`/${widgetSource}`}>
-          <CardMedia component="iframe" src={`/${widgetSource}`} sx={{ aspectRatio: 1 / 0.75 }} />
+          <CardMedia
+            component="iframe"
+            src={`/${widgetSource}`}
+            sx={{ aspectRatio: 1 / 0.75, border: 'none' }}
+          />
         </Link>
       </CardActionArea>
       <CardActions>
