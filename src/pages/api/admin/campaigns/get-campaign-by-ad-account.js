@@ -15,6 +15,7 @@ export default async function handler(req, res) {
   } catch (error) {
     if (error.data) {
       res.status(401).json({ message: error.message });
+      return;
     }
     if (!error.response) {
       res.status(503).json({ message: 'No response from Server' });
