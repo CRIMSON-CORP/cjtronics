@@ -48,7 +48,7 @@ const Page = ({}) => {
   return (
     <>
       <Head>
-        <title>Support | Dalukwa Admin</title>
+        <title>Support | CjtronicsS Admin</title>
       </Head>
       <Box component="main" flexGrow={1} py={3}>
         <Container maxWidth="xl">
