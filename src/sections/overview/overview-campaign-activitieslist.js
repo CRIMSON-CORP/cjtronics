@@ -20,22 +20,23 @@ let nextPage = 2;
 const itemCount = 25;
 
 export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
-  const [logs, setLogs] = useState(activities);
+  const [logs, setLogs] = useState(activities.list);
   const [isFetching, setIsFetching] = useState(false);
-  const [hasMore, setHasMore] = useState((activities.length = itemCount));
+  const [hasMore, setHasMore] = useState(activities.list.length >= itemCount);
   const observerRef = useRef();
   const containerRef = useRef();
-  const isFirstLoad = useRef(true); // This flag ensures no fetch on first load.
 
   const fetchMoreActivities = async () => {
     setIsFetching(true);
     try {
-      const response = await axios.get(`/api/campaigns?page=${nextPage}&size=${itemCount}`);
+      const response = await axios.get(
+        `/api/admin/activity/campaign?page=${nextPage}&size=${itemCount}`
+      );
 
-      if (response.data.data.length === 0) {
+      if (response.data.data.list.length === 0) {
         setHasMore(false); // Stop fetching when no more data is returned
       } else {
-        setLogs((prevLogs) => [...prevLogs, ...newActivities]);
+        setLogs((prevLogs) => [...prevLogs, ...response.data.data.list]);
         nextPage += 1;
       }
     } catch (error) {
@@ -49,11 +50,7 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
     const observer = new IntersectionObserver(
       (elements) => {
         if (elements[0].isIntersecting && !isFetching && hasMore) {
-          if (isFirstLoad.current) {
-            isFirstLoad.current = false; // Skip the first fetch on mount
-          } else {
-            fetchMoreActivities();
-          }
+          fetchMoreActivities();
         }
       },
       {
@@ -110,6 +107,6 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
 };
 
 OverviewCampaignActivitieList.propTypes = {
-  activities: PropTypes.array,
+  activities: PropTypes.object,
   sx: PropTypes.object,
 };
