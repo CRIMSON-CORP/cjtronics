@@ -150,6 +150,10 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
     formik.values.endTimeAt,
   ]);
 
+  useEffect(() => {
+    formik.setFieldValue('playFiles', '');
+  }, [formik.values.accountId]);
+
   return (
     <>
       <Head>
