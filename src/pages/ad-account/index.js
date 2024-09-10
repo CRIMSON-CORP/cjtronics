@@ -73,9 +73,12 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
+const superAdminRef = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF;
+
 function AdAccountForm({ organizations, companies, screens }) {
   const { user } = useAuth();
   const defaultOrganizationReference = user?.organizationReference || '';
+  const isSuperAdmin = defaultOrganizationReference === superAdminRef;
   const formik = useFormik({
     initialValues: {
       organizationId: defaultOrganizationReference,
@@ -85,7 +88,9 @@ function AdAccountForm({ organizations, companies, screens }) {
       submit: null,
     },
     validationSchema: Yup.object({
-      organizationId: Yup.string().required('Organization is required'),
+      ...(isSuperAdmin
+        ? {}
+        : { organizationId: Yup.string().required('Organization is required') }),
       companyId: Yup.string().max(255).required('Company Name is required'),
       screenId: Yup.string().max(255).required('Screen is required'),
       name: Yup.string().max(255).required('Ad Account name is required'),
@@ -145,7 +150,7 @@ function AdAccountForm({ organizations, companies, screens }) {
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.organizationId}
-                disabled={!!defaultOrganizationReference}
+                disabled={!isSuperAdmin}
               >
                 {organizations.list.map((organization) => (
                   <MenuItem key={organization.id} value={organization.reference}>

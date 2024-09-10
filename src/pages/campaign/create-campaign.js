@@ -37,10 +37,12 @@ import { getResourse } from 'src/lib/actions';
 import * as Yup from 'yup';
 import { screenLayoutToReferenceMap } from '../screens';
 
+const superAdminRef = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF;
 const Page = ({ screens, organizations, adAccounts, layouts }) => {
   const { user } = useAuth();
   const { push } = useRouter();
   const defaultOrganizationReference = user?.organizationReference || '';
+  const isSuperAdmin = defaultOrganizationReference === superAdminRef;
   const formik = useFormik({
     initialValues: {
       organizationId: defaultOrganizationReference,
@@ -58,7 +60,9 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
       playFiles: '',
     },
     validationSchema: Yup.object({
-      organizationId: Yup.string().required('Organization is required'),
+      ...(isSuperAdmin
+        ? {}
+        : { organizationId: Yup.string().required('Organization is required') }),
       name: Yup.string().max(255).required('Campaign name is required'),
       screenId: Yup.string().max(255).required('Screen ID is required'),
       accountId: Yup.string().max(255).required('Ad Account name is required'),
@@ -175,7 +179,7 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.organizationId}
-                      disabled={!!defaultOrganizationReference}
+                      disabled={!isSuperAdmin}
                     >
                       {organizations.list.map((organization) => (
                         <MenuItem key={organization.id} value={organization.reference}>

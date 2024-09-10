@@ -98,10 +98,13 @@ function ToolTipContent() {
   );
 }
 
+const superAdminRef = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF;
+
 function Form({ organizations, cities, screenLayouts }) {
   const { replace, asPath } = useRouter();
   const { user } = useAuth();
   const defaultOrganizationReference = user?.organizationReference || '';
+  const isSuperAdmin = defaultOrganizationReference === superAdminRef;
   const formik = useFormik({
     initialValues: {
       organizationId: defaultOrganizationReference,
@@ -115,7 +118,9 @@ function Form({ organizations, cities, screenLayouts }) {
       submit: null,
     },
     validationSchema: Yup.object({
-      organizationId: Yup.string().required('Organization is required'),
+      ...(isSuperAdmin
+        ? {}
+        : { organizationId: Yup.string().required('Organization is required') }),
       screenId: Yup.string().max(255).required('Screen ID is required'),
       screenName: Yup.string().max(255).required('Screen Name is required'),
       screenHeight: Yup.string().max(255).required('Screen Height is required'),
@@ -188,7 +193,7 @@ function Form({ organizations, cities, screenLayouts }) {
                 onBlur={formik.handleBlur}
                 onChange={formik.handleChange}
                 value={formik.values.organizationId}
-                disabled={!!defaultOrganizationReference}
+                disabled={!isSuperAdmin}
               >
                 {organizations.list.map((organization) => (
                   <MenuItem key={organization.id} value={organization.reference}>
