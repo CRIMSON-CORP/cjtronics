@@ -47,14 +47,9 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
     replace(`/campaign/campaign-schedule/${event.target.value}`);
   };
 
-  const screenLayoutReference = useMemo(
-    () => screens.screen.find((screen) => (screen.reference = selectedScreen))?.layoutReference,
-    [query.screen_id]
-  );
-
   const layoutInfo = useMemo(
-    () => layouts.find((layout) => layout.reference === screenLayoutReference),
-    [screenLayoutReference]
+    () => layouts.find((layout) => layout.reference === screen.layoutReference),
+    []
   );
 
   return (
@@ -97,7 +92,7 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
             <Stack spacing={1}>
               <Typography variant="h6">Screen Layout</Typography>
               <Box maxWidth={200}>
-                {screenLayoutToReferenceMap[screenLayoutReference](undefined, layoutInfo)}
+                {screenLayoutToReferenceMap[screen.layoutReference](undefined, layoutInfo)}
               </Box>
             </Stack>
 
@@ -121,6 +116,11 @@ function CampaignSquencing({ screen, campaignSquence }) {
       return item;
     })
   );
+
+  useEffect(() => {
+    setSequence(campaignSquence);
+  }, [campaignSquence]);
+
   return (
     <Grid container spacing={3}>
       <Grid xs={12} sm={6}>
@@ -265,7 +265,7 @@ function SequenceResult({ sequence, screen }) {
             justifyContent="space-between"
           >
             <Typography variant="h6">Sequence Ad Accounts</Typography>
-            <PlayAds sequence={sequence} screenName={screen.displayName} />
+            <PlayAds sequence={sequence} screen={screen} />
           </Stack>
         }
       />
@@ -349,14 +349,14 @@ function SendCampaignToDevice({ reference }) {
       startIcon={requestProcessing ? <CircularProgress /> : <PlayCircleFilledRounded />}
       variant="outlined"
     >
-      Play
+      Send to Device
     </Button>
   );
 }
 
-function PlayAds({ sequence, screenName }) {
+function PlayAds({ sequence, screen }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
-  const [ads, setAds] = useState([]);
+  const [campaignsLists, setCampaingsLists] = useState([]);
   const { open, close, state } = useToggle();
   const loadAds = async () => {
     setRequestProcessing(true);
@@ -367,24 +367,38 @@ function PlayAds({ sequence, screenName }) {
           axios.get(`/api/admin/campaigns/get-campaign-by-ad-account?reference=${reference}`)
         )
       );
+
       const campaignsLists = campaigns.map((campaign) => campaign.data.data.list).flat();
-      const campaignUploads = campaignsLists
-        .map((campaign) =>
-          campaign.playUploads.map((file) => {
-            file.duration = campaign.playDuration;
+
+      const grouped = campaignsLists.reduce(
+        (acc, obj) => {
+          obj.layoutView === 1 ? acc[0].push(obj) : acc[1].push(obj);
+
+          obj.playUploads.map((file) => {
+            file.duration = obj.playDuration;
             return file;
-          })
-        )
-        .flat();
+          });
+          return acc;
+        },
+        [[], []]
+      );
+      // const campaignUploads = campaignsLists
+      //   .map((campaign) =>
+      //     campaign.playUploads.map((file) => {
+      //       file.duration = campaign.playDuration;
+      //       return file;
+      //     })
+      //   )
+      //   .flat();
 
       // const maxLength = Math.max(...campaignsLists.map((arr) => arr.length));
       // const mergedCampaigns = Array.from({ length: maxLength }).flatMap((_, i) =>
       //   campaignsLists.map((arr) => arr[i]).filter((val) => val !== undefined)
       // );
-      setAds(campaignUploads);
+      setCampaingsLists(grouped);
       open();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
       console.log(error);
     } finally {
       setRequestProcessing(false);
@@ -409,17 +423,129 @@ function PlayAds({ sequence, screenName }) {
       <Dialog maxWidth="md" fullWidth onClose={close} open={state}>
         <DialogTitle>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography>{screenName}</Typography>
+            <Typography>{screen.screenName}</Typography>
             <IconButton onClick={close}>
               <Close />
             </IconButton>
           </Stack>
         </DialogTitle>
         <DialogContent sx={{ overflow: 'hidden', p: 0, display: 'flex', backgroundColor: 'black' }}>
-          <SequenceAds sequence={ads} onComplete={onComplete} />
+          <Screen screenLayoutRef={screen.layoutReference}>
+            {campaignsLists.map((campaignsList) => (
+              <View campaignsList={campaignsList} />
+            ))}
+          </Screen>
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function Screen({ children, screenLayoutRef }) {
+  const layoutConfig = screenReferenceToConfig[screenLayoutRef];
+
+  const screenStyle = {
+    width: '100%',
+    display: 'grid',
+    overflow: 'hidden',
+    ...(layoutConfig.horizontal
+      ? {
+          gridTemplateColumns: layoutConfig.split
+            ? layoutConfig.split
+                .split(',')
+                .map((split) => +split / 100 + 'fr')
+                .join(' ')
+            : '1fr',
+        }
+      : {
+          gridTemplateRows: layoutConfig.split
+            ? layoutConfig.split
+                .split(',')
+                .map((split) => +split / 100 + 'fr')
+                .join(' ')
+            : '1fr',
+        }),
+    aspectRatio: layoutConfig.landscape ? '16/9' : '9/16',
+  };
+
+  return <Box sx={screenStyle}>{children}</Box>;
+}
+
+function View({ campaignsList, onComplete }) {
+  const sequence = campaignsList.reduce((acc, item) => {
+    return item.playUploads ? [...acc, ...item.playUploads] : [];
+  }, []);
+
+  console.log(sequence);
+
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+
+  useEffect(() => {
+    if (currentAdIndex < sequence.length) {
+      const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
+      const timer = setTimeout(() => {
+        setCurrentAdIndex((prevIndex) => prevIndex + 1);
+      }, adDuration);
+
+      return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
+    } else {
+      setCurrentAdIndex(0);
+    }
+  }, [currentAdIndex, sequence, onComplete]);
+
+  if (currentAdIndex >= sequence.length) {
+    return null; // No more ads to show
+  }
+
+  const currentAd = sequence[currentAdIndex];
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      style={{
+        width: '100%',
+        flex: 1,
+        position: 'relative',
+        transition: 'transform 1s ease-out',
+        transform: `translateX(-${currentAdIndex * 100}%)`,
+      }}
+    >
+      {sequence.map((file, index) => {
+        return (
+          <Box
+            key={file.reference}
+            width="100%"
+            height="100%"
+            flex="none"
+            position="absolute"
+            sx={{ transform: `translateX(${index * 100}%)` }}
+          >
+            {file.uploadType === 'image' ? (
+              <Image
+                src={file.uploadFile}
+                alt={file.uploadName}
+                width={500}
+                height={400}
+                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+              />
+            ) : file.uploadType === 'video' ? (
+              <video
+                controls
+                src={file.uploadFile}
+                alt={file.uploadName}
+                autoPlay={index === currentAdIndex}
+                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+              />
+            ) : file.uploadType === 'html' ? (
+              index === currentAdIndex && (
+                <Iframe content={file.uploadFile} styles={{ width: '100%', height: '100%' }} />
+              )
+            ) : null}
+          </Box>
+        );
+      })}
+    </Stack>
   );
 }
 
@@ -512,3 +638,34 @@ function SequenceAds({ sequence, onComplete }) {
   //   </Stack>
   // );
 }
+
+const screenReferenceToConfig = {
+  VBSGTREW43: {
+    landscape: true,
+    horizontal: false,
+  },
+  JHSFER2763: {
+    horizontal: true,
+    landscape: true,
+    split: '80,20',
+  },
+  HDGTW5763: {
+    horizontal: false,
+    landscape: false,
+  },
+  SGDRWT5247: {
+    horizontal: true,
+    landscape: true,
+    split: '50,50',
+  },
+  KJUYTE4352: {
+    horizontal: false,
+    landscape: false,
+    split: '80,20',
+  },
+  SGHY5438JH: {
+    horizontal: false,
+    landscape: false,
+    split: '50,50',
+  },
+};
