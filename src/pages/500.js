@@ -1,9 +1,11 @@
-import ArrowLeftIcon from '@heroicons/react/24/solid/ArrowLeftIcon';
+import { Replay } from '@mui/icons-material';
 import { Box, Button, Container, SvgIcon, Typography } from '@mui/material';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 
-const Page = () => {
+const Page = (params) => {
+  console.log(params);
+
   const router = useRouter();
   return (
     <>
@@ -35,7 +37,7 @@ const Page = () => {
             >
               <img
                 alt="Under development"
-                src="/assets/errors/error-404.png"
+                src="/assets/errors/error-500.png"
                 style={{
                   display: 'inline-block',
                   maxWidth: '100%',
@@ -44,16 +46,16 @@ const Page = () => {
               />
             </Box>
             <Typography align="center" sx={{ mb: 3 }} variant="h3">
-              500: Thers a server error
+              500: Theres a server error
             </Typography>
             <Typography align="center" color="text.secondary" variant="body1">
-              Theres a server error, please refresh to try again
+              Theres a server error, could be network issue, please refresh to try again
             </Typography>
             <Button
               onClick={router.reload}
               startIcon={
                 <SvgIcon fontSize="small">
-                  <ArrowLeftIcon />
+                  <Replay />
                 </SvgIcon>
               }
               sx={{ mt: 3 }}
