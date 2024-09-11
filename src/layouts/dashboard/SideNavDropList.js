@@ -11,13 +11,17 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
       sx={{
         p: 0,
         my: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+        boxShadow: 'none',
+        background: 'transparent',
         '&:before': {
           content: 'none',
         },
         overflow: 'hidden',
         '&,&:last-of-type, &:first-of-type': {
           borderRadius: ' 8px',
+        },
+        '&.Mui-expanded': {
+          backgroundColor: 'rgba(0, 0, 0, 0.04)',
         },
       }}
     >
