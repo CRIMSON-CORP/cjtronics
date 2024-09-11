@@ -14,11 +14,13 @@ import {
 import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import * as Yup from 'yup';
 
 const Page = ({}) => {
+  const { push } = useRouter();
   const formik = useFormik({
     initialValues: {
       oldPassword: '',
@@ -36,6 +38,7 @@ const Page = ({}) => {
           loading: 'Reseting Password...',
           success: (response) => {
             helpers.resetForm();
+            push('/auth/login');
             return response.data.message;
           },
           error: (error) => {
