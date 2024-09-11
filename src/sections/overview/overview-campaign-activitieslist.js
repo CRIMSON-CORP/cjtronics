@@ -18,6 +18,10 @@ import { formatRelativeTime } from 'src/utils/fromRelativeTime';
 
 let nextPage = 2;
 const itemCount = 25;
+const timeFormat = new Intl.DateTimeFormat('en-us', {
+  dateStyle: 'short',
+  timeStyle: 'medium',
+});
 
 export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
   const [logs, setLogs] = useState(activities.list);
@@ -33,7 +37,7 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
         `/api/admin/activity/campaign?page=${nextPage}&size=${itemCount}`
       );
 
-      if (response.data.data.list.length === 0) {
+      if (response.data.data.list.length < itemCount) {
         setHasMore(false); // Stop fetching when no more data is returned
       } else {
         setLogs((prevLogs) => [...prevLogs, ...response.data.data.list]);
@@ -81,7 +85,7 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
               <ListItemText
                 primary={campaign.message}
                 primaryTypographyProps={{ variant: 'subtitle1' }}
-                secondary={`${campaign.createdAt} (${ago})`}
+                secondary={`${timeFormat.format(new Date(campaign.createdAt))} (${ago})`}
                 secondaryTypographyProps={{ variant: 'body2' }}
               />
             </ListItem>
