@@ -7,10 +7,12 @@ export default async function handler(req, res) {
     const response = await axios.post('/auth/login', req.body);
 
     if (response.data.status && response.status === 200) {
-      res.setHeader(
-        'Set-Cookie',
-        `${ADMIN_COOKIE_NAME}=${response.data.token}; Max-Age=777600; HttpOnly; Path=/`
-      );
+      if (response.data.token) {
+        res.setHeader(
+          'Set-Cookie',
+          `${ADMIN_COOKIE_NAME}=${response.data.token}; Max-Age=777600; HttpOnly; Path=/`
+        );
+      }
 
       res.status(response.status).json(response.data);
     } else throw response;
