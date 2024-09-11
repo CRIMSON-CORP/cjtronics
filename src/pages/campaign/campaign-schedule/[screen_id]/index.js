@@ -68,7 +68,11 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
           <Stack spacing={3}>
             <Stack justifyContent="space-between" direction="row" gap={3} flexWrap="wrap">
               <Typography variant="h5">Campaign schedule</Typography>
-              <SendCampaignToDevice reference={screen.reference} />
+              <SendCampaignToDevice
+                isOnline={screen.isOnline}
+                deviceId={screen.deviceId}
+                reference={screen.reference}
+              />
             </Stack>
             <Grid container>
               <Grid xs={12} sm={6} lg={4}>
@@ -322,8 +326,20 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
   }
 });
 
-function SendCampaignToDevice({ reference }) {
+function SendCampaignToDevice({ isOnline, deviceId, reference }) {
+  const [websocket, setWebsocket] = useState(null);
   const [requestProcessing, setRequestProcessing] = useState(false);
+  const [hasSent, setHasSent] = useState(false);
+
+  useEffect(() => {
+    const socket = new WebSocket('ws://localhost:8080');
+    socket.onopen = () => {
+      setWebsocket(socket);
+    };
+
+    return () => socket.close();
+  }, []);
+
   const sendCampaignToDevice = async () => {
     setRequestProcessing(true);
     try {
@@ -342,11 +358,50 @@ function SendCampaignToDevice({ reference }) {
     } catch (error) {}
     setRequestProcessing(false);
   };
+
+  const sendToDevice = () => {
+    if (!isOnline) {
+      return toast.error(
+        'Screen is currently offline, pls make sure screen is online, refresh and try again'
+      );
+    }
+    if (hasSent) {
+      return toast.error('Schedule already sent to device please try again later');
+    }
+    if (websocket.readyState === WebSocket.OPEN) {
+      websocket.send(
+        JSON.stringify({
+          event: 'send-to-device',
+          device_id: deviceId,
+        })
+      );
+      setHasSent(true);
+    }
+  };
+
+  useEffect(() => {
+    let timeout = null;
+    if (hasSent) {
+      timeout = setTimeout(
+        () => {
+          setHasSent(false);
+        },
+        10 * 60 * 1000
+      );
+    }
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [hasSent]);
+
   return (
     <Button
       disabled={requestProcessing}
-      onClick={sendCampaignToDevice}
-      startIcon={requestProcessing ? <CircularProgress /> : <PlayCircleFilledRounded />}
+      onClick={sendToDevice}
+      startIcon={
+        requestProcessing || !websocket ? <CircularProgress /> : <PlayCircleFilledRounded />
+      }
       variant="outlined"
     >
       Send to Device
