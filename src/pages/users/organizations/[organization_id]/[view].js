@@ -281,7 +281,6 @@ function CampaignsTable({ data }) {
             <TableHead>
               <TableRow>
                 <TableCell>Campaign Name</TableCell>
-                <TableCell>Screen Name</TableCell>
                 <TableCell>Starts at</TableCell>
                 <TableCell>Ends at</TableCell>
                 <TableCell>Play Duration</TableCell>
@@ -306,12 +305,6 @@ function CampaignsTable({ data }) {
                   <TableRow hover key={campaign.reference}>
                     <TableCell>{campaign.name}</TableCell>
                     <TableCell>
-                      <Typography variant="subtitle2">{campaign.screenName}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2">{campaign.screenName}</Typography>
-                    </TableCell>
-                    <TableCell>
                       <Typography variant="subtitle2">
                         {formatter.format(new Date(`${campaign.startAt} ${campaign.playTimeAt}`))}
                       </Typography>
@@ -320,6 +313,9 @@ function CampaignsTable({ data }) {
                       <Typography variant="subtitle2">
                         {formatter.format(new Date(`${campaign.endAt} ${campaign.endTimeAt}`))}
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="subtitle2">{campaign.playDuration}</Typography>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" gap={0.5} flexWrap="wrap">

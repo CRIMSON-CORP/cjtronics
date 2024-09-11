@@ -36,7 +36,7 @@ const Page = ({ adAccounts, adAccount, ads, campaignsLength }) => {
   return (
     <>
       <Head>
-        <title>Ad Account - {adAccount.name} | Devias Kit</title>
+        <title>Ad Account - {adAccount.name} | Cjtronics Kit</title>
       </Head>
       <Box
         component="main"
@@ -51,11 +51,11 @@ const Page = ({ adAccounts, adAccount, ads, campaignsLength }) => {
             <Grid container spacing={3}>
               <Grid xs={12} sm={6} lg={4}>
                 <FormControl fullWidth>
-                  <InputLabel id="scrren-select-label">Select Screen</InputLabel>
+                  <InputLabel id="scrren-select-label">Select Ad Account</InputLabel>
                   <Select
                     id="screen-select"
                     labelId="scrren-select-label"
-                    label="Select Screen"
+                    label="Select Ad Account"
                     value={query.ad_account_id}
                     onChange={handleSelectChange}
                   >
