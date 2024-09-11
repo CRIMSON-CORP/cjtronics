@@ -326,5 +326,19 @@ export function createComponents(config) {
         size: 16,
       },
     },
+    MuiDrawer: {
+      styleOverrides: {
+        root: {
+          [`.MuiDrawer-paper::-webkit-scrollbar`]: {
+            width: '6px',
+          },
+          [`.MuiDrawer-paper::-webkit-scrollbar-thumb`]: {
+            width: '6px',
+            borderRadius: '10px',
+            backgroundColor: 'rgba(0,0,0,0.2)',
+          },
+        },
+      },
+    },
   };
 }
