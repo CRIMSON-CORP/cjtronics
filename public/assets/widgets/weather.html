@@ -21,7 +21,21 @@
   </head>
   <body>
     <script>
-      (function (d, s, id) {
+      (async function (d, s, id) {
+        const url = new URL(window.location.href);
+        const location = url.searchParams.get('location');
+
+        if (location) {
+          const response = await fetch(
+            `https://corsproxy.io/?https://weather-services.tomorrow.io/backend/v1/cities?name=${location}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            const locationId = data.data.cities[0].id;
+            document.querySelector('.tomorrow').setAttribute('data-location-id', locationId);
+          }
+        }
+
         if (d.getElementById(id)) {
           if (window.__TOMORROW__) {
             window.__TOMORROW__.renderWidget();

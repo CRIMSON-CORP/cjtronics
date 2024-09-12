@@ -27,6 +27,7 @@ import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
+import { formatRelativeTime } from 'src/utils/fromRelativeTime';
 
 function groupLogsByDate(logs, dateKey) {
   const grouped = logs.reduce((acc, log) => {
@@ -90,7 +91,7 @@ const Page = ({ screens, adAccounts, logs }) => {
   return (
     <>
       <Head>
-        <title>Generate Report | Devias Kit</title>
+        <title>Generate Report | Cjtronics Kit</title>
       </Head>
       <Box component="main" flexGrow={1} py={2}>
         <Container maxWidth="xl">
@@ -210,31 +211,6 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
   }
 });
 
-function formatRelativeTime(date) {
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-  const now = new Date();
-  const diffInSeconds = Math.floor((date - now) / 1000);
-
-  const units = [
-    { unit: 'year', value: 60 * 60 * 24 * 365 }, // Approximation for a year
-    { unit: 'month', value: 60 * 60 * 24 * 30 }, // Approximation for a month
-    { unit: 'week', value: 60 * 60 * 24 * 7 },
-    { unit: 'day', value: 60 * 60 * 24 },
-    { unit: 'hour', value: 60 * 60 },
-    { unit: 'minute', value: 60 },
-    { unit: 'second', value: 1 },
-  ];
-
-  for (const { unit, value } of units) {
-    if (Math.abs(diffInSeconds) >= value) {
-      const amount = Math.floor(diffInSeconds / value);
-      return rtf.format(amount, unit);
-    }
-  }
-
-  return rtf.format(0, 'second'); // Default to "now" if difference is less than a second
-}
-
 function ActivityHistory({ logs }) {
   return (
     <Card>
@@ -245,7 +221,7 @@ function ActivityHistory({ logs }) {
             <ul>
               <ListSubheader>{log.date}</ListSubheader>
               {log.logs.map((_log, index) => {
-                const hasDivider = index < history.length - 1;
+                const hasDivider = index < log.length - 1;
                 const ago = formatRelativeTime(new Date(_log.playAt));
                 return (
                   <ListItem divider={hasDivider} key={_log.playAt}>
