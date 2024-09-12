@@ -6,6 +6,7 @@ import {
   Dashboard,
   Dvr,
   History,
+  Link,
   Monitor,
   OndemandVideo,
   People,
@@ -167,6 +168,16 @@ export const items = [
           </SvgIcon>
         ),
         matchers: ['campaign-schedule'],
+      },
+      {
+        title: 'External Campaings',
+        path: '/campaign/external-campaigns',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Link />
+          </SvgIcon>
+        ),
+        matchers: ['external-campaigns'],
       },
     ],
   },
