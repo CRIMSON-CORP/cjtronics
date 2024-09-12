@@ -14,7 +14,7 @@ function ScreenLayout({
 }) {
   const [box1Split, box2Split] = split.split(',');
   return (
-    <Stack alignItems="center">
+    <Stack alignItems="center" textAlign="center">
       <Stack
         direction={horizontal ? 'row' : 'column'}
         sx={{

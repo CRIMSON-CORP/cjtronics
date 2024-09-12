@@ -1,4 +1,4 @@
-import { Delete, Edit, HelpOutline } from '@mui/icons-material';
+import { Close, Delete, Edit, HelpOutline } from '@mui/icons-material';
 import {
   Autocomplete,
   Box,
@@ -241,7 +241,7 @@ function ScreenDetails({ screen, organizations, cities, screenLayouts }) {
     <Card>
       <CardHeader
         title={
-          <Stack justifyContent="space-between" direction="row" flexWrap="wrap" spacing={2}>
+          <Stack justifyContent="space-between" direction="row" flexWrap="wrap" gap={2}>
             <Typography variant="h5">Screen Details</Typography>
             <Stack direction="row" spacing={1}>
               <EditScreen
@@ -353,6 +353,10 @@ const modalStyles = {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
+  padding: 2,
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'center',
 };
 
 function EditScreen({ screen, organizations, cities, screenLayouts }) {
@@ -384,6 +388,7 @@ function EditScreen({ screen, organizations, cities, screenLayouts }) {
 }
 
 const cardStyles = {
+  width: '100%',
   maxWidth: 700,
   maxHeight: '85vh',
   overflowY: 'auto',
@@ -454,13 +459,18 @@ const EditScreenForm = ({ screen, organizations, cities, screenLayouts, closeMod
     <Card sx={cardStyles}>
       <CardHeader
         title={
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="h5">Edit Screen</Typography>
-            <Tooltip title={<ToolTipContent />}>
-              <IconButton>
-                <HelpOutline />
-              </IconButton>
-            </Tooltip>
+          <Stack direction="row" justifyContent="space-between" gap={3}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h5">Edit Screen</Typography>
+              <Tooltip title={<ToolTipContent />}>
+                <IconButton>
+                  <HelpOutline />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+            <IconButton onClick={closeModal}>
+              <Close />
+            </IconButton>
           </Stack>
         }
       />
