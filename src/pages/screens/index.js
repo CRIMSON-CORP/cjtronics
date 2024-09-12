@@ -187,7 +187,7 @@ function Form({ organizations, cities, screenLayouts }) {
               <Select
                 error={!!(formik.touched.organizationId && formik.errors.organizationId)}
                 fullWidth
-                label="Account Officer"
+                label="Select Organization"
                 name="organizationId"
                 id="organizationId"
                 onBlur={formik.handleBlur}
@@ -267,7 +267,7 @@ function Form({ organizations, cities, screenLayouts }) {
             <Divider />
             <FormControl variant="outlined">
               <Autocomplete
-                error={formik.touched.screenCity && formik.errors.screenCity}
+                error={!!(formik.touched.screenCity && formik.errors.screenCity)}
                 fullWidth
                 options={citiesOptions}
                 label="Screen Location"
