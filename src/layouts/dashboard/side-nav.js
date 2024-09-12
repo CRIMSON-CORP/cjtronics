@@ -190,7 +190,7 @@ function LogoutButton() {
           component="span"
           sx={{
             alignItems: 'center',
-            color: 'neutral.400',
+            color: 'neutral.500',
             display: 'inline-flex',
             justifyContent: 'center',
             mr: 2,
@@ -201,7 +201,7 @@ function LogoutButton() {
         <Box
           component="span"
           sx={{
-            color: 'neutral.400',
+            color: 'neutral.500',
             flexGrow: 1,
             fontFamily: (theme) => theme.typography.fontFamily,
             fontSize: 14,

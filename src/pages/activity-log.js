@@ -101,7 +101,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
-    size: ctx.query.size || 25,
+    size: ctx.query.size || 50,
   };
 
   try {
@@ -156,11 +156,11 @@ function formatRelativeTime(date) {
 }
 
 function ActivityHistory({ logs }) {
-  const { query } = useRouter();
+  const { query, replace } = useRouter();
   const handleRowsPerPageChange = useCallback((event, value) => {
     const queryParams = new URLSearchParams(query);
     queryParams.set('page', value);
-    replace(`/acitvity?${queryParams.toString()}`);
+    replace(`/activity-log?${queryParams.toString()}`);
   }, []);
 
   const groupedLogs = groupLogsByDate(logs.list);
