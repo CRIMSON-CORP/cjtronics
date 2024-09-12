@@ -332,7 +332,7 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   const [hasSent, setHasSent] = useState(false);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8080');
+    const socket = new WebSocket('wss://cjtronics-websocket-server.onrender.com');
     socket.onopen = () => {
       setWebsocket(socket);
     };
@@ -475,7 +475,17 @@ function PlayAds({ sequence, screen }) {
       >
         Play
       </Button>
-      <Dialog maxWidth="md" fullWidth onClose={close} open={state}>
+      <Dialog
+        sx={{
+          '.MuiDialog-paper': {
+            width: 'auto',
+            maxWidth: 'none',
+          },
+        }}
+        fullWidth
+        onClose={close}
+        open={state}
+      >
         <DialogTitle>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography>{screen.screenName}</Typography>
@@ -484,7 +494,15 @@ function PlayAds({ sequence, screen }) {
             </IconButton>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ overflow: 'hidden', p: 0, display: 'flex', backgroundColor: 'black' }}>
+        <DialogContent
+          sx={{
+            width: 'auto !important',
+            overflow: 'hidden',
+            p: 0,
+            display: 'flex',
+            backgroundColor: 'black',
+          }}
+        >
           <Screen screenLayoutRef={screen.layoutReference}>
             {campaignsLists.map((campaignsList, index) => (
               <View campaignsList={campaignsList} key={index} />
@@ -500,7 +518,6 @@ function Screen({ children, screenLayoutRef }) {
   const layoutConfig = screenReferenceToConfig[screenLayoutRef];
 
   const screenStyle = {
-    width: '100%',
     display: 'grid',
     overflow: 'hidden',
     ...(layoutConfig.horizontal
@@ -521,6 +538,15 @@ function Screen({ children, screenLayoutRef }) {
             : '1fr',
         }),
     aspectRatio: layoutConfig.landscape ? '16/9' : '9/16',
+    ...(layoutConfig.landscape
+      ? {
+          width: '80vw',
+          height: 'auto',
+        }
+      : {
+          width: 'auto',
+          height: '70vh',
+        }),
   };
 
   return <Box sx={screenStyle}>{children}</Box>;
