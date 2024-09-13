@@ -1,10 +1,16 @@
 import { ContentCopy, Download, MoreVert } from '@mui/icons-material';
 import {
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Unstable_Grid2 as Grid,
   IconButton,
   ListItemIcon,
@@ -13,10 +19,13 @@ import {
   MenuItem,
   MenuList,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import Head from 'next/head';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { usePopover } from 'src/hooks/use-popover';
@@ -43,7 +52,10 @@ const Page = ({ campaign }) => {
               <CardContent>
                 <Grid container spacing={2}>
                   <Grid xs={12} md={6}>
-                    <FilesDisplay files={campaign.uploads} />
+                    <Stack spacing={2}>
+                      <Actions reference={campaign.reference} />
+                      <FilesDisplay files={campaign.uploads} />
+                    </Stack>
                   </Grid>
                   <Grid xs={12} md={6}>
                     <CampaignDetails campaign={campaign} />
@@ -221,8 +233,9 @@ function CampaignDetails({ campaign }) {
         <ListItemText primary="Play Duration" secondary={campaign.playDuration} />
         <ListItemText
           primary="Play Days"
+          disableTypography
           secondary={
-            <Stack spacing={1} direction="row">
+            <Stack spacing={1} direction="row" flexWrap="wrap">
               {campaign.playDays.split(',').map((day) => (
                 <Chip label={day} key={day} sx={{ textTransform: 'capitalize' }} />
               ))}
@@ -231,7 +244,18 @@ function CampaignDetails({ campaign }) {
         />
         <ListItemText
           primary="Campaign Status"
-          secondary={<Chip label={campaign.status} color={colorStatusMap[campaign.status]} />}
+          disableTypography
+          secondary={
+            <Box mt={0.5}>
+              <Chip
+                label={campaign.status}
+                color={colorStatusMap[campaign.status]}
+                sx={{
+                  textTransform: 'capitalize',
+                }}
+              />
+            </Box>
+          }
         />
       </MenuList>
     </Stack>
@@ -243,3 +267,97 @@ const colorStatusMap = {
   approved: 'success',
   declined: 'error',
 };
+
+function Actions({ reference }) {
+  const { push } = useRouter();
+  const [selectedAction, setSelectedAction] = useState(null);
+  const [requestProcessing, setRequestProcessing] = useState(false);
+  const handleOpen = (action) => () => {
+    setSelectedAction(action);
+  };
+  const handleClose = () => {
+    setSelectedAction(null);
+  };
+
+  const handleAction = (event) => {
+    const formData = new FormData(event.target);
+    const reason = formData.get('reason');
+    if (selectedAction === 'decline' && !reason) {
+      toast.error('Please enter a reason for decline');
+      return;
+    }
+    setRequestProcessing(true);
+    try {
+      toast.promise(
+        axios.post('/api/admin/external/set-campaign-status', {
+          campaign_id: reference,
+          reason,
+          status: selectedAction,
+        }),
+        {
+          loading: `${
+            selectedAction === 'approve' ? 'Approving' : 'Declining'
+          } Campaign, Hold on...`,
+          success: (response) => {
+            push('/external-organizations/external-campaigns');
+            return response.data.message;
+          },
+          error: 'Failed to approve Campaign, Please try again',
+        }
+      );
+    } catch (error) {}
+    setRequestProcessing(true);
+  };
+
+  return (
+    <>
+      <Stack direction="row" spacing={1}>
+        <Button color="success" variant="contained" onClick={handleOpen('approve')}>
+          Approve
+        </Button>
+        <Button color="error" variant="contained" onClick={handleOpen('decline')}>
+          Decline
+        </Button>
+      </Stack>
+      <Dialog
+        open={selectedAction !== null}
+        onClose={handleClose}
+        PaperProps={{
+          component: 'form',
+          onSubmit: handleAction,
+        }}
+      >
+        <DialogTitle>{selectedAction === 'approve' ? 'Approve' : 'Decline'} Campaign?</DialogTitle>
+        {selectedAction === 'decline' && (
+          <DialogContent>
+            <TextField
+              autoFocus
+              required
+              margin="dense"
+              id="reason"
+              name="reason"
+              label="Reason"
+              type="text"
+              fullWidth
+              multiline
+              rows={5}
+              variant="outlined"
+            />
+          </DialogContent>
+        )}
+        <DialogActions>
+          <Button onClick={handleClose}>No no</Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={requestProcessing}
+            color={selectedAction === 'approve' ? 'success' : 'error'}
+            startIcon={requestProcessing && <CircularProgress />}
+          >
+            Yes, {selectedAction === 'approve' ? 'Approve' : 'Decline'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
