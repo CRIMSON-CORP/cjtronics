@@ -521,6 +521,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       getScreenCities(ctx.req),
       getScreenLayouts(ctx.req),
     ]);
+
     return {
       props: { screens, organizations, cities, screen_layouts },
     };

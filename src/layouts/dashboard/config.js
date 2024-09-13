@@ -6,9 +6,9 @@ import {
   Dashboard,
   Dvr,
   History,
-  Link,
   Monitor,
   OndemandVideo,
+  OpenInNew,
   People,
   ShowChart,
   VideoCameraFront,
@@ -169,12 +169,34 @@ export const items = [
         ),
         matchers: ['campaign-schedule'],
       },
+    ],
+  },
+  {
+    title: 'External Organizations',
+    type: 'drop-down',
+    icon: (
+      <SvgIcon fontSize="small">
+        <OpenInNew />
+      </SvgIcon>
+    ),
+    matchers: ['external-organizations'],
+    links: [
       {
-        title: 'External Campaings',
-        path: '/campaign/external-campaigns',
+        title: 'External Organizations',
+        path: '/external-organizations',
         icon: (
           <SvgIcon fontSize="small">
-            <Link />
+            <OndemandVideo />
+          </SvgIcon>
+        ),
+        matchers: ['external-organizations'],
+      },
+      {
+        title: 'External Campaigns',
+        path: '/external-organizations/external-campaigns',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Campaign />
           </SvgIcon>
         ),
         matchers: ['external-campaigns'],

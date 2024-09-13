@@ -178,7 +178,7 @@ export const OrganizationsTable = (props) => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="subtitle2">
-                        {formatDistanceToNow(new Date(organization.createdAt))}
+                        {formatRelativeTime(new Date(organization.createdAt))}
                       </Typography>
                     </TableCell>
                     <TableCell>

@@ -101,6 +101,7 @@ function SelectedScreen({ campaigns = [] }) {
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
     const screens = await getAllScreens(ctx.req);
+
     return {
       props: { screens },
     };

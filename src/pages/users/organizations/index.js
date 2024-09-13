@@ -2,6 +2,7 @@ import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import {
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   Container,
   Dialog,
@@ -9,6 +10,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControlLabel,
   Stack,
   TextField,
   Typography,
@@ -113,27 +115,6 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       notFound: true,
     };
   }
-
-  // return {
-  //   props: {
-  //     users: [
-  //       {
-  //         createdAt: '2024-08-07T23:10:31.980Z',
-  //         email: 'aa@aa.com',
-  //         firstName: 'aa',
-  //         lastName: 'aa',
-  //         organizationId: '64ae8231564cd6a76b7b2a42',
-  //         privilege: 'user',
-  //         type: 'individual',
-  //         updatedAt: '2024-08-07T23:10:31.980Z',
-  //         userActiveStatus: 1,
-  //         username: 'aa.aa',
-  //       },
-  //     ],
-  //     total_results: 1,
-  //     pager_current_page: 1,
-  //   },
-  // };
 });
 
 export default Page;
@@ -155,6 +136,7 @@ function CreateOrganizationForm() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const name = formData.get('organization-name');
+    const isExternal = formData.get('isExternal');
     if (!name) {
       return toast.error('organization name is required!');
     }
@@ -162,15 +144,18 @@ function CreateOrganizationForm() {
     setIsSubmitting(true);
 
     try {
-      await toast.promise(axios.post('/api/admin/organizations/create', { name }), {
-        loading: 'Creating Organization, Hold on...',
-        success: (response) => {
-          replace(asPath);
-          handleClose();
-          return response.data.message;
-        },
-        error: 'Failed to create Organization, Please try again',
-      });
+      await toast.promise(
+        axios.post('/api/admin/organizations/create', { name, isExternal: !!isExternal }),
+        {
+          loading: 'Creating Organization, Hold on...',
+          success: (response) => {
+            replace(asPath);
+            handleClose();
+            return response.data.message;
+          },
+          error: 'Failed to create Organization, Please try again',
+        }
+      );
     } catch (err) {
     } finally {
       setIsSubmitting(false);
@@ -202,6 +187,12 @@ function CreateOrganizationForm() {
             type="text"
             fullWidth
             variant="outlined"
+          />
+          <FormControlLabel
+            control={<Checkbox />}
+            label="Is External Organization"
+            name="isExternal"
+            id="isExternal"
           />
         </DialogContent>
         <DialogActions>

@@ -23,6 +23,9 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
         '&.Mui-expanded': {
           backgroundColor: 'rgba(0, 0, 0, 0.04)',
         },
+        '&.Mui-expanded:first-of-type': {
+          marginTop: '4px',
+        },
       }}
     >
       <AccordionSummary
