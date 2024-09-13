@@ -344,11 +344,18 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
     setRequestProcessing(true);
     try {
       await toast.promise(
-        axios.post('/api/admin/campaigns/set-campaign-status', { status: true, reference }),
+        axios.post('/api/admin/campaigns/get-new-campaign-data', { reference: deviceId }),
         {
-          loading: 'Sending request, hold on a moment...',
+          loading: 'Getting Campaign data, hold on a moment...',
           success: (response) => {
-            return response.data.message;
+            websocket.send(
+              JSON.stringify({
+                event: 'send-to-device',
+                deviceId,
+                data: response.data,
+              })
+            );
+            return "Campaign's data sent successfully";
           },
           error: (err) => {
             return err.response?.data?.message || err.message;
@@ -359,25 +366,25 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
     setRequestProcessing(false);
   };
 
-  const sendToDevice = () => {
-    if (!isOnline) {
-      return toast.error(
-        'Screen is currently offline, pls make sure screen is online, refresh and try again'
-      );
-    }
-    if (hasSent) {
-      return toast.error('Schedule already sent to device please try again later');
-    }
-    if (websocket.readyState === WebSocket.OPEN) {
-      websocket.send(
-        JSON.stringify({
-          event: 'send-to-device',
-          device_id: deviceId,
-        })
-      );
-      setHasSent(true);
-    }
-  };
+  // const sendToDevice = () => {
+  //   if (!isOnline) {
+  //     return toast.error(
+  //       'Screen is currently offline, pls make sure screen is online, refresh and try again'
+  //     );
+  //   }
+  //   if (hasSent) {
+  //     return toast.error('Schedule already sent to device please try again later');
+  //   }
+  //   if (websocket.readyState === WebSocket.OPEN) {
+  //     websocket.send(
+  //       JSON.stringify({
+  //         event: 'send-to-device',
+  //         device_id: deviceId,
+  //       })
+  //     );
+  //     setHasSent(true);
+  //   }
+  // };
 
   useEffect(() => {
     let timeout = null;
@@ -398,7 +405,7 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   return (
     <Button
       disabled={requestProcessing}
-      onClick={sendToDevice}
+      onClick={sendCampaignToDevice}
       startIcon={
         requestProcessing || !websocket ? <CircularProgress /> : <PlayCircleFilledRounded />
       }
