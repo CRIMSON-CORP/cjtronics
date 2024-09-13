@@ -37,7 +37,6 @@ import {
   Typography,
 } from '@mui/material';
 import axios from 'axios';
-import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
@@ -45,6 +44,7 @@ import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
 import { Scrollbar } from 'src/components/scrollbar';
 import { usePopover } from 'src/hooks/use-popover';
+import { formatRelativeTime } from 'src/utils/fromRelativeTime';
 import { getInitials } from 'src/utils/get-initials';
 
 export const OrganizationsTable = (props) => {
@@ -186,7 +186,11 @@ export const OrganizationsTable = (props) => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" gap={1}>
-                        <Options name={organization.name} reference={organization.reference} />
+                        <Options
+                          name={organization.name}
+                          reference={organization.reference}
+                          isExternal={organization.isExternal}
+                        />
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -310,7 +314,7 @@ function EditOrganizationForm({ reference, name }) {
   );
 }
 
-function Options({ reference, name }) {
+function Options({ reference, name, isExternal }) {
   const { anchorRef, handleClose, handleOpen, open } = usePopover();
 
   const { push } = useRouter();
@@ -384,24 +388,28 @@ function Options({ reference, name }) {
               </MenuItem>
             }
           />
-          <MenuItem onClick={goToUsers}>
-            <ListItemIcon>
-              <People fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>View Users in Organization</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={goToScreens}>
-            <ListItemIcon>
-              <Monitor fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>View Screens in Organization</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={goToCampaigns}>
-            <ListItemIcon>
-              <Campaign fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>View Campaigns in Organization</ListItemText>
-          </MenuItem>
+          {!isExternal && (
+            <>
+              <MenuItem onClick={goToUsers}>
+                <ListItemIcon>
+                  <People fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>View Users in Organization</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={goToScreens}>
+                <ListItemIcon>
+                  <Monitor fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>View Screens in Organization</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={goToCampaigns}>
+                <ListItemIcon>
+                  <Campaign fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>View Campaigns in Organization</ListItemText>
+              </MenuItem>
+            </>
+          )}
         </MenuList>
       </Menu>
     </>
