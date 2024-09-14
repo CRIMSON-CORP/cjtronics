@@ -231,14 +231,13 @@ Page.getLayout = (page) => <AuthLayout>{page}</AuthLayout>;
 
 export default Page;
 
-export const getStaticProps = async function () {
+export const getServerSideProps = async function () {
   try {
     const response = await axios.get('/auth/list/organization');
 
     if (response.data.status) {
       return {
         props: { organizations: response.data.data },
-        revalidate: 60 * 60 * 24,
       };
     } else throw response;
   } catch (error) {

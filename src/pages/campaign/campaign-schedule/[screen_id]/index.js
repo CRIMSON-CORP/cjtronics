@@ -311,6 +311,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       props: { screens, screen, layouts, campaignSquence },
     };
   } catch (error) {
+    console.log(error);
     if (error?.response?.status === 401) {
       return {
         redirect: {
@@ -341,6 +342,8 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   }, []);
 
   const sendCampaignToDevice = async () => {
+    if (hasSent)
+      return toast.error('Campaign already sent to device, Pls try again in less than 10 minutes');
     setRequestProcessing(true);
     try {
       await toast.promise(
@@ -355,6 +358,7 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
                 data: response.data,
               })
             );
+            setHasSent(true);
             return "Campaign's data sent successfully";
           },
           error: (err) => {
@@ -404,8 +408,9 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
 
   return (
     <Button
-      disabled={requestProcessing}
       onClick={sendCampaignToDevice}
+      disabled={requestProcessing || !websocket}
+      // disabled={requestProcessing || hasSent || !websocket}
       startIcon={
         requestProcessing || !websocket ? <CircularProgress /> : <PlayCircleFilledRounded />
       }
