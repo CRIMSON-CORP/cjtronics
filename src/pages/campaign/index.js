@@ -24,7 +24,7 @@ import { useFormik } from 'formik';
 import { nanoid } from 'nanoid';
 import Head from 'next/head';
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
@@ -38,11 +38,13 @@ import * as Yup from 'yup';
 
 const superAdminRef = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF;
 
-const Page = ({ organizations, screens, adAccounts }) => {
+const Page = ({ organizations, screens }) => {
   const { user } = useAuth();
   const defaultOrganizationReference = user?.organizationReference || '';
   const isSuperAdmin = defaultOrganizationReference === superAdminRef;
-  console.log(isSuperAdmin);
+
+  const [adAccounts, setAdAccounts] = useState([]);
+  const [fetchingAdAccounts, setFetchingAdAccounts] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -70,6 +72,32 @@ const Page = ({ organizations, screens, adAccounts }) => {
       }
     },
   });
+
+  const { screenId } = formik.values;
+  const fetchAdAccounts = useCallback(async () => {
+    setFetchingAdAccounts(true);
+    try {
+      toast.loading('Fetching Ad Accounts...');
+      const response = await axios.get(`/api/admin/ad-account/get-by-screen?reference=${screenId}`);
+      toast.dismiss();
+      const { list } = response.data.data;
+      if (list.length === 0) {
+        toast.error('No Ad Accounts found for this screen');
+        return;
+      }
+      setAdAccounts(response.data.data.list);
+    } catch (error) {
+      toast.error('Failed to fetch Ad accounts for this screen');
+    }
+    setFetchingAdAccounts(false);
+  }, [screenId]);
+
+  useEffect(() => {
+    if (screenId) {
+      fetchAdAccounts();
+    }
+  }, [screenId]);
+
   return (
     <>
       <Head>
@@ -143,8 +171,12 @@ const Page = ({ organizations, screens, adAccounts }) => {
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
                       value={formik.values.adsAccountId}
+                      disabled={
+                        !formik.values.screenId || adAccounts.length === 0 || fetchingAdAccounts
+                      }
+                      endAdornment={fetchingAdAccounts && <CircularProgress />}
                     >
-                      {adAccounts.list.map((adAccount) => (
+                      {adAccounts.map((adAccount) => (
                         <MenuItem value={adAccount.reference} key={adAccount.reference}>
                           {adAccount.name}
                         </MenuItem>
@@ -174,13 +206,12 @@ export default Page;
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [organizations, screens, adAccounts] = await Promise.all([
+    const [organizations, screens] = await Promise.all([
       getResourse(ctx.req, '/organization'),
       getResourse(ctx.req, '/screen'),
-      getResourse(ctx.req, '/ads-account'),
     ]);
     return {
-      props: { organizations, screens, adAccounts },
+      props: { organizations, screens },
     };
   } catch (error) {
     console.log(error);
