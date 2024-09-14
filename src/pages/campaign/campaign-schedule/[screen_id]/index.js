@@ -393,12 +393,9 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   useEffect(() => {
     let timeout = null;
     if (hasSent) {
-      timeout = setTimeout(
-        () => {
-          setHasSent(false);
-        },
-        10 * 60 * 1000
-      );
+      timeout = setTimeout(() => {
+        setHasSent(false);
+      }, 60 * 1000);
     }
 
     return () => {
