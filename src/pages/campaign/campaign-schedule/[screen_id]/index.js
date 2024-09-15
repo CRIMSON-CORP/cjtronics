@@ -343,7 +343,7 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
 
   const sendCampaignToDevice = async () => {
     if (hasSent)
-      return toast.error('Campaign already sent to device, Pls try again in less than 10 minutes');
+      return toast.error('Campaign already sent to device, Pls try again in less than a minute');
     setRequestProcessing(true);
     try {
       await toast.promise(
