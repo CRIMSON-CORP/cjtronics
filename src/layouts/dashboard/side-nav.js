@@ -66,8 +66,10 @@ export const SideNav = (props) => {
           }}
         >
           {items.map((item, index) => {
-            if (item.roles && !item.roles.includes(userAccountType)) {
+            {
+              /* if (item.roles && !item.roles.includes(userAccountType)) {
               return null;
+            } */
             }
             if (item.type === 'drop-down') {
               return (
