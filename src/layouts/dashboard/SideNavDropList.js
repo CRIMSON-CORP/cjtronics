@@ -40,6 +40,9 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
           '& .MuiAccordionSummary-content': {
             margin: '0px',
           },
+          '& li': {
+            width: '100%',
+          },
           ...(active && {
             backgroundColor: 'rgba(255, 255, 255, 0.04)',
           }),
