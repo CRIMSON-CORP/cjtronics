@@ -8,6 +8,7 @@
       body {
         height: 100vh;
         margin: 0px;
+        background-color: #131224;
       }
       iframe {
         height: 100vh !important;
@@ -58,7 +59,6 @@
         style.textContent = `
             body{
             font-size: 1.6vh;
-            pointer-events:none;
             }
 
             [data-theme=dark] .upcoming-widget-horizontal__root--T6MS{
@@ -67,14 +67,29 @@
             box-shadow:none !important;
             }
 
-            [data-theme=dark] .upcoming-widget-horizontal__current--NOo9{
-                width: 60vw !important;
+            [data-theme=dark] .upcoming-widget-square__root--KGAv{
+            gap:5vh;
             }
-                [data-theme=dark] .upcoming-widget-horizontal__location-icon--55oE{
-                    width: 2vw !important;
-                    height: 2vw !important;
-                    }
-                    [data-theme=dark] .upcoming-widget-horizontal__location-label--w4Ho{
+
+            [data-theme=dark] .upcoming-widget-horizontal__current--NOo9{
+                width: 85vw !important;
+            }
+                [data-theme=dark] .upcoming-days-summary__day-summary--ktcC{
+                gap:10vw;
+                }
+            #root > div > a > div.upcoming-widget-square__root--KGAv.upcoming-widget__square--2Cc- > div.upcoming-days-summary__root--2Vkp > div:nth-child(1) > div.upcoming-days-summary__temperature--rIee,
+            [data-theme=dark] .upcoming-days-summary__weather-icon-container--WdfK{
+            display:none
+            }
+
+          [data-theme=dark] .upcoming-widget-horizontal__location-icon--55oE{
+            width: 2vw !important;
+            height: 2vw !important;
+          }
+          [data-theme=dark] .upcoming-days-summary__precipitation-container-squared--5FLv{
+            flex:0; 
+          }
+          [data-theme=dark] .upcoming-widget-horizontal__location-label--w4Ho{
             font-size:2.4vw !important
             }
 
@@ -125,7 +140,7 @@
             border-radius: 0px !important;
             }
 
-            [data-theme=dark] .upcoming-days-summary__day-summary--ktcC:nth-child(n+4){
+            [data-theme=dark] .upcoming-days-summary__day-summary--ktcC:nth-child(n+2){
               display:none
             }
             `;
@@ -158,7 +173,13 @@
         href="https://www.tomorrow.io/weather-api/"
         rel="nofollow noopener noreferrer"
         target="_blank"
-        style="position: absolute; bottom: 0; transform: translate(-50%, -500%); left: 50%"
+        style="
+          position: absolute;
+          bottom: 0;
+          transform: translate(-50%, -500%);
+          left: 50%;
+          opacity: 0.5;
+        "
       >
         <img
           alt="Powered by the Tomorrow.io Weather API"
