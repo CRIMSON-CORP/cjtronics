@@ -30,7 +30,7 @@ export const AccountPopover = (props) => {
   }, [onClose, signOut, router]);
 
   const goToResetPassword = () => router.push('/reset-password');
-  const { firstName, lastName } = user || {};
+  const { first_name, last_name } = user || {};
 
   return (
     <Popover
@@ -51,7 +51,7 @@ export const AccountPopover = (props) => {
       >
         <Typography variant="overline">Account</Typography>
         <Typography color="text.secondary" variant="body2">
-          {firstName} {lastName}
+          {first_name} {last_name}
         </Typography>
       </Box>
       <Divider />
