@@ -204,16 +204,6 @@ export const AuthProvider = (props) => {
     [signIn, signOut, forgotPassword, resetPassword, createAdvertizer, state]
   );
 
-  if (
-    state.user &&
-    state.user?.account_type !== 'admin' &&
-    securedRoutes.includes(pathname.split('/')[1])
-  ) {
-    // redirect to dashboard nextjs 13 pages directory
-    push('/');
-    return <></>;
-  }
-
   return <AuthContext.Provider value={contextValues}>{children}</AuthContext.Provider>;
 };
 
