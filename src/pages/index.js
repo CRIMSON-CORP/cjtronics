@@ -52,8 +52,8 @@ const Page = ({ stats, screens: { screen }, campaingActivity }) => {
                 title="active campaigns"
                 icon={<Campaign />}
                 sx={{ height: '100%' }}
-                value="4"
-                theme={stats.activeCampaigns}
+                theme="primary.main"
+                value={stats.activeCampaigns}
               />
             </Grid>
             <Grid xs={12} sm={6} lg={3}>
