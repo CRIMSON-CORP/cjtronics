@@ -418,6 +418,8 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   );
 }
 
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 function PlayAds({ sequence, screen }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
   const [campaignsLists, setCampaingsLists] = useState([]);
@@ -426,26 +428,36 @@ function PlayAds({ sequence, screen }) {
     setRequestProcessing(true);
 
     try {
-      const campaigns = await Promise.all(
-        sequence.map(({ reference }) =>
-          axios.get(`/api/admin/campaigns/get-campaign-by-ad-account?reference=${reference}`)
-        )
+      const response = await axios.get(
+        `/api/admin/campaigns/get-campaign-ads?reference=${screen.deviceId}`
       );
 
-      const campaignsLists = campaigns.map((campaign) => campaign.data.data.list).flat();
+      const campaigns = response.data.data[0].campaigns;
 
-      const grouped = campaignsLists.reduce(
+      const filteredDaysCampaigns = campaigns.filter((campaign) =>
+        campaign.adConfiguration.days.includes(days[new Date().getDay()])
+      );
+
+      const filteredTimeCampaigns = filteredDaysCampaigns.filter((campaign) => {
+        const startTime = new Date(campaign.adConfiguration.startTime).getTime();
+        const endTime = new Date(campaign.adConfiguration.endTime).getTime();
+        return startTime <= new Date().getTime() && new Date().getTime() <= endTime;
+      });
+
+      const filteredCampaigsWithoutView = filteredTimeCampaigns.filter(
+        (campaign) => campaign.campaignView
+      );
+
+      const grouped = filteredCampaigsWithoutView.reduce(
         (acc, obj) => {
-          obj.layoutView === 1 ? acc[0].push(obj) : acc[1].push(obj);
-
-          obj.playUploads.map((file) => {
-            file.duration = obj.playDuration;
-            return file;
-          });
+          obj.campaignView === 1 ? acc[0].push(obj) : acc[1].push(obj);
           return acc;
         },
         [[], []]
       );
+
+      const filteredGroup = grouped.filter((group) => group.length > 0);
+
       // const campaignUploads = campaignsLists
       //   .map((campaign) =>
       //     campaign.playUploads.map((file) => {
@@ -459,7 +471,7 @@ function PlayAds({ sequence, screen }) {
       // const mergedCampaigns = Array.from({ length: maxLength }).flatMap((_, i) =>
       //   campaignsLists.map((arr) => arr[i]).filter((val) => val !== undefined)
       // );
-      setCampaingsLists(grouped);
+      setCampaingsLists(filteredGroup);
       open();
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
@@ -562,15 +574,13 @@ function Screen({ children, screenLayoutRef }) {
 }
 
 function View({ campaignsList }) {
-  const sequence = campaignsList.reduce((acc, item) => {
-    return item.playUploads ? [...acc, ...item.playUploads] : [];
-  }, []);
+  const sequence = campaignsList;
 
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
   useEffect(() => {
     if (currentAdIndex < sequence.length) {
-      const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
+      const adDuration = sequence[currentAdIndex].adConfiguration.duration * 1000; // Convert to milliseconds
       const timer = setTimeout(() => {
         setCurrentAdIndex((prevIndex) => prevIndex + 1);
       }, adDuration);
@@ -598,37 +608,37 @@ function View({ campaignsList }) {
         {sequence.map((file, index) => {
           return (
             <Box
-              key={file.reference + index}
+              key={file.uploadRef}
               width="100%"
               height="100%"
               flex="none"
               position="absolute"
               sx={{ transform: `translateX(${index * 100}%)` }}
             >
-              {file.uploadType === 'image' ? (
+              {file.adType === 'image' ? (
                 <Image
-                  src={file.uploadFile}
+                  src={file.adUrl}
                   alt={file.uploadName}
                   width={500}
                   height={400}
                   key={currentAdIndex}
                   style={{ objectFit: 'contain', width: '100%', height: '100%' }}
                 />
-              ) : file.uploadType === 'video' ? (
+              ) : file.adType === 'video' ? (
                 <video
                   loop
                   key={currentAdIndex}
                   controls={false}
-                  src={file.uploadFile}
+                  src={file.adUrl}
                   alt={file.uploadName}
                   autoPlay={index === currentAdIndex}
                   style={{ objectFit: 'contain', width: '100%', height: '100%' }}
                 />
-              ) : file.uploadType === 'html' ? (
+              ) : file.adType === 'html' ? (
                 index === currentAdIndex && (
                   <Iframe
                     key={currentAdIndex}
-                    content={file.uploadFile}
+                    content={file.adUrl}
                     styles={{ width: '100%', height: '100%' }}
                   />
                 )
