@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardMedia,
   CircularProgress,
   Container,
   Dialog,
@@ -424,6 +425,9 @@ function PlayAds({ sequence, screen }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
   const [campaignsLists, setCampaingsLists] = useState([]);
   const { open, close, state } = useToggle();
+  const [screenView, setScreenView] = useState('player');
+  const [completedScreen, setCompletedScreen] = useState([]);
+  const [widgets, setWidgets] = useState([]);
   const loadAds = async () => {
     setRequestProcessing(true);
 
@@ -446,6 +450,10 @@ function PlayAds({ sequence, screen }) {
 
       const filteredCampaigsWithoutView = filteredTimeCampaigns.filter(
         (campaign) => campaign.campaignView
+      );
+
+      const widgets = filteredTimeCampaigns.filter((campaign) =>
+        ['time', 'weather'].includes(campaign.adId)
       );
 
       const grouped = filteredCampaigsWithoutView.reduce(
@@ -471,7 +479,9 @@ function PlayAds({ sequence, screen }) {
       // const mergedCampaigns = Array.from({ length: maxLength }).flatMap((_, i) =>
       //   campaignsLists.map((arr) => arr[i]).filter((val) => val !== undefined)
       // );
+      setWidgets(widgets);
       setCampaingsLists(filteredGroup);
+
       open();
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
@@ -482,9 +492,21 @@ function PlayAds({ sequence, screen }) {
   };
 
   const onComplete = () => {
-    close();
-    setAds([]);
+    setCompletedScreen((prev) => [...prev, true]);
   };
+
+  const onWidgetComplete = () => {
+    setScreenView('player');
+    setCompletedScreen([]);
+  };
+
+  useEffect(() => {
+    if (completedScreen.length === campaignsLists.length && widgets.length > 0) {
+      setScreenView('widgets');
+    } else {
+      setScreenView('player');
+    }
+  }, [completedScreen, campaignsLists]);
 
   return (
     <>
@@ -524,11 +546,23 @@ function PlayAds({ sequence, screen }) {
             backgroundColor: 'black',
           }}
         >
-          <Screen screenLayoutRef={screen.layoutReference}>
-            {campaignsLists.map((campaignsList, index) => (
-              <View campaignsList={campaignsList} key={index} />
-            ))}
-          </Screen>
+          {screenView === 'player' ? (
+            <Screen screenLayoutRef={screen.layoutReference}>
+              {campaignsLists.map((campaignsList, index) => (
+                <View
+                  campaignsList={campaignsList}
+                  key={index}
+                  screenView={screenView}
+                  setScreenView={setScreenView}
+                  onComplete={onComplete}
+                />
+              ))}
+            </Screen>
+          ) : (
+            <Screen screenLayoutRef="VBSGTREW43">
+              <View campaignsList={widgets} onComplete={onWidgetComplete} />
+            </Screen>
+          )}
         </DialogContent>
       </Dialog>
     </>
@@ -573,7 +607,7 @@ function Screen({ children, screenLayoutRef }) {
   return <Box sx={screenStyle}>{children}</Box>;
 }
 
-function View({ campaignsList }) {
+function View({ campaignsList, screenView, setScreenView, onComplete }) {
   const sequence = campaignsList;
 
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
@@ -587,7 +621,10 @@ function View({ campaignsList }) {
 
       return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
     } else {
-      setCurrentAdIndex(0);
+      onComplete();
+      // setTimeout(() => {
+      //   setCurrentAdIndex(0);
+      // }, 1000 * 20);
     }
   }, [currentAdIndex, sequence]);
 
@@ -634,14 +671,22 @@ function View({ campaignsList }) {
                   autoPlay={index === currentAdIndex}
                   style={{ objectFit: 'contain', width: '100%', height: '100%' }}
                 />
-              ) : file.adType === 'html' ? (
-                index === currentAdIndex && (
-                  <Iframe
-                    key={currentAdIndex}
-                    content={file.adUrl}
-                    styles={{ width: '100%', height: '100%' }}
-                  />
-                )
+              ) : file.adType === 'iframe' ? (
+                <>
+                  {file.adUrl.startsWith('https://') ? (
+                    <CardMedia
+                      sx={{ width: '100%', height: '100%', margin: 0, border: 'none' }}
+                      component="iframe"
+                      className="card media"
+                      src={file.adUrl}
+                    />
+                  ) : (
+                    <Iframe
+                      content={file.adUrl}
+                      styles={{ width: '100%', height: '100%', border: 'none' }}
+                    />
+                  )}
+                </>
               ) : null}
             </Box>
           );
