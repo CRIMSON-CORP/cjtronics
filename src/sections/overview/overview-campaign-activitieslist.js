@@ -9,6 +9,7 @@ import {
   ListItemText,
   Skeleton,
   SvgIcon,
+  Typography,
 } from '@mui/material';
 import axios from 'axios';
 import PropTypes from 'prop-types';
@@ -71,6 +72,11 @@ export const OverviewCampaignActivitieList = ({ activities = [], sx }) => {
   return (
     <Card sx={sx}>
       <CardHeader title="Campaign activities" />
+      {logs.length === 0 && (
+        <Typography align="center" color="text.secondary" sx={{ py: 3 }} variant="h6">
+          No activities yet
+        </Typography>
+      )}
       <List ref={containerRef} sx={{ maxHeight: '50vh', overflow: 'auto', overflowAnchor: 'none' }}>
         {logs.map((campaign, index) => {
           const hasDivider = index < logs.length - 1;

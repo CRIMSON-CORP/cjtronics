@@ -8,7 +8,6 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const userAccountType = user?.account_type;
-  console.log(userAccountType);
 
   return (
     <Accordion

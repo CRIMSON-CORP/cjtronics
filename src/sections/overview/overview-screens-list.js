@@ -25,6 +25,11 @@ export const OverviewScreensList = ({ screens = [], sx }) => {
     <Card sx={sx}>
       <CardHeader title="Screens" />
       <List sx={{ maxHeight: '50vh', overflow: 'auto' }}>
+        {screens.length === 0 && (
+          <Typography align="center" color="text.secondary" sx={{ py: 3 }} variant="h6">
+            No Screens yet
+          </Typography>
+        )}
         {screens.map((screen, index) => {
           const hasDivider = index < screens.length - 1;
           return (
