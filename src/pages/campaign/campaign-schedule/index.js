@@ -40,21 +40,25 @@ const Page = ({ screen }) => {
             <Typography variant="h5">Campaign schedule</Typography>
             <Grid container spacing={3}>
               <Grid xs={12} sm={6} lg={4}>
-                <FormControl fullWidth>
-                  <InputLabel id="scrren-select-label">Select Screen</InputLabel>
-                  <Select
-                    label="Select Screen"
-                    value={selectedScreen}
-                    labelId="scrren-select-label"
-                    onChange={handleScreenSelect}
-                  >
-                    {screen.map((screen) => (
-                      <MenuItem value={screen.reference} key={screen.reference}>
-                        {screen.screenName}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                {screen.length === 0 ? (
+                  <Typography variant="h6">No screens found</Typography>
+                ) : (
+                  <FormControl fullWidth>
+                    <InputLabel id="scrren-select-label">Select Screen</InputLabel>
+                    <Select
+                      label="Select Screen"
+                      value={selectedScreen}
+                      labelId="scrren-select-label"
+                      onChange={handleScreenSelect}
+                    >
+                      {screen.map((screen) => (
+                        <MenuItem value={screen.reference} key={screen.reference}>
+                          {screen.screenName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
               </Grid>
             </Grid>
           </Stack>
