@@ -44,7 +44,7 @@ export const items = [
       </SvgIcon>
     ),
     matchers: ['users'],
-    roles: ['admin'],
+    roles: ['admin', 'user', 'advertiser'],
     links: [
       {
         title: 'All Users',
@@ -75,6 +75,7 @@ export const items = [
           </SvgIcon>
         ),
         matchers: ['organizations'],
+        roles: ['admin'],
       },
     ],
   },

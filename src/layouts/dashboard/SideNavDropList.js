@@ -1,10 +1,15 @@
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { Accordion, AccordionDetails, AccordionSummary, Box, ButtonBase } from '@mui/material';
 import { usePathname } from 'next/navigation';
+import { useAuth } from 'src/hooks/use-auth';
 import { SideNavItem } from './side-nav-item';
 
 function SideNavDropList({ title, icon, links, active, disabled }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const userAccountType = user?.account_type;
+  console.log(userAccountType);
+
   return (
     <Accordion
       disableGutters
@@ -109,6 +114,9 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
       </AccordionSummary>
       <AccordionDetails>
         {links.map((item, index) => {
+          if (item.roles && !item.roles.includes(userAccountType)) {
+            return null;
+          }
           const splitPath = pathname.split('/');
           const active =
             index === 0
