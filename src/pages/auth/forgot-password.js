@@ -110,7 +110,7 @@ const Page = () => {
                 </Typography>
               )}
               <Button
-                disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
+                disabled={!formik.isValid || formik.isSubmitting}
                 fullWidth
                 size="large"
                 sx={{ mt: 3 }}
