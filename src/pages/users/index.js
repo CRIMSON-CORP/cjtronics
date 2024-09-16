@@ -7,7 +7,6 @@ import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import axios from 'src/lib/axios';
 import { CustomersTable } from 'src/sections/customer/customers-table';
-import { applyPagination } from 'src/utils/apply-pagination';
 
 const useCustomerIds = (customers) => {
   return useMemo(() => {
@@ -84,6 +83,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       },
       params,
     });
+
     return {
       props: {
         users: data.data.users,
@@ -104,9 +104,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       };
     }
 
-    return {
-      notFound: true,
-    };
+    throw error;
   }
 
   // return {
