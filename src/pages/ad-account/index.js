@@ -169,7 +169,7 @@ function AdAccountForm({ organizations, companies, screens }) {
               <Select
                 error={!!(formik.touched.companyId && formik.errors.companyId)}
                 fullWidth
-                label="Account Officer"
+                label="Select Company name"
                 name="companyId"
                 id="companyId"
                 onBlur={formik.handleBlur}
