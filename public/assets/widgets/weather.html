@@ -21,6 +21,34 @@
     </style>
   </head>
   <body>
+    <div
+      class="tomorrow"
+      data-location-id=""
+      data-language="EN"
+      data-unit-system="METRIC"
+      data-skin="dark"
+      data-widget-type="upcoming"
+    >
+      <a
+        href="https://www.tomorrow.io/weather-api/"
+        rel="nofollow noopener noreferrer"
+        target="_blank"
+        style="
+          position: absolute;
+          bottom: 0;
+          transform: translate(-50%, -500%);
+          left: 50%;
+          opacity: 0.5;
+        "
+      >
+        <img
+          alt="Powered by the Tomorrow.io Weather API"
+          src="https://weather-website-client.tomorrow.io/img/powered-by.svg"
+          width="250"
+          height="18"
+        />
+      </a>
+    </div>
     <script>
       (async function (d, s, id) {
         const url = new URL(window.location.href);
@@ -53,24 +81,22 @@
       })(document, 'script', 'tomorrow-sdk');
       function edit() {
         const iframe = document.querySelector('iframe');
-        const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+        iframe.style.opacity = '0';
+        iframe.style.transition = 'opacity 0.5s ease-out';
         if (!iframe) return;
         const style = document.createElement('style');
         style.textContent = `
             body{
             font-size: 1.6vh;
             }
-
             [data-theme=dark] .upcoming-widget-horizontal__root--T6MS{
             height:100vh !important;
             border-radius:0px !important;
             box-shadow:none !important;
             }
-
             [data-theme=dark] .upcoming-widget-square__root--KGAv{
             gap:5vh;
             }
-
             [data-theme=dark] .upcoming-widget-horizontal__current--NOo9{
                 width: 85vw !important;
             }
@@ -81,113 +107,64 @@
             [data-theme=dark] .upcoming-days-summary__weather-icon-container--WdfK{
             display:none
             }
-
           [data-theme=dark] .upcoming-widget-horizontal__location-icon--55oE{
             width: 2vw !important;
             height: 2vw !important;
           }
           [data-theme=dark] .upcoming-days-summary__precipitation-container-squared--5FLv{
-            flex:0; 
+            flex:0;
           }
           [data-theme=dark] .upcoming-widget-horizontal__location-label--w4Ho{
             font-size:2.4vw !important
             }
-
             [data-theme=dark] .upcoming-widget-horizontal__icon--Q5sA{
                 width: 8vw !important;
                 height: 8vw !important;
-                
             }
-
             [data-theme=dark] .upcoming-widget-horizontal__temperature---2VB{
             font-size:9vw;
             }
-
             .temperature-apparent__root--x9Un, .weather-description__root--TMYu{
             font-size:2vw;
             line-height:normal !important;
             }
-
-            
-            
             [data-theme=dark] .upcoming-days-summary__weather-icon--gMBe{
             width: 4vw !important;
                 height: 4vw !important;
             }
-
             [data-theme=dark] .upcoming-days-summary__day--p24r, [data-theme=dark] .upcoming-days-summary__day-of-week--BP0g{
             font-size:2vw}
-
             .temperature-min-max__icon--K4X9{
             width:1.6vw;
             height: 1.2vw
             }
-
             [data-theme=dark] .upcoming-days-summary__day-summary--ktcC{
             justify-content:center !important;
             }
             [data-theme=dark] .upcoming-days-summary__weather-icon-container--WdfK{
             flex:0.65 !important;
             }
-
             [data-theme=dark] .upcoming-widget-square__root--KGAv{
             height:100vh !important;display: flex;
             flex-direction: column;
             justify-content: center;}
-
             [data-theme=dark] .upcoming-widget-square__root--KGAv{
             box-shadow: none !important;
             border-radius: 0px !important;
             }
-
             [data-theme=dark] .upcoming-days-summary__day-summary--ktcC:nth-child(n+2){
               display:none
             }
             `;
-        // Append the <link> element to the <head> of the iframe document
-
-        const observer = new MutationObserver((mutationsList) => {
-          mutationsList.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              if (node.tagName === 'SCRIPT') {
-                iframeDocument.head.appendChild(style);
-              }
-            });
-          });
+        // // Append the <link> element to the <head> of the iframe document
+        iframe.addEventListener('load', () => {
+          const iframeDocument = iframe?.contentDocument || iframe?.contentWindow.document;
+          iframeDocument.head.appendChild(style);
+          setTimeout(() => {
+            iframe.style.opacity = '1';
+          }, 500);
         });
-
-        // Start observing the document for added nodes (scripts)
-        observer.observe(iframeDocument, { childList: true, subtree: true });
       }
     </script>
-
-    <div
-      class="tomorrow"
-      data-location-id=""
-      data-language="EN"
-      data-unit-system="METRIC"
-      data-skin="dark"
-      data-widget-type="upcoming"
-    >
-      <a
-        href="https://www.tomorrow.io/weather-api/"
-        rel="nofollow noopener noreferrer"
-        target="_blank"
-        style="
-          position: absolute;
-          bottom: 0;
-          transform: translate(-50%, -500%);
-          left: 50%;
-          opacity: 0.5;
-        "
-      >
-        <img
-          alt="Powered by the Tomorrow.io Weather API"
-          src="https://weather-website-client.tomorrow.io/img/powered-by.svg"
-          width="250"
-          height="18"
-        />
-      </a>
-    </div>
   </body>
 </html>
