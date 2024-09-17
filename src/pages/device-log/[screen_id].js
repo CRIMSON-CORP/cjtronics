@@ -231,7 +231,7 @@ function ActivityHistory({ logs }) {
                       </SvgIcon>
                     </ListItemAvatar>
                     <ListItemText
-                      primary={_log.uploadName}
+                      primary={`${_log.accountName}: ${_log.uploadName}`}
                       primaryTypographyProps={{ variant: 'subtitle1' }}
                       secondary={`${_log.playAt} (${ago})`}
                       secondaryTypographyProps={{ variant: 'body2' }}
