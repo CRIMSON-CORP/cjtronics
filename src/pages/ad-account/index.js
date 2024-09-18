@@ -456,6 +456,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       getCompanies(ctx.req),
       getAllScreens(ctx.req),
     ]);
+    companies.list = companies.list.filter((company) => company.isActive);
     return {
       props: { organizations, companies, screens },
     };
