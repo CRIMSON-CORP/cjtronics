@@ -1,16 +1,9 @@
 import {
   Avatar,
   Box,
-  Button,
   Card,
   Checkbox,
   Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Stack,
   Table,
   TableBody,
@@ -22,10 +15,8 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
-import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
-import { useState } from 'react';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -49,6 +40,7 @@ export const CustomersTable = (props) => {
   } = props;
 
   const { replace, asPath } = useRouter();
+  const { user: loggedInUser } = useAuth();
 
   const selectedSome = selected.length > 0 && selected.length < items.length;
   const selectedAll = items.length > 0 && selected.length === items.length;
@@ -166,25 +158,27 @@ export const CustomersTable = (props) => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2}>
-                        {user.isActive ? (
-                          <ConfirmAction
-                            title="Suspend User?"
-                            color="error"
-                            action={toggleSuspendUser(user.reference, true)}
-                            content="Are you sure you want to Suspend this User?"
-                          >
-                            Suspend
-                          </ConfirmAction>
-                        ) : (
-                          <ConfirmAction
-                            title="Unsuspend User?"
-                            action={toggleSuspendUser(user.reference, false)}
-                            content="Are you sure you want to Unsuspend this User?"
-                          >
-                            Unsuspend
-                          </ConfirmAction>
-                        )}
-                        {user.userType !== 'admin' &&
+                        {loggedInUser?.reference !== user.reference ? (
+                          user.isActive ? (
+                            <ConfirmAction
+                              title="Suspend User?"
+                              color="error"
+                              action={toggleSuspendUser(user.reference, true)}
+                              content="Are you sure you want to Suspend this User?"
+                            >
+                              Suspend
+                            </ConfirmAction>
+                          ) : (
+                            <ConfirmAction
+                              title="Unsuspend User?"
+                              action={toggleSuspendUser(user.reference, false)}
+                              content="Are you sure you want to Unsuspend this User?"
+                            >
+                              Unsuspend
+                            </ConfirmAction>
+                          )
+                        ) : null}
+                        {loggedInUser?.account_type === 'admin' &&
                           (user.userType == 'partner' ? (
                             <ConfirmAction
                               color="error"
