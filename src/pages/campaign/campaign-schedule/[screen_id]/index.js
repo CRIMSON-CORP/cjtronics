@@ -428,6 +428,7 @@ function PlayAds({ sequence, screen }) {
   const [screenView, setScreenView] = useState('player');
   const [completedScreen, setCompletedScreen] = useState([]);
   const [widgets, setWidgets] = useState([]);
+
   const loadAds = async () => {
     setRequestProcessing(true);
 
@@ -501,12 +502,30 @@ function PlayAds({ sequence, screen }) {
   };
 
   useEffect(() => {
-    if (completedScreen.length === campaignsLists.length && widgets.length > 0) {
-      setScreenView('widgets');
-    } else {
-      setScreenView('player');
+    if (campaignsLists.length !== 0 || widgets.length !== 0) {
+      if (completedScreen.length === campaignsLists.length && widgets.length > 0) {
+        setScreenView('widgets');
+      } else {
+        if (completedScreen.length === campaignsLists.length) {
+          console.log('setting');
+
+          setCompletedScreen([]);
+          setScreenView('player' + new Date().getTime());
+        }
+      }
     }
-  }, [completedScreen, campaignsLists]);
+  }, [completedScreen, campaignsLists, widgets]);
+
+  useEffect(() => {
+    setCompletedScreen([]);
+  }, [screenView]);
+
+  useEffect(() => {
+    if (!state) {
+      setCompletedScreen([]);
+      setScreenView('player' + new Date().getTime());
+    }
+  }, [state]);
 
   return (
     <>
@@ -546,7 +565,7 @@ function PlayAds({ sequence, screen }) {
             backgroundColor: 'black',
           }}
         >
-          {screenView === 'player' ? (
+          {screenView.startsWith('player') ? (
             <Screen screenLayoutRef={screen.layoutReference}>
               {campaignsLists.map((campaignsList, index) => (
                 <View
@@ -627,6 +646,10 @@ function View({ campaignsList, screenView, setScreenView, onComplete }) {
       // }, 1000 * 20);
     }
   }, [currentAdIndex, sequence]);
+
+  useEffect(() => {
+    setCurrentAdIndex(0);
+  }, [screenView]);
 
   return (
     <Box overflow="hidden">
