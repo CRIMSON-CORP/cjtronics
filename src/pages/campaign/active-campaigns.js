@@ -1,25 +1,39 @@
 import {
   Box,
+  Button,
   Card,
   Container,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   Typography,
 } from '@mui/material';
+import Grid from '@mui/system/Unstable_Grid/Grid';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
-const Page = ({ campaigns }) => {
+const Page = ({ campaigns, screens }) => {
+  const { query, push } = useRouter();
+  const [selectedScreen, setSelectedScreen] = useState(query.screen_id || '');
+
+  const handleScreenSelect = (event) => {
+    setSelectedScreen(event.target.value);
+    push(`/campaign/active-campaigns?screen=${event.target.value}`);
+  };
+
   return (
     <>
       <Head>
@@ -35,6 +49,32 @@ const Page = ({ campaigns }) => {
         <Container maxWidth="xl">
           <Stack spacing={3}>
             <Typography variant="h5">Active campaigns({campaigns.totalRows})</Typography>
+            <Grid container spacing={3}>
+              <Grid xs={12} sm={6} lg={4}>
+                <FormControl fullWidth>
+                  <InputLabel id="scrren-select-label">Select Screen</InputLabel>
+                  <Select
+                    labelId="scrren-select-label"
+                    id="screen-select"
+                    name="screenId"
+                    value={selectedScreen}
+                    label="Select Screen"
+                    onChange={handleScreenSelect}
+                  >
+                    {screens.screen.map((screen) => (
+                      <MenuItem value={screen.reference} key={screen.reference}>
+                        {screen.screenName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid xs={12} sm={6} lg={4}>
+                <Button LinkComponent={Link} href="/campaign/active-campaigns">
+                  View All
+                </Button>
+              </Grid>
+            </Grid>
             <Activecampaigns campaigns={campaigns} />
           </Stack>
         </Container>
@@ -95,15 +135,6 @@ function Activecampaigns({ campaigns }) {
           </TableBody>
         </Table>
       </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25, 100]}
-        component="div"
-        count={+campaigns.totalRows}
-        rowsPerPage={+campaigns.rowsPerPage}
-        page={+campaigns.currentPage - 1}
-        onPageChange={onPageChange}
-        onRowsPerPageChange={handleRowsPerPageChange}
-      />
     </Card>
   );
 }
@@ -111,18 +142,17 @@ function Activecampaigns({ campaigns }) {
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
-  const params = {
-    ...ctx.query,
-    page: ctx.query.page || 1,
-    size: ctx.query.size || 25,
-  };
-
+  const { screen } = ctx.query;
   try {
-    const campaigns = await getResourse(ctx.req, `/campaign/active`, params);
+    const [campaigns, screens] = await Promise.all([
+      getResourse(ctx.req, screen ? `/campaign/screen/${screen}` : `/campaign`, { isActive: true }),
+      getResourse(ctx.req, '/screen'),
+    ]);
 
     return {
       props: {
         campaigns,
+        screens,
       },
     };
   } catch (error) {
