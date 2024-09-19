@@ -2,7 +2,6 @@ import { DeleteSweep } from '@mui/icons-material';
 import {
   Avatar,
   Box,
-  Button,
   Card,
   Checkbox,
   Chip,
@@ -155,7 +154,7 @@ export const CompaniesTable = (props) => {
                 <TableRow>
                   <TableCell colSpan={13}>
                     <Stack justifyContent="center" direction="row">
-                      <Typography variant="h4">No Users found</Typography>
+                      <Typography variant="h6">No Companies found</Typography>
                     </Stack>
                   </TableCell>
                 </TableRow>
