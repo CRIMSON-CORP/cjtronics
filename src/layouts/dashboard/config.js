@@ -110,6 +110,7 @@ export const items = [
         matchers: ['campaign'],
       },
     ],
+    roles: ['admin', 'partner'],
   },
   {
     title: 'Ad Account',

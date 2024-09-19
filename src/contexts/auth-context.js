@@ -10,6 +10,8 @@ import {
   useReducer,
   useRef,
 } from 'react';
+import toast from 'react-hot-toast';
+import { items } from 'src/layouts/dashboard/config';
 
 const HANDLERS = {
   INITIALIZE: 'INITIALIZE',
@@ -203,6 +205,42 @@ export const AuthProvider = (props) => {
     }),
     [signIn, signOut, forgotPassword, resetPassword, createAdvertizer, state]
   );
+
+  // const { account_type } = state.user;
+  const locations = pathname.split('/').filter(Boolean);
+  const routesAccessed = items.reduce((acc, item) => {
+    if (item?.matchers?.includes(locations[0])) {
+      acc.push(item);
+
+      if (item.links) {
+        item.links.forEach((link) => {
+          if (link.matchers?.includes(locations[1])) {
+            acc.push(link);
+          }
+        });
+      }
+    }
+    return acc;
+  }, []);
+
+  if (state.user) {
+    const isAllowed =
+      routesAccessed.length !== 0
+        ? routesAccessed.every((item) =>
+            item.roles ? item.roles?.includes(state.user.account_type) : true
+          )
+        : true;
+
+    if (!isAllowed) {
+      push('/');
+      toast.error('Youre not authorized to view this page');
+      return null;
+    }
+  }
+
+  // const [] = pathname.split('/');
+  // const configForLocation = items.find;
+  // console.log(routesAccessed);
 
   return <AuthContext.Provider value={contextValues}>{children}</AuthContext.Provider>;
 };
