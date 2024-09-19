@@ -38,11 +38,15 @@ import * as Yup from 'yup';
 import { screenLayoutToReferenceMap } from '../screens';
 
 const superAdminRef = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF;
-const Page = ({ screens, organizations, adAccounts, layouts }) => {
+const Page = ({ screens, organizations, layouts }) => {
   const { user } = useAuth();
   const { push } = useRouter();
   const defaultOrganizationReference = user?.organizationReference || '';
   const isSuperAdmin = defaultOrganizationReference === superAdminRef;
+
+  const [adAccounts, setAdAccounts] = useState([]);
+  const [fetchingAdAccounts, setFetchingAdAccounts] = useState(false);
+
   const formik = useFormik({
     initialValues: {
       organizationId: defaultOrganizationReference,
@@ -151,8 +155,37 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
   ]);
 
   useEffect(() => {
+    formik.setFieldValue('accountId', '', false);
+  }, [formik.values.screenId]);
+
+  useEffect(() => {
     formik.setFieldValue('playFiles', '');
   }, [formik.values.accountId]);
+
+  const { screenId } = formik.values;
+  const fetchAdAccounts = useCallback(async () => {
+    setFetchingAdAccounts(true);
+    try {
+      toast.loading('Fetching Ad Accounts...');
+      const response = await axios.get(`/api/admin/ad-account/get-by-screen?reference=${screenId}`);
+      toast.dismiss();
+      const { list } = response.data.data;
+      if (list.length === 0) {
+        toast.error('No Ad Accounts found for this screen');
+        return;
+      }
+      setAdAccounts(response.data.data.list);
+    } catch (error) {
+      toast.error('Failed to fetch Ad accounts for this screen');
+    }
+    setFetchingAdAccounts(false);
+  }, [screenId]);
+
+  useEffect(() => {
+    if (screenId) {
+      fetchAdAccounts();
+    }
+  }, [screenId]);
 
   return (
     <>
@@ -235,19 +268,23 @@ const Page = ({ screens, organizations, adAccounts, layouts }) => {
                       </FormHelperText>
                     )}
                   </FormControl>
-                  <FormControl fullWidth>
-                    <InputLabel id="ad-account">Select Ad Account</InputLabel>
+                  <FormControl variant="outlined">
+                    <InputLabel htmlFor="screen_id">Select Ad Account</InputLabel>
                     <Select
                       error={!!(formik.touched.accountId && formik.errors.accountId)}
-                      labelId="ad-account"
-                      id="screen-select"
+                      fullWidth
+                      label="Select Ad Account-"
                       name="accountId"
-                      value={formik.values.accountId}
-                      label="Select Ad Account"
+                      id="accountId"
                       onBlur={formik.handleBlur}
                       onChange={formik.handleChange}
+                      value={formik.values.accountId}
+                      disabled={
+                        !formik.values.screenId || adAccounts.length === 0 || fetchingAdAccounts
+                      }
+                      endAdornment={fetchingAdAccounts && <CircularProgress />}
                     >
-                      {adAccounts.list.map((adAccount) => (
+                      {adAccounts.map((adAccount) => (
                         <MenuItem value={adAccount.reference} key={adAccount.reference}>
                           {adAccount.name}
                         </MenuItem>
@@ -435,14 +472,13 @@ function DayCheck({ label, formik, value }) {
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   try {
-    const [screens, organizations, adAccounts, layouts] = await Promise.all([
+    const [screens, organizations, layouts] = await Promise.all([
       getResourse(ctx.req, '/screen'),
       getResourse(ctx.req, '/organization'),
-      getResourse(ctx.req, '/ads-account'),
       getResourse(ctx.req, 'screen/layout/all'),
     ]);
     return {
-      props: { screens, organizations, adAccounts, layouts },
+      props: { screens, organizations, layouts },
     };
   } catch (error) {
     console.log(error);
