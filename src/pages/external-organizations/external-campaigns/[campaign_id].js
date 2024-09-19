@@ -119,9 +119,16 @@ function FilesDisplay({ files }) {
 
 function File({ file }) {
   const { anchorRef, handleClose, handleOpen, open } = usePopover();
-
-  function handleDownload() {
-    window.open(file.uploadFile);
+  async function handleDownload() {
+    const response = await fetch(file.uploadFile);
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', file.uploadURL);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     handleClose();
   }
 
@@ -194,7 +201,7 @@ function File({ file }) {
           loop
           controls={false}
           src={file.uploadFile}
-          alt={file.uploadName}
+          alt={file.uploadURL}
           style={{ objectFit: 'contain', width: '100%', height: '100%', display: 'block' }}
         />
       ) : file.uploadType === 'html' ? (
