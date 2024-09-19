@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CardHeader,
+  CircularProgress,
   Container,
   Divider,
   FormControl,
@@ -20,9 +21,10 @@ import {
   SvgIcon,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import axios from 'axios';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -73,11 +75,9 @@ const Page = ({ screens, adAccounts, logs }) => {
     push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
   };
 
-  const exportAsCSV = () => {
-    if (!selectedScreen) {
-      return toast.error('Please select a screen!');
-    }
-  };
+  useEffect(() => {
+    setSelectedAdAccount('');
+  }, [query.screen_id]);
 
   const hanldePageChange = (_event, value) => {
     const queryParams = new URLSearchParams(query);
@@ -144,9 +144,7 @@ const Page = ({ screens, adAccounts, logs }) => {
               </FormControl>
             </Grid>
             <Grid xs={12}>
-              <Button onClick={exportAsCSV} startIcon={<Upload />} variant="contained">
-                Export as CSV
-              </Button>
+              <ExportCSV screen={selectedScreen} />
             </Grid>
             <Grid xs={12}>
               <ActivityHistory logs={groupedLogs} sx={{ height: '100%' }} />
@@ -245,5 +243,54 @@ function ActivityHistory({ logs }) {
       </List>
       <Divider />
     </Card>
+  );
+}
+
+function ExportCSV({ screen }) {
+  const [requestProcessing, setRequestProvessing] = useState(false);
+
+  const exportAsCSV = async () => {
+    let list = [];
+    setRequestProvessing(true);
+    try {
+      const { data } = await axios.get(`/api/admin/device-log/get-all-logs?screen=${screen}`);
+      list = data.data.list;
+    } catch (error) {
+      return toast.error(error.response.data.message);
+    } finally {
+      setRequestProvessing(false);
+    }
+
+    // Convert data to CSV string
+    const csvRows = [];
+
+    // Get headers
+    const headers = Object.keys(list[0]);
+    csvRows.push(headers.join(',')); // Add headers to CSV
+
+    // Loop over the rows
+    list.forEach((row) => {
+      const values = headers.map((header) => row[header]);
+      csvRows.push(values.join(',')); // Add row to CSV
+    });
+
+    // Convert to a CSV string
+    const csvString = csvRows.join('\n');
+
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csvString], { type: 'text/csv' }));
+    link.download = 'data.csv'; // Name of the downloaded file
+    link.click();
+  };
+
+  return (
+    <Button
+      onClick={exportAsCSV}
+      startIcon={requestProcessing ? <CircularProgress /> : <Upload />}
+      variant="contained"
+    >
+      Export as CSV
+    </Button>
   );
 }
