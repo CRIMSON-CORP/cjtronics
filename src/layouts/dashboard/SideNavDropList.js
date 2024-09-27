@@ -98,6 +98,7 @@ function SideNavDropList({ title, icon, links, active, disabled }) {
                 fontSize: 14,
                 fontWeight: 600,
                 lineHeight: '24px',
+                whiteSpace: 'nowrap',
                 ...(active && {
                   color: 'neutral.800',
                 }),
