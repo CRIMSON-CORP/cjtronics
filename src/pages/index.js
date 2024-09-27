@@ -126,8 +126,6 @@ function useSocketScreens({ defaultScreens }) {
 
         if (data.event === 'device-connection')
           if (data.screens) {
-            console.log(data.screens, 'data screens');
-
             setScreens(data.screens);
           }
       };
@@ -139,8 +137,6 @@ function useSocketScreens({ defaultScreens }) {
   const userOrganizationScreens = useMemo(
     () =>
       screens.filter((screen) => {
-        console.log(screen.organizationReference === user.organizationReference);
-
         return (
           screen.organizationReference === user.organizationReference ||
           user.organizationReference === process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF
