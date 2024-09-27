@@ -88,8 +88,8 @@ export const AuthProvider = (props) => {
     let user = {};
 
     try {
-      isAuthenticated = window.sessionStorage.getItem('authenticated') === 'true';
-      user = JSON.parse(window.sessionStorage.getItem('user'));
+      isAuthenticated = localStorage.getItem('authenticated') === 'true';
+      user = JSON.parse(localStorage.getItem('user'));
     } catch (err) {
       console.error(err);
     }
@@ -121,8 +121,8 @@ export const AuthProvider = (props) => {
           token: data.token,
           ...data.data,
         };
-        window.sessionStorage.setItem('authenticated', 'true');
-        window.sessionStorage.setItem('user', JSON.stringify(payload));
+        localStorage.setItem('authenticated', 'true');
+        localStorage.setItem('user', JSON.stringify(payload));
         dispatch({
           type: HANDLERS.SIGN_IN,
           payload,
@@ -139,8 +139,8 @@ export const AuthProvider = (props) => {
       const response = await axios.post('/api/auth/logout');
       const { data, status } = response;
       if (status === 200) {
-        window.sessionStorage.setItem('authenticated', 'false');
-        window.sessionStorage.setItem('user', null);
+        localStorage.setItem('authenticated', 'false');
+        localStorage.setItem('user', null);
         dispatch({
           type: HANDLERS.SIGN_OUT,
         });
