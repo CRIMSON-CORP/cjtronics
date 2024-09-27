@@ -20,19 +20,23 @@ import Grid from '@mui/system/Unstable_Grid/Grid';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
 const Page = ({ campaigns, screens }) => {
   const { query, push } = useRouter();
-  const [selectedScreen, setSelectedScreen] = useState(query.screen_id || '');
+  const [selectedScreen, setSelectedScreen] = useState(query.screen || '');
 
   const handleScreenSelect = (event) => {
     setSelectedScreen(event.target.value);
     push(`/campaign/active-campaigns?screen=${event.target.value}`);
   };
+
+  useEffect(() => {
+    setSelectedScreen(query.screen || '');
+  }, [query.screen]);
 
   return (
     <>
@@ -48,7 +52,7 @@ const Page = ({ campaigns, screens }) => {
       >
         <Container maxWidth="xl">
           <Stack spacing={3}>
-            <Typography variant="h5">Active campaigns({campaigns.totalRows})</Typography>
+            <Typography variant="h5">Active campaigns({campaigns.list.length})</Typography>
             <Grid container spacing={3}>
               <Grid xs={12} sm={6} lg={4}>
                 <FormControl fullWidth>
@@ -127,7 +131,7 @@ function Activecampaigns({ campaigns }) {
               return (
                 <TableRow hover role="checkbox" tabIndex={-1} key={campaign.reference}>
                   <TableCell>{campaign.name}</TableCell>
-                  <TableCell>{campaign.accountName}</TableCell>
+                  <TableCell>{campaign.accountName || campaign.adsAccountName}</TableCell>
                   <TableCell>{campaign.screenName}</TableCell>
                 </TableRow>
               );
