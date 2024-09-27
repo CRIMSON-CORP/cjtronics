@@ -2,8 +2,9 @@ import { Campaign, Download, Monitor } from '@mui/icons-material';
 import { Box, Button, Container, Unstable_Grid2 as Grid, Stack } from '@mui/material';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import { useAuth } from 'src/hooks/use-auth';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-campaign-activitieslist';
@@ -99,6 +100,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       },
     };
   } catch (error) {
+    console.log(error);
     if (error?.response?.status === 401) {
       return {
         redirect: {
@@ -113,6 +115,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
 });
 
 function useSocketScreens({ defaultScreens }) {
+  const { user } = useAuth();
   const [screens, setScreens] = useState(defaultScreens);
   useEffect(() => {
     const socket = new WebSocket('wss://cjtronics-websocket-server.onrender.com');
@@ -123,6 +126,8 @@ function useSocketScreens({ defaultScreens }) {
 
         if (data.event === 'device-connection')
           if (data.screens) {
+            console.log(data.screens, 'data screens');
+
             setScreens(data.screens);
           }
       };
@@ -131,9 +136,25 @@ function useSocketScreens({ defaultScreens }) {
     return () => socket.close();
   }, []);
 
-  const connectedScreens = screens.filter((screen) => screen.isOnline).length;
+  const userOrganizationScreens = useMemo(
+    () =>
+      screens.filter((screen) => {
+        console.log(screen.organizationReference === user.organizationReference);
+
+        return (
+          screen.organizationReference === user.organizationReference ||
+          user.organizationReference === process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF
+        );
+      }),
+    [screens]
+  );
+
+  const connectedScreens = useMemo(
+    () => userOrganizationScreens.filter((screen) => screen.isOnline).length,
+    [userOrganizationScreens]
+  );
   return {
-    screens,
+    screens: userOrganizationScreens,
     connectedScreens,
   };
 }
