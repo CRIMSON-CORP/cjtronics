@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { styled } from '@mui/material/styles';
+import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 import { withAuthGuard } from 'src/hocs/with-auth-guard';
 import { SideNav } from './side-nav';
 import { TopNav } from './top-nav';
 
-const SIDE_NAV_WIDTH = 280;
+const SIDE_NAV_WIDTH = 305;
 
 const LayoutRoot = styled('div')(({ theme }) => ({
   display: 'flex',

@@ -8,7 +8,7 @@ import { usePopover } from 'src/hooks/use-popover';
 import { AccountPopover } from './account-popover';
 import { items } from './config';
 
-const SIDE_NAV_WIDTH = 280;
+const SIDE_NAV_WIDTH = 305;
 const TOP_NAV_HEIGHT = 64;
 
 export const TopNav = (props) => {
