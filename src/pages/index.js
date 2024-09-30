@@ -118,7 +118,7 @@ function useSocketScreens({ defaultScreens }) {
   const { user } = useAuth();
   const [screens, setScreens] = useState(defaultScreens);
   useEffect(() => {
-    const socket = new WebSocket('wss://cjtronics-websocket-server.onrender.com');
+    const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
 
     socket.onopen = () => {
       socket.onmessage = (event) => {

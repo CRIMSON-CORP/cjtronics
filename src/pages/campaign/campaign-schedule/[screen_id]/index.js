@@ -334,7 +334,7 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   const [hasSent, setHasSent] = useState(false);
 
   useEffect(() => {
-    const socket = new WebSocket('wss://cjtronics-websocket-server.onrender.com');
+    const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
     socket.onopen = () => {
       setWebsocket(socket);
     };
