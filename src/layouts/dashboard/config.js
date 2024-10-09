@@ -243,3 +243,124 @@ export const items = [
     ),
   },
 ];
+
+// function generateAdSequence(input) {
+//   const adIndices = input.map((account) => account.map(() => 0)); // Track current ad index for each campaign in each account
+//   const output = [];
+//   const totalAds = input.reduce((max, campaigns) => {
+//     const totalAds = campaigns.reduce((count, ads) => count + ads.length, 0);
+//     return Math.max(max, totalAds);
+//   }, 0); // There are max 4 ads per account, across all campaigns
+//   let adsPlayed = 0;
+
+//   // Continue until we've generated the required number of ads
+//   while (adsPlayed < totalAds) {
+//     // Loop through each account
+//     for (let accIdx = 0; accIdx < input.length; accIdx++) {
+//       const account = input[accIdx];
+
+//       // Try to pick the next ad for each campaign in the account
+//       let pickedAd = false;
+//       for (let campIdx = 0; campIdx < account.length; campIdx++) {
+//         const campaign = account[campIdx];
+//         const adIdx = adIndices[accIdx][campIdx];
+
+//         // If there's an ad available at the current index
+//         if (adIdx < campaign.length) {
+//           output.push(campaign[adIdx]); // Add the ad to the output
+//           adIndices[accIdx][campIdx]++; // Increment index for the campaign
+//           adsPlayed++; // Track total ads played
+//           pickedAd = true;
+//           break; // Stop looking once an ad is picked
+//         }
+//       }
+
+//       // If no ad was picked in any campaign, loop back to the first campaign
+//       if (!pickedAd) {
+//         for (let campIdx = 0; campIdx < account.length; campIdx++) {
+//           // If all ads in this campaign have been picked, restart the loop
+//           if (adIndices[accIdx][campIdx] === account[campIdx].length) {
+//             output.push(account[campIdx][0]); // Pick the first ad from this campaign
+//             adIndices[accIdx][campIdx] = 1; // Set the index to 1 (loop back)
+//             adsPlayed++;
+//             break;
+//           }
+//         }
+//       }
+
+//       if (adsPlayed >= totalAds) break; // Stop when the required number of ads is reached
+//     }
+//   }
+
+//   return output;
+// }
+
+// // Example input
+// const input = [
+//   [
+//     ['ad1', 'ad2'],
+//     ['ad3', 'ad4'],
+//   ],
+//   [['ad5'], ['ad6', 'ad7']],
+//   [['ad8'], ['ad11'], ['ad9', 'ad10']],
+// ];
+
+// console.log(generateAdSequence(input));
+
+// ['ad1', 'ad5', 'ad8', 'ad2', 'ad6', 'ad11', 'ad3', 'ad7', 'ad9', 'ad4', 'ad6', 'ad10'];
+
+// screen
+// const input = [
+//   // ad account
+//   [
+//     // campaign
+//     [
+//       // ad
+//       'ad1',
+//       // ad
+//       'ad2',
+//     ],
+//     // campaign
+//     [
+//       // ad
+//       'ad3',
+//       // ad
+//       'ad4',
+//     ],
+//   ],
+//   //ad account
+//   [
+//     // campaign
+//     [
+//       // ad
+//       'ad5',
+//     ],
+//     // campaign
+//     [
+//       // ad
+//       'ad6',
+//       // ad
+//       'ad7',
+//     ],
+//   ],
+//   //ad account
+//   [
+//     // campaign
+//     [
+//       // ad
+//       'ad8',
+//     ],
+//     // campaign
+//     [
+//       // ad
+//       'ad11',
+//     ],
+//     // campaign
+//     [
+//       // ad
+//       'ad9',
+//       // ad
+//       'ad10',
+//     ],
+//   ],
+// ];
