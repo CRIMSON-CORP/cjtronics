@@ -24,7 +24,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axios from 'axios';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -53,9 +53,10 @@ const Page = ({ screens, adAccounts, logs }) => {
   const [selectedAdAccount, setSelectedAdAccount] = useState(query.account || '');
   const [selectedDate, setSelectedDate] = useState(query.date ? new Date(query.date) : new Date());
 
-  const handleScreenSelect = (event) => {
+  const handleScreenSelect = async (event) => {
     setSelectedScreen(event.target.value);
-    push(`/device-log/${event.target.value}`);
+    await push(`/device-log/${event.target.value}`);
+    setSelectedAdAccount('');
   };
 
   const handleAdAccountSelect = (event) => {
@@ -74,10 +75,6 @@ const Page = ({ screens, adAccounts, logs }) => {
     queryParams.delete('screen_id');
     push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
   };
-
-  useEffect(() => {
-    setSelectedAdAccount('');
-  }, [query.screen_id]);
 
   const hanldePageChange = (_event, value) => {
     const queryParams = new URLSearchParams(query);
@@ -144,7 +141,7 @@ const Page = ({ screens, adAccounts, logs }) => {
               </FormControl>
             </Grid>
             <Grid xs={12}>
-              <ExportCSV screen={selectedScreen} />
+              <ExportCSV screen={selectedScreen} selectedAdAccount={selectedAdAccount} />
             </Grid>
             <Grid xs={12}>
               <ActivityHistory logs={groupedLogs} sx={{ height: '100%' }} />
@@ -214,15 +211,15 @@ function ActivityHistory({ logs }) {
     <Card>
       <CardHeader title={logs.length === 0 ? 'No activity history' : 'Activities'} />
       <List sx={{ maxHeight: '50vh', overflow: 'auto' }} subheader={<li />}>
-        {logs.map((log) => (
-          <li key={log.date}>
+        {logs.map((log, index) => (
+          <li key={log.date + index}>
             <ul>
               <ListSubheader>{log.date}</ListSubheader>
               {log.logs.map((_log, index) => {
                 const hasDivider = index < log.length - 1;
                 const ago = formatRelativeTime(new Date(_log.playAt));
                 return (
-                  <ListItem divider={hasDivider} key={_log.playAt}>
+                  <ListItem divider={hasDivider} key={_log.playAt + index}>
                     <ListItemAvatar>
                       <SvgIcon>
                         <Campaign />
@@ -246,14 +243,16 @@ function ActivityHistory({ logs }) {
   );
 }
 
-function ExportCSV({ screen }) {
+function ExportCSV({ screen, selectedAdAccount }) {
   const [requestProcessing, setRequestProvessing] = useState(false);
 
   const exportAsCSV = async () => {
     let list = [];
     setRequestProvessing(true);
     try {
-      const { data } = await axios.get(`/api/admin/device-log/get-all-logs?screen=${screen}`);
+      const { data } = await axios.get(
+        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}`
+      );
       list = data.data.list;
     } catch (error) {
       return toast.error(error.response.data.message);

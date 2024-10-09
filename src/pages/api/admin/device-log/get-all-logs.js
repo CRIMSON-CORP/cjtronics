@@ -7,6 +7,9 @@ export default async function handler(req, res) {
       headers: {
         Authorization: `Bearer ${getCookie(req)}`,
       },
+      params: {
+        accountRef: req.query.account,
+      },
     });
 
     if (response.data.status && response.status === 200)
