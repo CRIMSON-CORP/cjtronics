@@ -237,7 +237,7 @@ function AdAccountForm({ organizations, companies, screens }) {
               size="large"
               disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
             >
-              Add Company
+              Add Ad Account
             </Button>
           </Stack>
         </form>
