@@ -33,7 +33,7 @@ import { formatRelativeTime } from 'src/utils/fromRelativeTime';
 
 function groupLogsByDate(logs, dateKey) {
   const grouped = logs.reduce((acc, log) => {
-    const date = log[dateKey || 'playAt'].split(' ')[0];
+    const date = log[dateKey || 'playDate'].split(' ')[0];
     if (!acc[date]) {
       acc[date] = [];
     }
@@ -219,7 +219,7 @@ function ActivityHistory({ logs }) {
                 const hasDivider = index < log.length - 1;
                 const ago = formatRelativeTime(new Date(_log.playDate + ' ' + _log.playTime));
                 return (
-                  <ListItem divider={hasDivider} key={_log.playAt + index}>
+                  <ListItem divider={hasDivider} key={_log.playDate + ' ' + _log.playTime + index}>
                     <ListItemAvatar>
                       <SvgIcon>
                         <Campaign />
@@ -228,7 +228,7 @@ function ActivityHistory({ logs }) {
                     <ListItemText
                       primary={`${_log.accountName}: ${_log.uploadName}`}
                       primaryTypographyProps={{ variant: 'subtitle1' }}
-                      secondary={`${_log.playAt} (${ago})`}
+                      secondary={`${_log.playDate + ' ' + _log.playTime} (${ago})`}
                       secondaryTypographyProps={{ variant: 'body2' }}
                     />
                   </ListItem>
