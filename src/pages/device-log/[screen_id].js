@@ -217,7 +217,7 @@ function ActivityHistory({ logs }) {
               <ListSubheader>{log.date}</ListSubheader>
               {log.logs.map((_log, index) => {
                 const hasDivider = index < log.length - 1;
-                const ago = formatRelativeTime(new Date(_log.playAt));
+                const ago = formatRelativeTime(new Date(_log.playDate + ' ' + _log.playTime));
                 return (
                   <ListItem divider={hasDivider} key={_log.playAt + index}>
                     <ListItemAvatar>
