@@ -141,7 +141,7 @@ const Page = ({ screens, adAccounts, logs }) => {
               </FormControl>
             </Grid>
             <Grid xs={12}>
-              <ExportCSV screen={selectedScreen} selectedAdAccount={selectedAdAccount} />
+              <ExportCSV screen={selectedScreen} selectedAdAccount={selectedAdAccount} selectedDate={selectedDate}/>
             </Grid>
             <Grid xs={12}>
               <ActivityHistory logs={groupedLogs} sx={{ height: '100%' }} />
@@ -243,7 +243,7 @@ function ActivityHistory({ logs }) {
   );
 }
 
-function ExportCSV({ screen, selectedAdAccount }) {
+function ExportCSV({ screen, selectedAdAccount, selectedDate }) {
   const [requestProcessing, setRequestProvessing] = useState(false);
 
   const exportAsCSV = async () => {
@@ -251,7 +251,7 @@ function ExportCSV({ screen, selectedAdAccount }) {
     setRequestProvessing(true);
     try {
       const { data } = await axios.get(
-        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}`
+        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}&dateSelected=${selectedDate}`
       );
       list = data.data.list;
     } catch (error) {
