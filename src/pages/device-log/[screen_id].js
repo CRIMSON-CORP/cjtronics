@@ -217,7 +217,7 @@ function ActivityHistory({ logs }) {
               <ListSubheader>{log.date}</ListSubheader>
               {log.logs.map((_log, index) => {
                 const hasDivider = index < log.length - 1;
-                const ago = formatRelativeTime(new Date(_log.playDate + ' ' + _log.playTime));
+                const ago = formatRelativeTime(new Date(_log.playAt));
                 return (
                   <ListItem divider={hasDivider} key={_log.playDate + ' ' + _log.playTime + index}>
                     <ListItemAvatar>
@@ -228,7 +228,7 @@ function ActivityHistory({ logs }) {
                     <ListItemText
                       primary={`${_log.accountName}: ${_log.uploadName}`}
                       primaryTypographyProps={{ variant: 'subtitle1' }}
-                      secondary={`${_log.playDate + ' ' + _log.playTime} (${ago})`}
+                      secondary={`${_log.playAt} (${ago})`}
                       secondaryTypographyProps={{ variant: 'body2' }}
                     />
                   </ListItem>
