@@ -51,7 +51,12 @@ const Page = ({ screens, adAccounts, logs }) => {
   const { query, push } = useRouter();
   const [selectedScreen, setSelectedScreen] = useState(query.screen_id || '');
   const [selectedAdAccount, setSelectedAdAccount] = useState(query.account || '');
-  const [selectedDate, setSelectedDate] = useState(query.date ? new Date(query.date) : new Date());
+  const [selectedDateFrom, setSelectedDateFrom] = useState(
+    query.dateFrom ? new Date(query.dateFrom) : null
+  );
+  const [selectedDateTo, setSelectedDateTo] = useState(
+    query.dateTo ? new Date(query.dateTo) : null
+  );
 
   const handleScreenSelect = async (event) => {
     setSelectedScreen(event.target.value);
@@ -68,10 +73,26 @@ const Page = ({ screens, adAccounts, logs }) => {
     push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
   };
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
+  const handleDateFromChange = (date) => {
+    if (selectedDateTo && date > selectedDateTo) {
+      toast.error('The start date cannot be later than the end date.');
+      return; // Prevent setting the invalid date
+    }
+    setSelectedDateFrom(date);
     const queryParams = new URLSearchParams(query);
-    queryParams.set('date', date.toISOString().split('T')[0]);
+    queryParams.set('dateFrom', date.toLocaleDateString('en-CA').replaceAll('-', '/'));
+    queryParams.delete('screen_id');
+    push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
+  };
+
+  const handleDateToChange = (date) => {
+    if (selectedDateFrom && date < selectedDateFrom) {
+      toast.error('The end date cannot be earlier than the start date.');
+      return; // Prevent setting the invalid date
+    }
+    setSelectedDateTo(date);
+    const queryParams = new URLSearchParams(query);
+    queryParams.set('dateTo', date.toLocaleDateString('en-CA').replaceAll('-', '/'));
     queryParams.delete('screen_id');
     push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
   };
@@ -130,18 +151,37 @@ const Page = ({ screens, adAccounts, logs }) => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid xs={12} sm={6} lg={4}>
-              <FormControl fullWidth>
-                <DatePicker
-                  fullWidth
-                  label="Select Day"
-                  value={selectedDate}
-                  onChange={handleDateChange}
-                />
-              </FormControl>
+            <Grid xs={12} spacing={3}>
+              <Grid container spacing={3}>
+                <Grid item>
+                  <FormControl>
+                    <DatePicker
+                      fullWidth
+                      label="Select Day From"
+                      value={selectedDateFrom}
+                      onChange={handleDateFromChange}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item>
+                  <FormControl>
+                    <DatePicker
+                      fullWidth
+                      label="Select Day To"
+                      value={selectedDateTo}
+                      onChange={handleDateToChange}
+                    />
+                  </FormControl>
+                </Grid>
+              </Grid>
             </Grid>
             <Grid xs={12}>
-              <ExportCSV screen={selectedScreen} selectedAdAccount={selectedAdAccount} selectedDate={selectedDate}/>
+              <ExportCSV
+                screen={selectedScreen}
+                selectedAdAccount={selectedAdAccount}
+                selectedDateFrom={selectedDateFrom}
+                selectedDateTo={selectedDateTo}
+              />
             </Grid>
             <Grid xs={12}>
               <ActivityHistory logs={groupedLogs} sx={{ height: '100%' }} />
@@ -172,8 +212,10 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
     page: ctx.query.page || 1,
     size: ctx.query.size || 25,
     ...(ctx.query.account ? { accountRef: ctx.query.account } : {}),
-    ...(ctx.query.date ? { dateSelected: ctx.query.date } : {}),
+    ...(ctx.query.dateFrom ? { dateFrom: ctx.query.dateFrom } : {}),
+    ...(ctx.query.dateTo ? { dateTo: ctx.query.dateTo } : {}),
   };
+
   try {
     const [screens, adAccounts, logs] = await Promise.all([
       getResourse(ctx.req, `/screen`),
@@ -243,7 +285,7 @@ function ActivityHistory({ logs }) {
   );
 }
 
-function ExportCSV({ screen, selectedAdAccount, selectedDate }) {
+function ExportCSV({ screen, selectedAdAccount, selectedDateFrom, selectedDateTo }) {
   const [requestProcessing, setRequestProvessing] = useState(false);
 
   const exportAsCSV = async () => {
@@ -251,7 +293,7 @@ function ExportCSV({ screen, selectedAdAccount, selectedDate }) {
     setRequestProvessing(true);
     try {
       const { data } = await axios.get(
-        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}&dateSelected=${selectedDate}`
+        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}&dateFrom=${selectedDateFrom}&dateTo=${selectedDateTo}`
       );
       list = data.data.list;
     } catch (error) {

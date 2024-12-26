@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     }
     if (error.data) {
       res.status(401).json({ message: error.message });
-      return
+      return;
     }
     res.status(error.response.status).json(error.response.data);
   }
