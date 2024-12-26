@@ -293,7 +293,11 @@ function ExportCSV({ screen, selectedAdAccount, selectedDateFrom, selectedDateTo
     setRequestProvessing(true);
     try {
       const { data } = await axios.get(
-        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}&dateFrom=${selectedDateFrom}&dateTo=${selectedDateTo}`
+        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}&dateFrom=${selectedDateFrom
+          .toLocaleDateString('en-CA')
+          .replaceAll('-', '/')}&dateTo=${selectedDateTo
+          .toLocaleDateString('en-CA')
+          .replaceAll('-', '/')}`
       );
       list = data.data.list;
     } catch (error) {

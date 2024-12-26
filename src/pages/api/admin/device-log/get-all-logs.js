@@ -9,6 +9,7 @@ export default async function handler(req, res) {
       },
       params: {
         accountRef: req.query.account,
+        ...req.query,
       },
     });
 
