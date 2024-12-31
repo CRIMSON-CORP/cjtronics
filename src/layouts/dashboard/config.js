@@ -162,7 +162,7 @@ export const items = [
         matchers: ['create-campaign'],
       },
       {
-        title: 'Campaign Shedule',
+        title: 'Campaign Schedule',
         path: '/campaign/campaign-schedule',
         icon: (
           <SvgIcon fontSize="small">
