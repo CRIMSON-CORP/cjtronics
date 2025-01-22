@@ -641,7 +641,7 @@ function UploadForm({ formik, adReference }) {
 
     setRequestProcessing(true);
     toast.promise(
-      axios.post(`https://cjtronics.tushcode.com/v1/ads/edit/${adReference}`, formData, {
+      axios.post(`${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/v1/ads/edit/${adReference}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${user.token}`,

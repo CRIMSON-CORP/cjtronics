@@ -647,6 +647,8 @@ function UploadForm({ formik }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
   const { user } = useAuth();
 
+  console.log(process.env.BACKEND_DOMAIN);
+
   const hanldeUpload = () => {
     const formData = new FormData();
     const { organizationId, screenId, adsAccountId, adFiles } = formik.values;
@@ -663,7 +665,7 @@ function UploadForm({ formik }) {
     setRequestProcessing(true);
 
     toast.promise(
-      axios.post('https://cjtronics.tushcode.com/v1/ads/create', formData, {
+      axios.post(`${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/v1/ads/create`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${user.token}`,
