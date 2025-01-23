@@ -9,6 +9,10 @@ module.exports = {
         protocol: 'https',
         hostname: 'cjtronics.tushcode.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'cjtronics.errandexpress.com.ng',
+      },
     ],
   },
 };
