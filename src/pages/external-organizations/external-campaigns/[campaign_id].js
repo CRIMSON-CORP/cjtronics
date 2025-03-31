@@ -120,16 +120,20 @@ function FilesDisplay({ files }) {
 function File({ file }) {
   const { anchorRef, handleClose, handleOpen, open } = usePopover();
   async function handleDownload() {
-    const response = await fetch(file.uploadFile);
-    const blob = await response.blob();
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', file.uploadURL);
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    handleClose();
+    try {
+      const response = await fetch(file.uploadFile);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', file.uploadURL);
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      handleClose();
+    } catch (error) {
+      toast.error(error.message);
+    }
   }
 
   function copyUrl() {
@@ -144,6 +148,34 @@ function File({ file }) {
 
   return (
     <Box width="90%" flex="none" position="relative">
+      {file.uploadType === 'image' ? (
+        <Image
+          src={file.uploadFile}
+          alt={file.uploadURL}
+          width={500}
+          height={400}
+          style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
+        />
+      ) : file.uploadType === 'video' ? (
+        <video
+          loop
+          controls
+          src={file.uploadFile}
+          alt={file.uploadURL}
+          style={{
+            objectFit: 'contain',
+            width: '100%',
+            height: '100%',
+            display: 'block',
+            backgroundColor: 'black',
+          }}
+        />
+      ) : file.uploadType === 'html' ? (
+        <Iframe
+          content={file.uploadFile}
+          styles={{ width: '100%', height: '100%', display: 'block' }}
+        />
+      ) : null}
       <Box position="absolute" right={5} top={5}>
         <IconButton
           id="options-button"
@@ -188,28 +220,6 @@ function File({ file }) {
           </MenuItem>
         </MenuList>
       </Menu>
-      {file.uploadType === 'image' ? (
-        <Image
-          src={file.uploadFile}
-          alt={file.uploadURL}
-          width={500}
-          height={400}
-          style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
-        />
-      ) : file.uploadType === 'video' ? (
-        <video
-          loop
-          controls={false}
-          src={file.uploadFile}
-          alt={file.uploadURL}
-          style={{ objectFit: 'contain', width: '100%', height: '100%', display: 'block' }}
-        />
-      ) : file.uploadType === 'html' ? (
-        <Iframe
-          content={file.uploadFile}
-          styles={{ width: '100%', height: '100%', display: 'block' }}
-        />
-      ) : null}
     </Box>
   );
 }
@@ -223,47 +233,61 @@ function CampaignDetails({ campaign }) {
     <Stack>
       <Typography variant="h6">Campaign details</Typography>
       <MenuList>
-        <ListItemText primary="Campaign Name" secondary={campaign.name} />
-        <ListItemText
-          primary="Campaign Created At"
-          secondary={formatter.format(new Date(campaign.createdAt))}
-        />
-        <ListItemText primary="Provider" secondary={campaign.organizationName} />
-        <ListItemText
-          primary="Starts at"
-          secondary={formatter.format(new Date(`${campaign.startAt} ${campaign.playFrom}`))}
-        />
-        <ListItemText
-          primary="Ends at"
-          secondary={formatter.format(new Date(`${campaign.endAt} ${campaign.playTo}`))}
-        />
-        <ListItemText primary="Play Duration" secondary={campaign.playDuration} />
-        <ListItemText
-          primary="Play Days"
-          disableTypography
-          secondary={
-            <Stack spacing={1} direction="row" flexWrap="wrap">
-              {campaign.playDays.split(',').map((day) => (
-                <Chip label={day} key={day} sx={{ textTransform: 'capitalize' }} />
-              ))}
-            </Stack>
-          }
-        />
-        <ListItemText
-          primary="Campaign Status"
-          disableTypography
-          secondary={
-            <Box mt={0.5}>
-              <Chip
-                label={campaign.status}
-                color={colorStatusMap[campaign.status]}
-                sx={{
-                  textTransform: 'capitalize',
-                }}
-              />
-            </Box>
-          }
-        />
+        {campaign.name && <ListItemText primary="Campaign Name" secondary={campaign.name} />}
+        {campaign.createdAt && (
+          <ListItemText
+            primary="Campaign Created At"
+            secondary={formatter.format(new Date(campaign.createdAt))}
+          />
+        )}
+        {campaign.organizationName && (
+          <ListItemText primary="Provider" secondary={campaign.organizationName} />
+        )}
+        {campaign.startAt && (
+          <ListItemText
+            primary="Starts at"
+            secondary={formatter.format(new Date(`${campaign.startAt} ${campaign.playFrom}`))}
+          />
+        )}
+        {campaign.endAt && (
+          <ListItemText
+            primary="Ends at"
+            secondary={formatter.format(new Date(`${campaign.endAt} ${campaign.playTo}`))}
+          />
+        )}
+        {campaign.playDuration && (
+          <ListItemText primary="Play Duration" secondary={campaign.playDuration} />
+        )}
+        {campaign.playDays && (
+          <ListItemText
+            primary="Play Days"
+            disableTypography
+            secondary={
+              <Stack spacing={1} direction="row" flexWrap="wrap">
+                {campaign.playDays?.split(',').map((day) => (
+                  <Chip label={day} key={day} sx={{ textTransform: 'capitalize' }} />
+                ))}
+              </Stack>
+            }
+          />
+        )}
+        {campaign.status && (
+          <ListItemText
+            primary="Campaign Status"
+            disableTypography
+            secondary={
+              <Box mt={0.5}>
+                <Chip
+                  label={campaign.status}
+                  color={colorStatusMap[campaign.status]}
+                  sx={{
+                    textTransform: 'capitalize',
+                  }}
+                />
+              </Box>
+            }
+          />
+        )}
       </MenuList>
     </Stack>
   );
