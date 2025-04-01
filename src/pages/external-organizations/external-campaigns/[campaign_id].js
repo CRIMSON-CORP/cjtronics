@@ -29,6 +29,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { usePopover } from 'src/hooks/use-popover';
+import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
@@ -301,13 +302,15 @@ const colorStatusMap = {
 
 function Actions({ reference }) {
   const { push } = useRouter();
+  const { state, open, close } = useToggle();
   const [selectedAction, setSelectedAction] = useState(null);
   const [requestProcessing, setRequestProcessing] = useState(false);
   const handleOpen = (action) => () => {
     setSelectedAction(action);
+    open();
   };
   const handleClose = () => {
-    setSelectedAction(null);
+    close();
   };
 
   const handleAction = (event) => {
@@ -351,7 +354,7 @@ function Actions({ reference }) {
         </Button>
       </Stack>
       <Dialog
-        open={selectedAction !== null}
+        open={state}
         onClose={handleClose}
         PaperProps={{
           component: 'form',

@@ -220,12 +220,14 @@ function CampaignsTable({ campaigns }) {
                     <TableCell>{campaign.name}</TableCell>
                     <TableCell>
                       <Typography variant="subtitle2">
-                        {formatter.format(new Date(`${campaign.startAt} ${campaign.playFrom}`))}
+                        {campaign.startAt &&
+                          formatter.format(new Date(`${campaign.startAt} ${campaign.playFrom}`))}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="subtitle2">
-                        {formatter.format(new Date(`${campaign.endAt} ${campaign.playTo}`))}
+                        {campaign.endAt &&
+                          formatter.format(new Date(`${campaign.endAt} ${campaign.playTo}`))}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -233,7 +235,7 @@ function CampaignsTable({ campaigns }) {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" gap={0.5} flexWrap="wrap">
-                        {campaign.playDays.split(',').map((day) => (
+                        {campaign.playDays?.split(',')?.map((day) => (
                           <Chip key={day} label={day} sx={{ textTransform: 'capitalize' }} />
                         ))}
                       </Stack>
