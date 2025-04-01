@@ -22,6 +22,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import Head from 'next/head';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
@@ -34,6 +35,8 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
 const Page = ({ campaign }) => {
+  console.log(campaign);
+
   return (
     <>
       <Head>
@@ -54,7 +57,11 @@ const Page = ({ campaign }) => {
                 <Grid container spacing={2}>
                   <Grid xs={12} md={6}>
                     <Stack spacing={2}>
-                      <Actions reference={campaign.reference} />
+                      <Actions
+                        isAcknowledged={campaign.isConfirmed}
+                        status={campaign.status}
+                        reference={campaign.reference}
+                      />
                       <FilesDisplay files={campaign.uploads} />
                     </Stack>
                   </Grid>
@@ -300,9 +307,10 @@ const colorStatusMap = {
   declined: 'error',
 };
 
-function Actions({ reference }) {
-  const { push } = useRouter();
+function Actions({ reference, status, isAcknowledged }) {
+  const { replace, asPath } = useRouter();
   const { state, open, close } = useToggle();
+  const { state: acknowledgeState, open: openAcknowledge, close: closeAcknowledge } = useToggle();
   const [selectedAction, setSelectedAction] = useState(null);
   const [requestProcessing, setRequestProcessing] = useState(false);
   const handleOpen = (action) => () => {
@@ -314,9 +322,10 @@ function Actions({ reference }) {
   };
 
   const handleAction = (event) => {
+    event.preventDefault();
     const formData = new FormData(event.target);
     const reason = formData.get('reason');
-    if (selectedAction === 'decline' && !reason) {
+    if (selectedAction === 'declined' && !reason) {
       toast.error('Please enter a reason for decline');
       return;
     }
@@ -330,28 +339,66 @@ function Actions({ reference }) {
         }),
         {
           loading: `${
-            selectedAction === 'approve' ? 'Approving' : 'Declining'
+            selectedAction === 'approved' ? 'Approving' : 'Declining'
           } Campaign, Hold on...`,
           success: (response) => {
-            push('/external-organizations/external-campaigns');
+            replace(asPath);
+            handleClose();
             return response.data.message;
           },
           error: 'Failed to approve Campaign, Please try again',
         }
       );
-    } catch (error) {}
+    } catch (error) {
+    } finally {
+      setRequestProcessing(false);
+    }
+  };
+
+  const acknowledgeCampaing = () => {
     setRequestProcessing(true);
+    try {
+      toast.promise(
+        axios.post('/api/admin/external/set-campaign-acknowledge', {
+          campaign_id: reference,
+        }),
+        {
+          loading: 'Okay, Hold on...',
+          success: (response) => {
+            replace(asPath);
+            closeAcknowledge();
+            return response.data.message;
+          },
+          error: 'Failed to Acknowledge Campaign, Please try again',
+        }
+      );
+    } catch (error) {
+    } finally {
+      setRequestProcessing(false);
+    }
   };
 
   return (
     <>
       <Stack direction="row" spacing={1}>
-        <Button color="success" variant="contained" onClick={handleOpen('approve')}>
-          Approve
-        </Button>
-        <Button color="error" variant="contained" onClick={handleOpen('decline')}>
-          Decline
-        </Button>
+        {status === 'pending' ? (
+          <>
+            <Button color="success" variant="contained" onClick={handleOpen('approved')}>
+              Approve
+            </Button>
+            <Button color="error" variant="contained" onClick={handleOpen('declined')}>
+              Decline
+            </Button>
+          </>
+        ) : isAcknowledged ? (
+          <Button color="primary" variant="contained" disabled>
+            Acknowledged
+          </Button>
+        ) : (
+          <Button color="primary" variant="contained" onClick={openAcknowledge}>
+            Acknowledge
+          </Button>
+        )}
       </Stack>
       <Dialog
         open={state}
@@ -361,8 +408,8 @@ function Actions({ reference }) {
           onSubmit: handleAction,
         }}
       >
-        <DialogTitle>{selectedAction === 'approve' ? 'Approve' : 'Decline'} Campaign?</DialogTitle>
-        {selectedAction === 'decline' && (
+        <DialogTitle>{selectedAction === 'approved' ? 'Approve' : 'Decline'} Campaign?</DialogTitle>
+        {selectedAction === 'declined' && (
           <DialogContent>
             <TextField
               autoFocus
@@ -385,10 +432,24 @@ function Actions({ reference }) {
             type="submit"
             variant="contained"
             disabled={requestProcessing}
-            color={selectedAction === 'approve' ? 'success' : 'error'}
+            color={selectedAction === 'approved' ? 'success' : 'error'}
             startIcon={requestProcessing && <CircularProgress />}
           >
-            Yes, {selectedAction === 'approve' ? 'Approve' : 'Decline'}
+            Yes, {selectedAction === 'approved' ? 'Approve' : 'Decline'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={acknowledgeState} onClose={closeAcknowledge}>
+        <DialogTitle>Acknowledge Campaign?</DialogTitle>
+        <DialogActions>
+          <Button onClick={closeAcknowledge}>No no</Button>
+          <Button
+            variant="contained"
+            onClick={acknowledgeCampaing}
+            disabled={requestProcessing}
+            startIcon={requestProcessing && <CircularProgress />}
+          >
+            Yes, Acknowledge
           </Button>
         </DialogActions>
       </Dialog>
