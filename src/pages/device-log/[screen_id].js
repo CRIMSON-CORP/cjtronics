@@ -292,13 +292,14 @@ function ExportCSV({ screen, selectedAdAccount, selectedDateFrom, selectedDateTo
     let list = [];
     setRequestProvessing(true);
     try {
-      const { data } = await axios.get(
-        `/api/admin/device-log/get-all-logs?screen=${screen}&account=${selectedAdAccount}&dateFrom=${selectedDateFrom
-          .toLocaleDateString('en-CA')
-          .replaceAll('-', '/')}&dateTo=${selectedDateTo
-          .toLocaleDateString('en-CA')
-          .replaceAll('-', '/')}`
-      );
+      const { data } = await axios.get(`/api/admin/device-log/get-all-logs`, {
+        params: {
+          screen,
+          account: selectedAdAccount,
+          dateFrom: selectedDateFrom?.toLocaleDateString('en-CA').replaceAll('-', '/'),
+          dateTo: selectedDateTo?.toLocaleDateString('en-CA').replaceAll('-', '/'),
+        },
+      });
       list = data.data.list;
     } catch (error) {
       return toast.error(error.response?.data?.message ?? error.message);
