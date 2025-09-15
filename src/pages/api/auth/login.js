@@ -6,6 +6,8 @@ export default async function handler(req, res) {
   try {
     const response = await axios.post('/auth/login', req.body);
 
+    console.log(response, '--axios-response');
+
     if (response.data.status && response.status === 200) {
       if (response.data.token) {
         res.setHeader(
