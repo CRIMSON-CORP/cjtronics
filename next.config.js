@@ -15,4 +15,5 @@ module.exports = {
       },
     ],
   },
+  staticPageGenerationTimeout: 100,
 };
