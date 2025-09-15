@@ -111,10 +111,14 @@ export const AuthProvider = (props) => {
 
   const signIn = async (email, password) => {
     try {
-      const { data, status } = await axios.post('/api/auth/login', {
+      const { data, status } = await axios.post('https://cjtronics.tushcode.com/v1/auth/login', {
         email,
         password,
       });
+      // const { data, status } = await axios.post('/api/auth/login', {
+      //   email,
+      //   password,
+      // });
 
       if (status === 200 && data.status) {
         const payload = {
