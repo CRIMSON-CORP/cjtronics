@@ -1,9 +1,12 @@
 import axios from 'src/lib/axios';
+import fullAxios from 'axios';
 import { ADMIN_COOKIE_NAME } from 'src/utils/constants';
 
 export default async function handler(req, res) {
   // extract a particluar cookie from a string of cookies nextjs getServerSideProps?
   try {
+    const fakerResponse = await fullAxios.get('https://fakerapi.it/api/v2/books?_quantity=1');
+    console.log(fakerResponse.data);
     const response = await axios.post('/auth/login', req.body);
 
     console.log(response, '--axios-response');
