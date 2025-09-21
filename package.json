@@ -46,6 +46,7 @@
     "yup": "1.0.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.4",
     "@babel/eslint-parser": "^7.22.9",
     "@types/node": "18.13.0",
     "@types/nprogress": "0.2.0",

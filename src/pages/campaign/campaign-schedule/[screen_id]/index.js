@@ -343,6 +343,8 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   }, []);
 
   const sendCampaignToDevice = async () => {
+    if (websocket.readyState !== websocket.OPEN)
+      return toast.error('Websocket is not Connected, Please Contact Maintainance');
     if (hasSent)
       return toast.error('Campaign already sent to device, Pls try again in less than a minute');
     setRequestProcessing(true);

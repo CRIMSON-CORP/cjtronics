@@ -5,7 +5,7 @@ import { useCallback, useMemo } from 'react';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
-import { getCompanies } from 'src/lib/actions';
+import { getCompanies, getUsers } from 'src/lib/actions';
 import { CompaniesTable } from 'src/sections/customer/companies-table';
 
 const useCustomerIds = (customers) => {
@@ -14,7 +14,7 @@ const useCustomerIds = (customers) => {
   }, [customers]);
 };
 
-const Page = ({ companies }) => {
+const Page = ({ companies, users }) => {
   const page = companies.currentPage - 1;
   const customersIds = useCustomerIds(companies.list);
   const customersSelection = useSelection(customersIds);
@@ -61,6 +61,7 @@ const Page = ({ companies }) => {
               selected={customersSelection.selected}
               rowsPerPage={+companies.rowsPerPage}
               pageSizeOptions={[5, 10, 25, 30]}
+              users={users}
             />
           </Stack>
         </Container>
@@ -79,9 +80,12 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
   };
 
   try {
-    const companies = await getCompanies(ctx.req, params);
+    const [companies, { users }] = await Promise.all([
+      getCompanies(ctx.req, params),
+      getUsers(ctx.req),
+    ]);
     return {
-      props: { companies },
+      props: { companies, users },
     };
   } catch (error) {
     console.log(error);

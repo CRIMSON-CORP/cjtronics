@@ -1,10 +1,22 @@
-import { DeleteSweep } from '@mui/icons-material';
+import { Close, DeleteSweep, Edit } from '@mui/icons-material';
 import {
   Avatar,
   Box,
+  Button,
   Card,
+  CardContent,
+  CardHeader,
   Checkbox,
   Chip,
+  CircularProgress,
+  Divider,
+  FormControl,
+  FormHelperText,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Modal,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -12,16 +24,20 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
+import { useFormik } from 'formik';
 import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
+import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
 import { Scrollbar } from 'src/components/scrollbar';
 import { getInitials } from 'src/utils/get-initials';
+import * as Yup from 'yup';
 
 export const CompaniesTable = (props) => {
   const {
@@ -37,75 +53,66 @@ export const CompaniesTable = (props) => {
     rowsPerPage,
     pageSizeOptions,
     onRowsPerPageChange,
+    users,
   } = props;
   const { replace, asPath } = useRouter();
 
   const selectedSome = selected.length > 0 && selected.length < items.length;
   const selectedAll = items.length > 0 && selected.length === items.length;
 
-  const toggleActivateCompany = (reference, status) => async (e) => {
-    try {
-      await toast.promise(
-        axios.put('/api/admin/companies/update-status', {
-          reference,
-          status,
-        }),
-        {
-          loading: `${status ? 'Activating' : 'Deactivating'} Company, Hang on a sec...`,
-          success: (response) => {
-            replace(asPath);
-            return response.data.message;
-          },
-          error: (error) => {
-            return error.response?.data?.message || error.response?.data || error.message;
-          },
-        }
-      );
-    } catch (error) {}
+  const toggleActivateCompany = (reference, status) => async () => {
+    await toast.promise(
+      axios.put('/api/admin/companies/update-status', {
+        reference,
+        status,
+      }),
+      {
+        loading: `${status ? 'Activating' : 'Deactivating'} Company, Hang on a sec...`,
+        success: (response) => {
+          replace(asPath);
+          return response.data.message;
+        },
+        error: (error) => {
+          return error.response?.data?.message || error.response?.data || error.message;
+        },
+      }
+    );
   };
 
-  const deleteCompany = (reference) => async (e) => {
-    try {
-      await toast.promise(
-        axios.put('/api/admin/companies/delete', {
-          reference,
-        }),
-        {
-          loading: 'Deleting Company, Hang on a sec...',
-          success: (response) => {
-            replace(asPath);
-            return response.data.message;
-          },
-          error: (error) => error.response?.data?.message || error.response?.data || error.message,
-        }
-      );
-    } catch (error) {
-      throw error;
-    }
+  const deleteCompany = (reference) => async () => {
+    await toast.promise(
+      axios.put('/api/admin/companies/delete', {
+        reference,
+      }),
+      {
+        loading: 'Deleting Company, Hang on a sec...',
+        success: (response) => {
+          replace(asPath);
+          return response.data.message;
+        },
+        error: (error) => error.response?.data?.message || error.response?.data || error.message,
+      }
+    );
   };
 
-  const deleteSelectedCompanies = (references) => async (e) => {
-    try {
-      await toast.promise(
-        Promise.all([
-          ...references.map((reference) =>
-            axios.post('/api/admin/companies/delete', {
-              reference,
-            })
-          ),
-        ]),
-        {
-          loading: 'Deleteing Companies...',
-          success: () => {
-            replace(asPath);
-            return 'Companies deleted';
-          },
-          error: (error) => error.response?.data?.message || error.response?.data || error.message,
-        }
-      );
-    } catch (error) {
-      throw error;
-    }
+  const deleteSelectedCompanies = (references) => async () => {
+    await toast.promise(
+      Promise.all([
+        ...references.map((reference) =>
+          axios.post('/api/admin/companies/delete', {
+            reference,
+          })
+        ),
+      ]),
+      {
+        loading: 'Deleteing Companies...',
+        success: () => {
+          replace(asPath);
+          return 'Companies deleted';
+        },
+        error: (error) => error.response?.data?.message || error.response?.data || error.message,
+      }
+    );
   };
 
   return (
@@ -231,6 +238,7 @@ export const CompaniesTable = (props) => {
                         >
                           Delete
                         </ConfirmAction>
+                        <EditCompany company={company} users={users} />
                       </Stack>
                     </TableCell>
                   </TableRow>
@@ -266,3 +274,219 @@ CompaniesTable.propTypes = {
   rowsPerPage: PropTypes.number,
   selected: PropTypes.array,
 };
+
+const modalStyles = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  padding: 2,
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'center',
+};
+
+function EditCompany({ company, users }) {
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const openModal = () => {
+    setEditModalOpen(true);
+  };
+  const closeModal = () => {
+    setEditModalOpen(false);
+  };
+  return (
+    <>
+      <Button onClick={openModal} startIcon={<Edit />} variant="contained">
+        Edit
+      </Button>
+      <Modal open={editModalOpen} onClose={closeModal}>
+        <Box sx={modalStyles}>
+          <EditCompanyForm
+            screen={screen}
+            closeModal={closeModal}
+            company={company}
+            users={users}
+          />
+        </Box>
+      </Modal>
+    </>
+  );
+}
+
+function EditCompanyForm({ closeModal, company, users = [] }) {
+  const { replace, asPath } = useRouter();
+  const formik = useFormik({
+    initialValues: {
+      ...company,
+      accountOfficer: company.officerReference,
+      submit: null,
+    },
+    validationSchema: Yup.object({
+      name: Yup.string().max(255).required('Company Name is required'),
+      code: Yup.string().max(255).required('Company Code is required'),
+      managerName: Yup.string().max(255).required('Ad account manager name is required'),
+      managerPhone: Yup.string().max(255).required('Ad account manager phone number is required'),
+      managerEmail: Yup.string()
+        .email('Must be a valid email!')
+        .max(255)
+        .required('Ad account manager name is required'),
+      accountOfficer: Yup.string().max(255).required('Ad account officer is required'),
+    }),
+    onSubmit: async (values, helpers) => {
+      helpers.setSubmitting(true);
+      try {
+        await toast.promise(axios.post('/api/admin/companies/create', values), {
+          loading: 'Updating Ad Company, hang on a sec...',
+          success: (response) => {
+            closeModal();
+            replace(asPath);
+            return response.data.message;
+          },
+          error: (error) => {
+            return error.response?.data?.message || error.message;
+          },
+        });
+      } catch (error) {
+        console.log(error);
+      } finally {
+        helpers.setSubmitting(false);
+      }
+    },
+  });
+
+  const filteredUser = useMemo(() => users.filter((user) => user.isActive), [users]);
+  return (
+    <Card>
+      <CardHeader
+        title={
+          <Stack direction="row" justifyContent="space-between" gap={3}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h5">Edit Comany</Typography>
+            </Stack>
+            <IconButton onClick={closeModal}>
+              <Close />
+            </IconButton>
+          </Stack>
+        }
+      />
+      <CardContent>
+        <form onSubmit={formik.handleSubmit}>
+          <Stack spacing={3}>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.name && formik.errors.name)}
+                fullWidth
+                helperText={formik.touched.name && formik.errors.name}
+                label="Company Name"
+                name="name"
+                id="name"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                type="text"
+                value={formik.values.name}
+              />
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.code && formik.errors.code)}
+                fullWidth
+                helperText={formik.touched.code && formik.errors.code}
+                label="Company Code"
+                name="code"
+                id="code"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                type="text"
+                value={formik.values.code}
+              />
+              <FormHelperText>This can be the company&apos;s abbreviation e.g ABBV</FormHelperText>
+            </FormControl>
+            <Divider />
+            <Typography variant="subtitle1">Company Ad Account Manager</Typography>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.managerName && formik.errors.managerName)}
+                fullWidth
+                helperText={formik.touched.managerName && formik.errors.managerName}
+                label="Ad Account Manager Name"
+                name="managerName"
+                id="managerName"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                type="text"
+                value={formik.values.managerName}
+              />
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.managerEmail && formik.errors.managerEmail)}
+                fullWidth
+                helperText={formik.touched.managerEmail && formik.errors.managerEmail}
+                label="Ad Account Manager Email"
+                name="managerEmail"
+                id="managerEmail"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                type="email"
+                value={formik.values.managerEmail}
+              />
+            </FormControl>
+            <FormControl variant="outlined">
+              <TextField
+                error={!!(formik.touched.managerPhone && formik.errors.managerPhone)}
+                fullWidth
+                helperText={formik.touched.managerPhone && formik.errors.managerPhone}
+                label="Ad Account Manager Phone number"
+                name="managerPhone"
+                id="managerPhone"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                type="tel"
+                value={formik.values.managerPhone}
+              />
+            </FormControl>
+            <Divider />
+            <Typography variant="subtitle1">Account Officer</Typography>
+            <FormControl variant="outlined">
+              <InputLabel htmlFor="account_officer">Account Officer</InputLabel>
+              <Select
+                error={!!(formik.touched.accountOfficer && formik.errors.accountOfficer)}
+                fullWidth
+                label="Account Officer"
+                name="accountOfficer"
+                id="accountOfficer"
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.accountOfficer}
+              >
+                {filteredUser.map((user) => (
+                  <MenuItem key={user.id} value={user.reference}>
+                    {user.firstName} {user.lastName}
+                  </MenuItem>
+                ))}
+              </Select>
+              {!!(formik.touched.accountOfficer && formik.errors.accountOfficer) && (
+                <FormHelperText sx={{ color: 'error.main' }}>
+                  {formik.errors.accountOfficer}
+                </FormHelperText>
+              )}
+            </FormControl>
+            <Button
+              type="submit"
+              startIcon={
+                formik.isSubmitting && (
+                  <CircularProgress size={16} sx={{ color: 'rgba(17,25,39,0.6)' }} />
+                )
+              }
+              variant="contained"
+              size="large"
+              disabled={!(formik.isValid && formik.dirty) || formik.isSubmitting}
+            >
+              Edit Company
+            </Button>
+          </Stack>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

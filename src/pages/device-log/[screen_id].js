@@ -24,7 +24,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axios from 'axios';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -57,6 +57,7 @@ const Page = ({ screens, adAccounts, logs }) => {
   const [selectedDateTo, setSelectedDateTo] = useState(
     query.dateTo ? new Date(query.dateTo) : null
   );
+  const [stateLogs, setStateLogs] = useState(logs.list);
 
   const handleScreenSelect = async (event) => {
     setSelectedScreen(event.target.value);
@@ -104,7 +105,24 @@ const Page = ({ screens, adAccounts, logs }) => {
     push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
   };
 
-  const groupedLogs = groupLogsByDate(logs.list);
+  const groupedLogs = groupLogsByDate(stateLogs);
+
+  useEffect(() => {
+    const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
+    socket.onmessage = (event) => {
+      const data = JSON.stringify(event.data);
+      if (data.event === 'device-log') {
+        if (
+          (query.screen_id && data.log.screen_id === query.screen_id) ||
+          (query.account && query.account === data.log.addAccountId)
+        ) {
+          setStateLogs((prev) => [...prev, data.log]);
+        }
+      }
+    };
+
+    return () => socket.close();
+  }, [query.account, query.screen_id]);
 
   return (
     <>

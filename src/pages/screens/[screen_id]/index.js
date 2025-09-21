@@ -119,12 +119,15 @@ const columns = [
 
 function ScreenCampaigns({ campaigns }) {
   const { query, replace } = useRouter();
-  const handleRowsPerPageChange = useCallback((event) => {
-    const queryParams = new URLSearchParams(query);
-    queryParams.set('size', event.target.value);
-    queryParams.delete('screen_id');
-    replace(`/screens/${query.screen_id}?${queryParams.toString()}`);
-  }, []);
+  const handleRowsPerPageChange = useCallback(
+    (event) => {
+      const queryParams = new URLSearchParams(query);
+      queryParams.set('size', event.target.value);
+      queryParams.delete('screen_id');
+      replace(`/screens/${query.screen_id}?${queryParams.toString()}`);
+    },
+    [query, replace]
+  );
 
   const onPageChange = (_event, newPage) => {
     const queryParams = new URLSearchParams(query);
@@ -441,9 +444,12 @@ const EditScreenForm = ({ screen, organizations, cities, screenLayouts, closeMod
 
   const citiesOptions = useMemo(() => cities.map((city) => city.city), [cities]);
 
-  const handleCityChange = useCallback((_event, value) => {
-    formik.setFieldValue('screenCity', value);
-  }, []);
+  const handleCityChange = useCallback(
+    (_event, value) => {
+      formik.setFieldValue('screenCity', value);
+    },
+    [formik]
+  );
 
   const selectedScreenCoordinates = useMemo(() => {
     const city = cities.find((city) => city.city === formik.values.screenCity);
@@ -453,7 +459,7 @@ const EditScreenForm = ({ screen, organizations, cities, screenLayouts, closeMod
         latitude: city.lat,
       };
     }
-  }, [formik.values.screenCity]);
+  }, [cities, formik.values.screenCity]);
 
   return (
     <Card sx={cardStyles}>
@@ -659,7 +665,8 @@ function ToolTipContent() {
         <li>Install the apk on the device</li>
         <li>Copy device Id generated on the device</li>
         <li>
-          Use device Id generated to create new screen details on cj tronics by folham's application
+          Use device Id generated to create new screen details on cj tronics by folham&apos;s
+          application
         </li>
         <li>Proceed to create campaign with the newly created screen details</li>
         <li>Start up the device and begin to view your adverts</li>
