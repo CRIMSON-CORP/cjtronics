@@ -29,7 +29,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import Iframe from 'src/components/Iframe';
@@ -333,13 +333,47 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
   const [hasSent, setHasSent] = useState(false);
 
-  useEffect(() => {
+  const reconnectAttempts = useRef(0);
+  const reconnectTimeout = useRef(null);
+  const maxReconnectAttempts = 10; // you can bump this or make it infinite
+  const baseDelay = 2000; // 2s
+
+  const connect = () => {
     const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
+
     socket.onopen = () => {
+      console.log('WebSocket connected ✅');
       setWebsocket(socket);
+      reconnectAttempts.current = 0; // reset attempts
     };
 
-    return () => socket.close();
+    socket.onclose = () => {
+      console.log('WebSocket closed ❌');
+      setWebsocket(null);
+
+      if (reconnectAttempts.current < maxReconnectAttempts) {
+        const delay = baseDelay * Math.pow(2, reconnectAttempts.current); // exponential backoff
+        reconnectAttempts.current += 1;
+        console.log(`Reconnecting in ${delay / 1000}s...`);
+
+        reconnectTimeout.current = setTimeout(connect, delay);
+      }
+    };
+
+    socket.onerror = (err) => {
+      console.error('WebSocket error:', err);
+      socket.close(); // force close, triggers onclose → reconnect
+    };
+  };
+
+  useEffect(() => {
+    connect();
+
+    return () => {
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
+      if (websocket) websocket.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sendCampaignToDevice = async () => {
