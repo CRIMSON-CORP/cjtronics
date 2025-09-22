@@ -13,6 +13,10 @@ module.exports = {
         protocol: 'https',
         hostname: 'cjtronics.errandexpress.com.ng',
       },
+      {
+        protocol: 'https',
+        hostname: 'cjtronics-api.com.ng',
+      },
     ],
   },
   staticPageGenerationTimeout: 100,
