@@ -50,7 +50,7 @@ const Page = ({ screens, screen, layouts, campaignSquence }) => {
 
   const layoutInfo = useMemo(
     () => layouts.find((layout) => layout.reference === screen.layoutReference),
-    []
+    [layouts, screen.layoutReference]
   );
 
   return (
@@ -160,22 +160,20 @@ function CampaignSequence({ screen, sequence, setSequence }) {
 
   const handleSaveOrder = async () => {
     setrequestProcessing(true);
-    try {
-      await toast.promise(
-        axios.post(`/api/admin/ad-account/set-ads-sequence?screen_id=${screen.reference}`, {
-          reorder: sequence.map((item) => item.reference).join(','),
-        }),
-        {
-          loading: 'Saving Order, hold on a moment...',
-          success: (response) => {
-            return response.data.message;
-          },
-          error: (err) => {
-            return err.response?.data?.message || err.message;
-          },
-        }
-      );
-    } catch (error) {}
+    await toast.promise(
+      axios.post(`/api/admin/ad-account/set-ads-sequence?screen_id=${screen.reference}`, {
+        reorder: sequence.map((item) => item.reference).join(','),
+      }),
+      {
+        loading: 'Saving Order, hold on a moment...',
+        success: (response) => {
+          return response.data.message;
+        },
+        error: (err) => {
+          return err.response?.data?.message || err.message;
+        },
+      }
+    );
     setrequestProcessing(false);
   };
   return (
@@ -222,7 +220,7 @@ function CampaignSequence({ screen, sequence, setSequence }) {
         </Stack>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="campaigns">
-            {(provided, snapshot) => (
+            {(provided) => (
               <List {...provided.droppableProps} ref={provided.innerRef}>
                 {sequence.map((campaign, index) => (
                   <Draggable
@@ -328,10 +326,11 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
   }
 });
 
-function SendCampaignToDevice({ isOnline, deviceId, reference }) {
+function SendCampaignToDevice({ isOnline, deviceId }) {
   const [websocket, setWebsocket] = useState(null);
   const [requestProcessing, setRequestProcessing] = useState(false);
   const [hasSent, setHasSent] = useState(false);
+  const [screenIsOnline, setScreenIsOnline] = useState(isOnline);
 
   const reconnectAttempts = useRef(0);
   const reconnectTimeout = useRef(null);
@@ -360,6 +359,21 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
       }
     };
 
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.event === 'device-connection') {
+        const screen = data.screens.find((screen) => screen.deviceId === deviceId);
+        if (screen) {
+          setScreenIsOnline(screen.isOnline);
+          if (screen.isOnline) {
+            toast.success('Screen just came online!', { duration: 5000 });
+          } else {
+            toast.error('Screen just went offline!', { duration: 5000 });
+          }
+        }
+      }
+    };
+
     socket.onerror = (err) => {
       console.error('WebSocket error:', err);
       socket.close(); // force close, triggers onclose → reconnect
@@ -379,31 +393,32 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
   const sendCampaignToDevice = async () => {
     if (websocket.readyState !== websocket.OPEN)
       return toast.error('Websocket is not Connected, Please Contact Maintainance');
+    if (!screenIsOnline) {
+      return toast.error('Screen is currently offline');
+    }
     if (hasSent)
       return toast.error('Campaign already sent to device, Pls try again in less than a minute');
     setRequestProcessing(true);
-    try {
-      await toast.promise(
-        axios.post('/api/admin/campaigns/get-new-campaign-data', { reference: deviceId }),
-        {
-          loading: 'Getting Campaign data, hold on a moment...',
-          success: (response) => {
-            websocket.send(
-              JSON.stringify({
-                event: 'send-to-device',
-                deviceId,
-                data: response.data,
-              })
-            );
-            setHasSent(true);
-            return "Campaign's data sent successfully";
-          },
-          error: (err) => {
-            return err.response?.data?.message || err.message;
-          },
-        }
-      );
-    } catch (error) {}
+    await toast.promise(
+      axios.post('/api/admin/campaigns/get-new-campaign-data', { reference: deviceId }),
+      {
+        loading: 'Getting Campaign data, hold on a moment...',
+        success: (response) => {
+          websocket.send(
+            JSON.stringify({
+              event: 'send-to-device',
+              deviceId,
+              data: response.data,
+            })
+          );
+          setHasSent(true);
+          return "Campaign's data sent successfully";
+        },
+        error: (err) => {
+          return err.response?.data?.message || err.message;
+        },
+      }
+    );
     setRequestProcessing(false);
   };
 
@@ -457,7 +472,7 @@ function SendCampaignToDevice({ isOnline, deviceId, reference }) {
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function PlayAds({ sequence, screen }) {
+function PlayAds({ screen }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
   const [campaignsLists, setCampaingsLists] = useState([]);
   const { open, close, state } = useToggle();
@@ -662,7 +677,7 @@ function Screen({ children, screenLayoutRef }) {
   return <Box sx={screenStyle}>{children}</Box>;
 }
 
-function View({ campaignsList, screenView, setScreenView, onComplete }) {
+function View({ campaignsList, screenView, onComplete }) {
   const sequence = campaignsList;
 
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
@@ -681,7 +696,7 @@ function View({ campaignsList, screenView, setScreenView, onComplete }) {
       //   setCurrentAdIndex(0);
       // }, 1000 * 20);
     }
-  }, [currentAdIndex, sequence]);
+  }, [currentAdIndex, onComplete, sequence]);
 
   useEffect(() => {
     setCurrentAdIndex(0);
@@ -723,6 +738,7 @@ function View({ campaignsList, screenView, setScreenView, onComplete }) {
               ) : file.adType === 'video' ? (
                 <video
                   loop
+                  muted
                   key={currentAdIndex}
                   controls={false}
                   src={file.adUrl}
@@ -755,95 +771,95 @@ function View({ campaignsList, screenView, setScreenView, onComplete }) {
   );
 }
 
-function SequenceAds({ sequence, onComplete }) {
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+// function SequenceAds({ sequence, onComplete }) {
+//   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
-  useEffect(() => {
-    if (currentAdIndex < sequence.length) {
-      const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
-      const timer = setTimeout(() => {
-        setCurrentAdIndex((prevIndex) => prevIndex + 1);
-      }, adDuration);
+//   useEffect(() => {
+//     if (currentAdIndex < sequence.length) {
+//       const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
+//       const timer = setTimeout(() => {
+//         setCurrentAdIndex((prevIndex) => prevIndex + 1);
+//       }, adDuration);
 
-      return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
-    } else if (onComplete) {
-      onComplete(); // Call the callback when all ads have finished
-    }
-  }, [currentAdIndex, sequence, onComplete]);
+//       return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
+//     } else if (onComplete) {
+//       onComplete(); // Call the callback when all ads have finished
+//     }
+//   }, [currentAdIndex, sequence, onComplete]);
 
-  if (currentAdIndex >= sequence.length) {
-    return null; // No more ads to show
-  }
+//   if (currentAdIndex >= sequence.length) {
+//     return null; // No more ads to show
+//   }
 
-  const currentAd = sequence[currentAdIndex];
+//   const currentAd = sequence[currentAdIndex];
 
-  return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      style={{
-        width: '100%',
-        flex: 1,
-        transition: 'transform 1s ease-out',
-        transform: `translateX(-${currentAdIndex * 100}%)`,
-      }}
-    >
-      {sequence.map((file, index) => {
-        return (
-          <Box key={file.reference} width="100%" height="100%" flex="none">
-            {file.uploadType === 'image' ? (
-              <Image
-                src={file.uploadFile}
-                alt={file.uploadName}
-                width={500}
-                height={400}
-                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-              />
-            ) : file.uploadType === 'video' ? (
-              <video
-                controls
-                src={file.uploadFile}
-                alt={file.uploadName}
-                autoPlay={index === currentAdIndex}
-                style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-              />
-            ) : file.uploadType === 'html' ? (
-              index === currentAdIndex && (
-                <Iframe content={file.uploadFile} styles={{ width: '100%', height: '100%' }} />
-              )
-            ) : null}
-          </Box>
-        );
-      })}
-    </Stack>
-  );
+//   return (
+//     <Stack
+//       direction="row"
+//       alignItems="center"
+//       style={{
+//         width: '100%',
+//         flex: 1,
+//         transition: 'transform 1s ease-out',
+//         transform: `translateX(-${currentAdIndex * 100}%)`,
+//       }}
+//     >
+//       {sequence.map((file, index) => {
+//         return (
+//           <Box key={file.reference} width="100%" height="100%" flex="none">
+//             {file.uploadType === 'image' ? (
+//               <Image
+//                 src={file.uploadFile}
+//                 alt={file.uploadName}
+//                 width={500}
+//                 height={400}
+//                 style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+//               />
+//             ) : file.uploadType === 'video' ? (
+//               <video
+//                 controls
+//                 src={file.uploadFile}
+//                 alt={file.uploadName}
+//                 autoPlay={index === currentAdIndex}
+//                 style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+//               />
+//             ) : file.uploadType === 'html' ? (
+//               index === currentAdIndex && (
+//                 <Iframe content={file.uploadFile} styles={{ width: '100%', height: '100%' }} />
+//               )
+//             ) : null}
+//           </Box>
+//         );
+//       })}
+//     </Stack>
+//   );
 
-  // return (
-  //   <Stack direction="row">
-  //     {currentAd.uploadType === 'image' ? (
-  //       <Image
-  //         src={currentAd.uploadFile}
-  //         alt={currentAd.uploadName}
-  //         width={500}
-  //         height={400}
-  //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
-  //       />
-  //     ) : currentAd.uploadType === 'video' ? (
-  //       <video
-  //         src={currentAd.uploadFile}
-  //         alt={currentAd.uploadName}
-  //         width={500}
-  //         height={400}
-  //         controls
-  //         autoPlay
-  //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
-  //       />
-  //     ) : currentAd.uploadType === 'html' ? (
-  //       <Iframe content={currentAd.uploadFile} styles={{ width: '100%', height: 'auto' }} />
-  //     ) : null}
-  //   </Stack>
-  // );
-}
+//   // return (
+//   //   <Stack direction="row">
+//   //     {currentAd.uploadType === 'image' ? (
+//   //       <Image
+//   //         src={currentAd.uploadFile}
+//   //         alt={currentAd.uploadName}
+//   //         width={500}
+//   //         height={400}
+//   //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
+//   //       />
+//   //     ) : currentAd.uploadType === 'video' ? (
+//   //       <video
+//   //         src={currentAd.uploadFile}
+//   //         alt={currentAd.uploadName}
+//   //         width={500}
+//   //         height={400}
+//   //         controls
+//   //         autoPlay
+//   //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
+//   //       />
+//   //     ) : currentAd.uploadType === 'html' ? (
+//   //       <Iframe content={currentAd.uploadFile} styles={{ width: '100%', height: 'auto' }} />
+//   //     ) : null}
+//   //   </Stack>
+//   // );
+// }
 
 const screenReferenceToConfig = {
   VBSGTREW43: {
