@@ -274,7 +274,7 @@ function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size should be less than 2MB');
+      toast.error('File size should be less than 5MB');
       return;
     }
 
