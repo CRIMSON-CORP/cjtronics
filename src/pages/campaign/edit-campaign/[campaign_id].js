@@ -1,4 +1,4 @@
-import { AddPhotoAlternate, Delete } from '@mui/icons-material';
+import { AddPhotoAlternate, Delete, Download } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -133,7 +133,7 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
   const selectedScreenLayoutReference = useMemo(
     () =>
       screens.screen.find((screen) => screen.reference === formik.values.screenId)?.layoutReference,
-    [formik.values.screenId]
+    [formik.values.screenId, screens.screen]
   );
 
   const screenLayout = useMemo(() => {
@@ -141,15 +141,18 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
       (layout) => layout.reference === selectedScreenLayoutReference
     );
     return selectedLyout;
-  }, [selectedScreenLayoutReference]);
+  }, [layouts, selectedScreenLayoutReference]);
 
   useEffect(() => {
     formik.setFieldValue('layoutId', selectedScreenLayoutReference);
-  }, [selectedScreenLayoutReference]);
+  }, [formik, selectedScreenLayoutReference]);
 
-  const handleDateTimeUpdate = useCallback((field, date) => (value) => {
-    formik.setFieldValue(field, value);
-  });
+  const handleDateTimeUpdate = useCallback(
+    (field) => (value) => {
+      formik.setFieldValue(field, value);
+    },
+    [formik]
+  );
 
   useEffect(() => {
     const { startAt, endAt, playTimeAt, endTimeAt } = formik.values;
@@ -184,6 +187,7 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
     formik.values.endAt,
     formik.values.playTimeAt,
     formik.values.endTimeAt,
+    formik,
   ]);
 
   return (
@@ -490,7 +494,7 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
   const [fetchingAds, setFetchingAds] = useState(false);
   const [adFiles, setAdFiles] = useState([]);
 
-  const fetchAdFiles = async () => {
+  const fetchAdFiles = useCallback(async () => {
     setAdFiles([]);
     setFetchingAds(true);
     try {
@@ -503,7 +507,7 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
       console.log(error);
     }
     setFetchingAds(false);
-  };
+  }, [adAccountId]);
 
   const removeFile = (reference) => {
     setAdFiles(adFiles.filter((file) => file.reference !== reference));
@@ -511,7 +515,7 @@ function AdFilesSelectWrapper({ adAccountId, formik }) {
 
   useEffect(() => {
     if (adAccountId) fetchAdFiles();
-  }, [adAccountId]);
+  }, [adAccountId, fetchAdFiles]);
 
   if (!adAccountId) {
     return <Typography>Select Ad Account to select Ad files</Typography>;
@@ -603,6 +607,7 @@ function AdFile({ name, url, reference, type, formik, removeFile }) {
       error: (error) => error.response?.data?.message || error.response?.data || error.message,
     });
   };
+
   return (
     <Card>
       <CardHeader
@@ -615,13 +620,21 @@ function AdFile({ name, url, reference, type, formik, removeFile }) {
           },
         }}
         action={
-          <Stack gap={1} direction="row" alignItems="center">
+          <Stack gap={0.25} direction="row" alignItems="center">
             <FormControlLabel
               onChange={handleChange}
               value={reference}
               control={<Checkbox />}
               checked={formik.values.playFiles.includes(reference)}
+              sx={{ margin: 0 }}
             />
+            <IconButton
+              download={url.split('/').pop()}
+              href={`/api/admin/campaigns/ads/download?url=${encodeURIComponent(url)}`}
+              color="primary"
+            >
+              <Download />
+            </IconButton>
             <ConfirmAction
               action={deleteAdFile}
               trigger={
