@@ -24,7 +24,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axios from 'axios';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -47,7 +47,7 @@ function groupLogsByDate(logs, dateKey) {
   }));
 }
 
-const Page = ({ screens, adAccounts, logs }) => {
+const Page = ({ screens, adAccounts, logs, campaigns }) => {
   const { query, push } = useRouter();
   const [selectedScreen, setSelectedScreen] = useState(query.screen_id || '');
   const [selectedAdAccount, setSelectedAdAccount] = useState(query.account || '');
@@ -57,6 +57,7 @@ const Page = ({ screens, adAccounts, logs }) => {
   const [selectedDateTo, setSelectedDateTo] = useState(
     query.dateTo ? new Date(query.dateTo) : null
   );
+  const [selectedCampaign, setSelectedCampaign] = useState(query.campaign || '');
   const [stateLogs, setStateLogs] = useState(logs.list);
 
   const handleScreenSelect = async (event) => {
@@ -71,6 +72,15 @@ const Page = ({ screens, adAccounts, logs }) => {
     const queryParams = new URLSearchParams(query);
     queryParams.delete('screen_id');
     queryParams.set('account', value);
+    push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
+  };
+
+  const handleCampaignSelect = (event) => {
+    const { value } = event.target;
+    setSelectedCampaign(value);
+    const queryParams = new URLSearchParams(query);
+    queryParams.delete('screen_id');
+    queryParams.set('campaign', value);
     push(`/device-log/${selectedScreen}?${queryParams.toString()}`);
   };
 
@@ -107,22 +117,90 @@ const Page = ({ screens, adAccounts, logs }) => {
 
   const groupedLogs = groupLogsByDate(stateLogs);
 
-  useEffect(() => {
+  const reconnectAttempts = useRef(0);
+  const reconnectTimeout = useRef(null);
+  const maxReconnectAttempts = 10; // you can bump this or make it infinite
+  const baseDelay = 2000; // 2s
+
+  const socketRef = useRef(null);
+
+  const connect = useCallback(() => {
+    const existing = socketRef.current;
+    if (existing) {
+      existing.onopen = null;
+      existing.onclose = null;
+      existing.onmessage = null;
+      existing.onerror = null;
+      existing.close();
+    }
+
     const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log('WebSocket connected ✅');
+      reconnectAttempts.current = 0;
+    };
+
+    socket.onclose = () => {
+      console.log('WebSocket closed ❌');
+
+      if (reconnectAttempts.current < maxReconnectAttempts) {
+        const delay = baseDelay * Math.pow(2, reconnectAttempts.current);
+        reconnectAttempts.current += 1;
+        console.log(`Reconnecting in ${delay / 1000}s...`);
+        reconnectTimeout.current = setTimeout(connect, delay);
+      }
+    };
+
     socket.onmessage = (event) => {
-      const data = JSON.stringify(event.data);
+      const data = JSON.parse(event.data);
       if (data.event === 'device-log') {
-        if (
-          (query.screen_id && data.log.screen_id === query.screen_id) ||
-          (query.account && query.account === data.log.addAccountId)
-        ) {
-          setStateLogs((prev) => [...prev, data.log]);
+        if (parseInt(logs.currentPage) !== 1) return; // not on first page;
+        const sameScreen = data.log.screenRef === query.screen_id; // required
+        if (!sameScreen) return; // bail early if screen doesn't match
+
+        const sameAccount = !query.account || data.log.accountId === query.account;
+
+        const sameCampaign = !query.campaign || data.log.campaignRef === query.campaign;
+
+        const logTime = new Date(data.log.loggedOn || data.log.playAt);
+        const from = query.dateFrom ? new Date(query.dateFrom) : null;
+        const to = query.dateTo ? new Date(query.dateTo) : null;
+
+        const inDateRange = (!from || logTime >= from) && (!to || logTime <= to);
+
+        if (sameAccount && sameCampaign && inDateRange) {
+          setStateLogs((prev) => [{ ...data.log, newlog: true }, ...prev]);
         }
       }
     };
 
-    return () => socket.close();
-  }, [query.account, query.screen_id]);
+    socket.onerror = (err) => {
+      console.error('WebSocket error:', err);
+      socket.close(); // triggers onclose → reconnect
+    };
+  }, [query.account, query.screen_id, logs.currentPage]);
+
+  useEffect(() => {
+    connect();
+
+    return () => {
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
+      const existing = socketRef.current;
+      if (existing) {
+        existing.onopen = null;
+        existing.onclose = null;
+        existing.onmessage = null;
+        existing.onerror = null;
+        existing.close();
+      }
+    };
+  }, [connect]);
+
+  useEffect(() => {
+    setStateLogs(logs.list);
+  }, [logs.list]);
 
   return (
     <>
@@ -164,6 +242,24 @@ const Page = ({ screens, adAccounts, logs }) => {
                   {adAccounts.map((adAccount) => (
                     <MenuItem value={adAccount.reference} key={adAccount.reference}>
                       {adAccount.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid xs={12} sm={6} lg={4}>
+              <FormControl fullWidth>
+                <InputLabel id="campaign-select-label">Select Campaign</InputLabel>
+                <Select
+                  labelId="campaign-select-label"
+                  id="campaign-select"
+                  value={selectedCampaign}
+                  label="Select Campaign"
+                  onChange={handleCampaignSelect}
+                >
+                  {campaigns.map((campaign) => (
+                    <MenuItem value={campaign.reference} key={campaign.reference}>
+                      {campaign.name}
                     </MenuItem>
                   ))}
                 </Select>
@@ -226,18 +322,19 @@ export default Page;
 
 export const getServerSideProps = ProtectDashboard(async (ctx) => {
   const params = {
-    ...ctx.query,
     page: ctx.query.page || 1,
     size: ctx.query.size || 25,
     ...(ctx.query.account ? { accountRef: ctx.query.account } : {}),
     ...(ctx.query.dateFrom ? { dateFrom: ctx.query.dateFrom } : {}),
     ...(ctx.query.dateTo ? { dateTo: ctx.query.dateTo } : {}),
+    ...(ctx.query.campaign ? { campaignRef: ctx.query.campaign } : {}),
   };
 
   try {
-    const [screens, adAccounts, logs] = await Promise.all([
+    const [screens, adAccounts, screen_campaigns, logs] = await Promise.all([
       getResourse(ctx.req, `/screen`),
       getResourse(ctx.req, `/ads-account/screen/${ctx.query.screen_id}`),
+      getResourse(ctx.req, `/campaign/screen/${ctx.query.screen_id}`),
       getResourse(ctx.req, `/activity/device-log/${ctx.query.screen_id}`, params),
     ]);
 
@@ -246,6 +343,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
         screens: screens.screen,
         adAccounts: adAccounts.list,
         logs,
+        campaigns: screen_campaigns.list,
       },
     };
   } catch (error) {
@@ -275,25 +373,9 @@ function ActivityHistory({ logs }) {
           <li key={log.date + index}>
             <ul>
               <ListSubheader>{log.date}</ListSubheader>
-              {log.logs.map((_log, index) => {
-                const hasDivider = index < log.length - 1;
-                const ago = formatRelativeTime(new Date(_log.playAt));
-                return (
-                  <ListItem divider={hasDivider} key={_log.playDate + ' ' + _log.playTime + index}>
-                    <ListItemAvatar>
-                      <SvgIcon>
-                        <Campaign />
-                      </SvgIcon>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={`${_log.accountName}: ${_log.uploadName}`}
-                      primaryTypographyProps={{ variant: 'subtitle1' }}
-                      secondary={`${_log.playAt} (${ago})`}
-                      secondaryTypographyProps={{ variant: 'body2' }}
-                    />
-                  </ListItem>
-                );
-              })}
+              {log.logs.map((_log, index) => (
+                <LogItem _log={_log} index={index} log_length={logs.length} key={index} />
+              ))}
             </ul>
           </li>
         ))}
@@ -302,6 +384,27 @@ function ActivityHistory({ logs }) {
     </Card>
   );
 }
+
+const LogItem = memo(({ _log, index, log_length }) => {
+  const hasDivider = index < log_length - 1;
+  const ago = formatRelativeTime(new Date(_log.playAt));
+
+  return (
+    <ListItem divider={hasDivider} key={_log.playDate + ' ' + _log.playTime + index}>
+      <ListItemAvatar>
+        <SvgIcon>
+          <Campaign />
+        </SvgIcon>
+      </ListItemAvatar>
+      <ListItemText
+        primary={`${_log.accountName}: ${_log.uploadName}`}
+        primaryTypographyProps={{ variant: 'subtitle1' }}
+        secondary={`${_log.playAt} (${ago})`}
+        secondaryTypographyProps={{ variant: 'body2' }}
+      />
+    </ListItem>
+  );
+});
 
 function ExportCSV({ screen, selectedAdAccount, selectedDateFrom, selectedDateTo }) {
   const [requestProcessing, setRequestProvessing] = useState(false);
