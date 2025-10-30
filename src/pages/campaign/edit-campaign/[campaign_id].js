@@ -144,7 +144,7 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
   }, [layouts, selectedScreenLayoutReference]);
 
   useEffect(() => {
-    formik.setFieldValue('layoutId', selectedScreenLayoutReference);
+    // formik.setFieldValue('layoutId', selectedScreenLayoutReference);
   }, [formik, selectedScreenLayoutReference]);
 
   const handleDateTimeUpdate = useCallback(
@@ -154,9 +154,10 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
     [formik]
   );
 
-  useEffect(() => {
-    const { startAt, endAt, playTimeAt, endTimeAt } = formik.values;
+  const { startAt, endAt, playTimeAt, endTimeAt } = formik.values;
+  const { setFieldValue } = formik;
 
+  useEffect(() => {
     if (startAt && endAt && playTimeAt && endTimeAt) {
       const startDateTime = new Date(
         startAt.getFullYear(),
@@ -177,18 +178,12 @@ const Page = ({ screens, organizations, adAccounts, layouts, campaign }) => {
       );
 
       if (startDateTime > endDateTime) {
-        formik.setFieldValue('endAt', null);
-        formik.setFieldValue('endTimeAt', null);
+        setFieldValue('endAt', null);
+        setFieldValue('endTimeAt', null);
         toast.error('Start date cannot be greater than end date');
       }
     }
-  }, [
-    formik.values.startAt,
-    formik.values.endAt,
-    formik.values.playTimeAt,
-    formik.values.endTimeAt,
-    formik,
-  ]);
+  }, [startAt, endAt, playTimeAt, endTimeAt, setFieldValue]);
 
   return (
     <>
@@ -607,7 +602,6 @@ function AdFile({ name, url, reference, type, formik, removeFile }) {
       error: (error) => error.response?.data?.message || error.response?.data || error.message,
     });
   };
-
   return (
     <Card>
       <CardHeader
