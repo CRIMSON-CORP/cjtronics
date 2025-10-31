@@ -8,13 +8,10 @@ export default async function handler(req, res) {
       res.status(response.status).json(response.data);
     } else throw response;
   } catch (error) {
-    if (error.data) {
-      res.status(401).json({ message: error.message });
-    }
     if (!error.response) {
       res.status(503).json({ message: 'No response from Server' });
       return;
     }
-    res.status(error.response.status).json(error.response.data);
+    res.status(400).json(error.response.data);
   }
 }

@@ -154,16 +154,8 @@ export const AuthProvider = (props) => {
   }, []);
 
   const forgotPassword = useCallback(async (email) => {
-    try {
-      const { data, status } = await axios.post('/api/auth/forgot-password', { email });
-      if (status === 200) {
-        return data.message;
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (err) {
-      throw new Error(err?.response?.data?.message ?? err.message);
-    }
+    const { data } = await axios.post('/api/auth/forgot-password', { email });
+    return data.message;
   }, []);
 
   const resetPassword = useCallback(async (payload) => {

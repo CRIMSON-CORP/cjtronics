@@ -24,8 +24,6 @@ const Page = () => {
       email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
     }),
     onSubmit: async ({ email }, helpers) => {
-      console.log('submit');
-
       helpers.setSubmitting(true);
       await toast.promise(forgotPassword(email), {
         loading: 'Requesting Change of passsword...',
@@ -33,7 +31,7 @@ const Page = () => {
           return message;
         },
         error: (error) => {
-          return error.message;
+          return error.response?.data?.message || error.message;
         },
       });
       helpers.setSubmitting(false);
