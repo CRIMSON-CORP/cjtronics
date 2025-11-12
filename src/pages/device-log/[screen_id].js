@@ -171,6 +171,10 @@ const Page = ({ screens, adAccounts, logs, campaigns }) => {
         const inDateRange = (!from || logTime >= from) && (!to || logTime <= to);
 
         if (sameAccount && sameCampaign && inDateRange) {
+          const date = new Date(data.log.playAt);
+          date.setMinutes(date.getMinutes() - 5);
+          date.setSeconds(date.getSeconds() - 9);
+          data.log.playAt = date.toISOString();
           setStateLogs((prev) => [{ ...data.log, newlog: true }, ...prev]);
         }
       }
@@ -180,7 +184,14 @@ const Page = ({ screens, adAccounts, logs, campaigns }) => {
       console.error('WebSocket error:', err);
       socket.close(); // triggers onclose → reconnect
     };
-  }, [query.account, query.screen_id, logs.currentPage]);
+  }, [
+    logs.currentPage,
+    query.screen_id,
+    query.account,
+    query.campaign,
+    query.dateFrom,
+    query.dateTo,
+  ]);
 
   useEffect(() => {
     connect();
@@ -293,6 +304,7 @@ const Page = ({ screens, adAccounts, logs, campaigns }) => {
               <ExportCSV
                 screen={selectedScreen}
                 selectedAdAccount={selectedAdAccount}
+                selectedCampaign={selectedCampaign}
                 selectedDateFrom={selectedDateFrom}
                 selectedDateTo={selectedDateTo}
               />
@@ -343,7 +355,11 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
         screens: screens.screen,
         adAccounts: adAccounts.list,
         logs,
-        campaigns: screen_campaigns.list,
+        campaigns: params.accountRef
+          ? screen_campaigns.list.filter(
+              (campaign) => campaign.adsAccountReference === params.accountRef
+            )
+          : screen_campaigns.list,
       },
     };
   } catch (error) {
@@ -406,7 +422,13 @@ const LogItem = memo(({ _log, index, log_length }) => {
   );
 });
 
-function ExportCSV({ screen, selectedAdAccount, selectedDateFrom, selectedDateTo }) {
+function ExportCSV({
+  screen,
+  selectedAdAccount,
+  selectedCampaign,
+  selectedDateFrom,
+  selectedDateTo,
+}) {
   const [requestProcessing, setRequestProvessing] = useState(false);
 
   const exportAsCSV = async () => {
@@ -417,6 +439,7 @@ function ExportCSV({ screen, selectedAdAccount, selectedDateFrom, selectedDateTo
         params: {
           screen,
           account: selectedAdAccount,
+          campaignRef: selectedCampaign,
           dateFrom: selectedDateFrom?.toLocaleDateString('en-CA').replaceAll('-', '/'),
           dateTo: selectedDateTo?.toLocaleDateString('en-CA').replaceAll('-', '/'),
         },
