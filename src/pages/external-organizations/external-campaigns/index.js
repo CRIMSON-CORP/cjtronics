@@ -22,18 +22,11 @@ import Grid from '@mui/system/Unstable_Grid/Grid';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Scrollbar } from 'src/components/scrollbar';
 import ProtectDashboard from 'src/hocs/protectDashboard';
-import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
-
-const useCustomerIds = (customers) => {
-  return useMemo(() => {
-    return customers.map((customer) => customer.reference);
-  }, [customers]);
-};
 
 const Page = ({ campaigns, externalOrganizations }) => {
   return (
@@ -109,13 +102,21 @@ function Filters({ externalOrganizations }) {
 
   function handleExternalOrganizationSelect(event) {
     const queryParams = new URLSearchParams(query);
-    queryParams.set('organization', event.target.value);
+    if (event.target.value) {
+      queryParams.set('organization', event.target.value);
+    } else {
+      queryParams.delete('organization');
+    }
     replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
     setselectedOrganization(event.target.value);
   }
   function handleStatusSelect(event) {
     const queryParams = new URLSearchParams(query);
-    queryParams.set('status', event.target.value);
+    if (event.target.value) {
+      queryParams.set('status', event.target.value);
+    } else {
+      queryParams.delete('status');
+    }
     replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
     setStatus(event.target.value);
   }
@@ -131,6 +132,7 @@ function Filters({ externalOrganizations }) {
             label="Select External Organization"
             onChange={handleExternalOrganizationSelect}
           >
+            <MenuItem value="">All</MenuItem>
             {externalOrganizations.list.map((screen) => (
               <MenuItem value={screen.reference} key={screen.reference}>
                 {screen.name}
@@ -149,6 +151,7 @@ function Filters({ externalOrganizations }) {
             label="Select Status"
             onChange={handleStatusSelect}
           >
+            <MenuItem value="all">All</MenuItem>
             <MenuItem value="pending">Pending</MenuItem>
             <MenuItem value="approved">Approved</MenuItem>
             <MenuItem value="declined">Declined</MenuItem>
@@ -169,21 +172,20 @@ function CampaignsTable({ campaigns }) {
 
   const { replace, query } = useRouter();
 
-  const handleRowsPerPageChange = useCallback((event) => {
-    const queryParams = new URLSearchParams(query);
-    queryParams.set('size', event.target.value);
-    replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
-  }, []);
+  const handleRowsPerPageChange = useCallback(
+    (event) => {
+      const queryParams = new URLSearchParams(query);
+      queryParams.set('size', event.target.value);
+      replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
+    },
+    [query, replace]
+  );
 
   const onPageChange = (_event, newPage) => {
     const queryParams = new URLSearchParams(query);
     queryParams.set('page', newPage + 1);
     replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
   };
-
-  const customersIds = useCustomerIds(list);
-
-  const customersSelection = useSelection(customersIds);
 
   return (
     <Card>
