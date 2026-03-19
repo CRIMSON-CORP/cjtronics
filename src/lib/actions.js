@@ -1,5 +1,7 @@
 import getCookie from 'src/utils/get-cookie';
 import axios from './axios';
+import { appendFile } from "fs/promises";
+import path from "path";
 
 export async function getUsers(req, params) {
   try {
@@ -121,6 +123,9 @@ export async function getResourse(req, url, params) {
       },
       params,
     });
+
+    //  const filePath = path.join(process.cwd(), "data.txt");
+    //   await appendFile (filePath, JSON.stringify(data, null, 2));
 
     return data.data;
   } catch (error) {
