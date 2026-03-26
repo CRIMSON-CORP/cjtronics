@@ -2,8 +2,6 @@ import axios from 'src/lib/axios';
 import getCookie from 'src/utils/get-cookie';
 
 export default async function handler(req, res) {
-  console.log('running here');
-
   try {
     const response = await axios.put(
       `/external/campaign/status/${req.body.campaign_id}`,
@@ -14,7 +12,6 @@ export default async function handler(req, res) {
         },
       }
     );
-
     if (response.data.status && response.status === 200)
       res.status(response.status).json(response.data);
     else throw response;
