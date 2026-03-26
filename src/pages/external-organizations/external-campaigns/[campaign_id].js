@@ -1,3 +1,4 @@
+import ArrowLeftIcon from '@heroicons/react/24/solid/ArrowLeftIcon';
 import { ContentCopy, Download, MoreVert } from '@mui/icons-material';
 import {
   Box,
@@ -28,6 +29,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { usePopover } from 'src/hooks/use-popover';
 import useToggle from 'src/hooks/useToggle';
@@ -35,8 +37,7 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
 const Page = ({ campaign }) => {
-  console.log(campaign);
-
+  const { back } = useRouter();
   return (
     <>
       <Head>
@@ -50,9 +51,13 @@ const Page = ({ campaign }) => {
         }}
       >
         <Container maxWidth="xl">
-          <Stack spacing={3}>
+          <Stack spacing={3} alignItems="flex-start">
+            <Button onClick={back} variant="outlined" startIcon={<ArrowLeftIcon />}>
+              <Typography>Go Back</Typography>
+            </Button>
+
             <Typography variant="h5">{campaign.name}</Typography>
-            <Card>
+            <Card sx={{ width: '100%' }}>
               <CardContent>
                 <Grid container spacing={2}>
                   <Grid xs={12} md={6}>
@@ -61,6 +66,7 @@ const Page = ({ campaign }) => {
                         isAcknowledged={campaign.isConfirmed}
                         status={campaign.status}
                         reference={campaign.reference}
+                        icConfirmed={campaign.isConfirmed}
                       />
                       <FilesDisplay files={campaign.uploads} />
                     </Stack>
@@ -177,7 +183,9 @@ function File({ file }) {
             display: 'block',
             backgroundColor: 'black',
           }}
-        />
+        >
+          <track kind="captions" srcLang="en" label="English" />
+        </video>
       ) : file.uploadType === 'html' ? (
         <Iframe
           content={file.uploadFile}
@@ -307,7 +315,7 @@ const colorStatusMap = {
   declined: 'error',
 };
 
-function Actions({ reference, status, isAcknowledged }) {
+function Actions({ reference, status, isConfirmed }) {
   const { replace, asPath } = useRouter();
   const { state, open, close } = useToggle();
   const { state: acknowledgeState, open: openAcknowledge, close: closeAcknowledge } = useToggle();
@@ -350,55 +358,82 @@ function Actions({ reference, status, isAcknowledged }) {
         }
       );
     } catch (error) {
+      console.log(error);
     } finally {
       setRequestProcessing(false);
     }
   };
 
-  const acknowledgeCampaing = () => {
+  // const acknowledgeCampaing = () => {
+  //   setRequestProcessing(true);
+  //   try {
+  //     toast.promise(
+  //       axios.post('/api/admin/external/set-campaign-acknowledge', {
+  //         campaign_id: reference,
+  //       }),
+  //       {
+  //         loading: 'Okay, Hold on...',
+  //         success: (response) => {
+  //           replace(asPath);
+  //           closeAcknowledge();
+  //           return response.data.message;
+  //         },
+  //         error: 'Failed to Acknowledge Campaign, Please try again',
+  //       }
+  //     );
+  //   } finally {
+  //     setRequestProcessing(false);
+  //   }
+  // };
+
+  const recordPlay = async () => {
     setRequestProcessing(true);
     try {
-      toast.promise(
-        axios.post('/api/admin/external/set-campaign-acknowledge', {
+      await toast.promise(
+        axios.post('/api/admin/external/set-campaign-record-play', {
           campaign_id: reference,
         }),
         {
-          loading: 'Okay, Hold on...',
+          loading: 'Recording play, Hold on...',
           success: (response) => {
             replace(asPath);
-            closeAcknowledge();
             return response.data.message;
           },
-          error: 'Failed to Acknowledge Campaign, Please try again',
+          error: (error) => {
+            console.log(error);
+            return error?.response?.data?.message || 'Failed to record play, Please try again';
+          },
         }
       );
     } catch (error) {
+      console.log(error);
     } finally {
       setRequestProcessing(false);
     }
   };
+
+  const isDisapproved = status === 'declined';
+  const buttonDisabled = isConfirmed || isDisapproved;
 
   return (
     <>
       <Stack direction="row" spacing={1}>
-        {status === 'pending' ? (
-          <>
-            <Button color="success" variant="contained" onClick={handleOpen('approved')}>
-              Approve
-            </Button>
-            <Button color="error" variant="contained" onClick={handleOpen('declined')}>
-              Decline
-            </Button>
-          </>
-        ) : isAcknowledged ? (
-          <Button color="primary" variant="contained" disabled>
-            Acknowledged
-          </Button>
-        ) : (
-          <Button color="primary" variant="contained" onClick={openAcknowledge}>
-            Acknowledge
-          </Button>
-        )}
+        <Button
+          color="success"
+          variant="contained"
+          disabled={buttonDisabled}
+          onClick={openAcknowledge}
+        >
+          {isConfirmed ? 'Play Recorded' : 'Record Play'}
+        </Button>
+        <Button
+          color="error"
+          variant="contained"
+          disabled={buttonDisabled}
+          onClick={handleOpen('declined')}
+        >
+          {isDisapproved ? 'Declined' : 'Decline'}
+        </Button>
       </Stack>
       <Dialog
         open={state}
@@ -445,7 +480,7 @@ function Actions({ reference, status, isAcknowledged }) {
           <Button onClick={closeAcknowledge}>No no</Button>
           <Button
             variant="contained"
-            onClick={acknowledgeCampaing}
+            onClick={recordPlay}
             disabled={requestProcessing}
             startIcon={requestProcessing && <CircularProgress />}
           >

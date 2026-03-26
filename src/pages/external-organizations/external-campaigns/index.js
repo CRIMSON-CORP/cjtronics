@@ -29,6 +29,8 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
 const Page = ({ campaigns, externalOrganizations }) => {
+  console.log(campaigns);
+
   return (
     <>
       <Head>
@@ -98,7 +100,7 @@ function Filters({ externalOrganizations }) {
   const [selectedOrganization, setselectedOrganization] = useState(
     query.external_organization || ''
   );
-  const [status, setStatus] = useState(query.status || '');
+  const [isConfirmed, setIsConfirmed] = useState(query.confirmed || '');
 
   function handleExternalOrganizationSelect(event) {
     const queryParams = new URLSearchParams(query);
@@ -110,15 +112,15 @@ function Filters({ externalOrganizations }) {
     replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
     setselectedOrganization(event.target.value);
   }
-  function handleStatusSelect(event) {
+  function handleRecordedSelect(event) {
     const queryParams = new URLSearchParams(query);
     if (event.target.value) {
-      queryParams.set('status', event.target.value);
+      queryParams.set('confirmed', event.target.value);
     } else {
-      queryParams.delete('status');
+      queryParams.delete('confirmed');
     }
     replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
-    setStatus(event.target.value);
+    setIsConfirmed(event.target.value);
   }
   return (
     <Grid container gap={3}>
@@ -143,18 +145,17 @@ function Filters({ externalOrganizations }) {
       </Grid>
       <Grid xs={12} md={6} lg={3}>
         <FormControl fullWidth>
-          <InputLabel id="status">Select Status</InputLabel>
+          <InputLabel id="recorded">Filter by Recorded</InputLabel>
           <Select
-            labelId="status"
-            id="status-select"
-            value={status}
-            label="Select Status"
-            onChange={handleStatusSelect}
+            labelId="recorded"
+            id="recorded-select"
+            value={isConfirmed}
+            label="Filter by Recorded"
+            onChange={handleRecordedSelect}
           >
             <MenuItem value="all">All</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="approved">Approved</MenuItem>
-            <MenuItem value="declined">Declined</MenuItem>
+            <MenuItem value="yes">Yes</MenuItem>
+            <MenuItem value="no">No</MenuItem>
           </Select>
         </FormControl>
       </Grid>
@@ -198,8 +199,7 @@ function CampaignsTable({ campaigns }) {
                 <TableCell>Starts at</TableCell>
                 <TableCell>Ends at</TableCell>
                 <TableCell>Play Duration</TableCell>
-                <TableCell sx={{ minWidth: 300 }}>Play Days</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>is Recorded</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
@@ -236,17 +236,10 @@ function CampaignsTable({ campaigns }) {
                       <Typography variant="subtitle2">{campaign.playDuration}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Stack direction="row" gap={0.5} flexWrap="wrap">
-                        {campaign.playDays?.split(',')?.map((day) => (
-                          <Chip key={day} label={day} sx={{ textTransform: 'capitalize' }} />
-                        ))}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
                       <Chip
-                        label={campaign.status}
-                        sx={{ textTransform: 'uppercase' }}
-                        color={colorStatusMap[campaign.status]}
+                        label={campaign.isConfirmed ? 'Yes' : 'No'}
+                        sx={{ textTransform: 'capitalize' }}
+                        color={campaign.isConfirmed ? 'success' : 'error'}
                       />
                     </TableCell>
                     <TableCell>
@@ -277,9 +270,3 @@ function CampaignsTable({ campaigns }) {
     </Card>
   );
 }
-
-const colorStatusMap = {
-  pending: 'warning',
-  approved: 'success',
-  declined: 'error',
-};
