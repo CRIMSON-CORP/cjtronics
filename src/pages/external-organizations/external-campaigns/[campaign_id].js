@@ -66,7 +66,7 @@ const Page = ({ campaign }) => {
                         isAcknowledged={campaign.isConfirmed}
                         status={campaign.status}
                         reference={campaign.reference}
-                        icConfirmed={campaign.isConfirmed}
+                        isConfirmed={campaign.isConfirmed}
                       />
                       <FilesDisplay files={campaign.uploads} />
                     </Stack>
@@ -418,22 +418,26 @@ function Actions({ reference, status, isConfirmed }) {
   return (
     <>
       <Stack direction="row" spacing={1}>
-        <Button
-          color="success"
-          variant="contained"
-          disabled={buttonDisabled}
-          onClick={openAcknowledge}
-        >
-          {isConfirmed ? 'Play Recorded' : 'Record Play'}
-        </Button>
-        <Button
-          color="error"
-          variant="contained"
-          disabled={buttonDisabled}
-          onClick={handleOpen('declined')}
-        >
-          {isDisapproved ? 'Declined' : 'Decline'}
-        </Button>
+        {!isDisapproved && (
+          <Button
+            color="success"
+            variant="contained"
+            disabled={buttonDisabled}
+            onClick={openAcknowledge}
+          >
+            {isConfirmed ? 'Play Recorded' : 'Record Play'}
+          </Button>
+        )}
+        {!isConfirmed && (
+          <Button
+            color="error"
+            variant="contained"
+            disabled={buttonDisabled}
+            onClick={handleOpen('declined')}
+          >
+            {isDisapproved ? 'Declined' : 'Decline'}
+          </Button>
+        )}
       </Stack>
       <Dialog
         open={state}

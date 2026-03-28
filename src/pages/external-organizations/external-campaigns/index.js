@@ -29,8 +29,6 @@ import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
 const Page = ({ campaigns, externalOrganizations }) => {
-  console.log(campaigns);
-
   return (
     <>
       <Head>
