@@ -133,23 +133,6 @@ function FilesDisplay({ files }) {
 
 function File({ file }) {
   const { anchorRef, handleClose, handleOpen, open } = usePopover();
-  async function handleDownload() {
-    try {
-      const response = await fetch(file.uploadFile);
-      const blob = await response.blob();
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', file.uploadURL);
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      handleClose();
-    } catch (error) {
-      toast.error(error.message);
-    }
-  }
-
   function copyUrl() {
     try {
       navigator.clipboard.writeText(file.uploadFile);
@@ -222,7 +205,11 @@ function File({ file }) {
         }}
       >
         <MenuList>
-          <MenuItem onClick={handleDownload}>
+          <MenuItem
+            component="a"
+            download={file.uploadFile.split('/').pop()}
+            href={`/api/admin/campaigns/ads/download?url=${encodeURIComponent(file.uploadFile)}`}
+          >
             <ListItemIcon>
               <Download fontSize="small" />
             </ListItemIcon>
