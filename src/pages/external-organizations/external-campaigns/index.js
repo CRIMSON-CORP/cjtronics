@@ -183,7 +183,7 @@ function Filters({ screens, campaigns, externalOrganizations }) {
 
   function handleRecordedSelect(event) {
     const queryParams = new URLSearchParams(query);
-    if (event.target.value) {
+    if (event.target.value === 'yes' || event.target.value === 'no') {
       queryParams.set('confirmed', event.target.value === 'yes' ? 'true' : 'false');
     } else {
       queryParams.delete('confirmed');
