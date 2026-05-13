@@ -19,16 +19,18 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/system/Unstable_Grid/Grid';
+import { DatePicker } from '@mui/x-date-pickers';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
+import toast from 'react-hot-toast';
 import { Scrollbar } from 'src/components/scrollbar';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
-const Page = ({ campaigns, externalOrganizations }) => {
+const Page = ({ campaigns, unique_campaigns, screens, externalOrganizations, pagination }) => {
   return (
     <>
       <Head>
@@ -44,8 +46,12 @@ const Page = ({ campaigns, externalOrganizations }) => {
         <Container maxWidth="xl">
           <Stack spacing={3}>
             <Typography variant="h5">External Campaigns({campaigns.totalRows})</Typography>
-            <Filters externalOrganizations={externalOrganizations} />
-            <CampaignsTable campaigns={campaigns} />
+            <Filters
+              screens={screens}
+              campaigns={unique_campaigns}
+              externalOrganizations={externalOrganizations}
+            />
+            <CampaignsTable campaigns={campaigns} pagination={pagination} />
           </Stack>
         </Container>
       </Box>
@@ -67,10 +73,18 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       getResourse(ctx.req, '/external/campaigns', params),
       getResourse(ctx.req, '/external/organization'),
     ]);
+
     return {
       props: {
-        campaigns,
+        unique_campaigns: campaigns.campaign,
+        campaigns: campaigns.list,
+        screens: campaigns.adsUnits,
         externalOrganizations,
+        pagination: {
+          totalRows: campaigns.totalRows,
+          currentPage: campaigns.currentPage,
+          rowsPerPage: campaigns.rowsPerPage,
+        },
       },
     };
   } catch (error) {
@@ -93,27 +107,84 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
 
 export default Page;
 
-function Filters({ externalOrganizations }) {
+function Filters({ screens, campaigns, externalOrganizations }) {
   const { query, replace } = useRouter();
-  const [selectedOrganization, setselectedOrganization] = useState(
-    query.external_organization || ''
+  const [selectedOrganization, setselectedOrganization] = useState(query.organizationName || '');
+  const [selectedScreen, setSelectedScreen] = useState(query.adunitName || '');
+  const [isConfirmed, setIsConfirmed] = useState(query.confirmed === 'true' || '');
+  const [selectedDateFrom, setSelectedDateFrom] = useState(
+    query.dateFrom ? new Date(query.dateFrom) : null
   );
-  const [isConfirmed, setIsConfirmed] = useState(query.confirmed || '');
+  const [selectedDateTo, setSelectedDateTo] = useState(
+    query.dateTo ? new Date(query.dateTo) : null
+  );
+  const [selectedCampaign, setSelectedCampaign] = useState(query.campaignName || '');
 
   function handleExternalOrganizationSelect(event) {
     const queryParams = new URLSearchParams(query);
     if (event.target.value) {
-      queryParams.set('organization', event.target.value);
+      queryParams.set('organizationName', event.target.value);
     } else {
-      queryParams.delete('organization');
+      queryParams.delete('organizationName');
     }
     replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
     setselectedOrganization(event.target.value);
   }
+  const handleScreenSelect = (event) => {
+    const queryParams = new URLSearchParams(query);
+    if (event.target.value) {
+      queryParams.set('adunitName', event.target.value);
+    } else {
+      queryParams.delete('adunitName');
+    }
+    replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
+    setSelectedScreen(event.target.value);
+  };
+  const handleCampaignSelect = (event) => {
+    const queryParams = new URLSearchParams(query);
+    if (event.target.value) {
+      queryParams.set('campaignName', event.target.value);
+    } else {
+      queryParams.delete('campaignName');
+    }
+    replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
+    setSelectedCampaign(event.target.value);
+  };
+
+  const handleDateFromChange = (date) => {
+    if (selectedDateTo && date > selectedDateTo) {
+      toast.error('The start date cannot be later than the end date.');
+      return; // Prevent setting the invalid date
+    }
+    const queryParams = new URLSearchParams(query);
+    if (date) {
+      queryParams.set('dateFrom', date.toLocaleDateString('en-CA').replaceAll('-', '/'));
+    } else {
+      queryParams.delete('dateFrom');
+    }
+    replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
+    setSelectedDateFrom(date);
+  };
+
+  const handleDateToChange = (date) => {
+    if (selectedDateFrom && date < selectedDateFrom) {
+      toast.error('The end date cannot be earlier than the start date.');
+      return; // Prevent setting the invalid date
+    }
+    const queryParams = new URLSearchParams(query);
+    if (date) {
+      queryParams.set('dateTo', date.toLocaleDateString('en-CA').replaceAll('-', '/'));
+    } else {
+      queryParams.delete('dateTo');
+    }
+    replace(`/external-organizations/external-campaigns?${queryParams.toString()}`);
+    setSelectedDateTo(date);
+  };
+
   function handleRecordedSelect(event) {
     const queryParams = new URLSearchParams(query);
     if (event.target.value) {
-      queryParams.set('confirmed', event.target.value);
+      queryParams.set('confirmed', event.target.value === 'yes' ? 'true' : 'false');
     } else {
       queryParams.delete('confirmed');
     }
@@ -134,13 +205,77 @@ function Filters({ externalOrganizations }) {
           >
             <MenuItem value="">All</MenuItem>
             {externalOrganizations.list.map((screen) => (
-              <MenuItem value={screen.reference} key={screen.reference}>
+              <MenuItem value={screen.name} key={screen.reference}>
                 {screen.name}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
       </Grid>
+      <Grid xs={12} sm={6} lg={4}>
+        <FormControl fullWidth>
+          <InputLabel id="scrren-select-label">Select Ad Unit</InputLabel>
+          <Select
+            labelId="scrren-select-label"
+            id="screen-select"
+            name="screenId"
+            value={selectedScreen}
+            label="Select Screen"
+            onChange={handleScreenSelect}
+          >
+            <MenuItem value="">All</MenuItem>
+            {screens.map((screen) => (
+              <MenuItem value={screen.name} key={screen.reference}>
+                {screen.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Grid>
+      <Grid xs={12} sm={6} lg={4}>
+        <FormControl fullWidth>
+          <InputLabel id="campaign-select-label">Select Campaign</InputLabel>
+          <Select
+            labelId="campaign-select-label"
+            id="campaign-select"
+            value={selectedCampaign}
+            label="Select Campaign"
+            onChange={handleCampaignSelect}
+          >
+            <MenuItem value="">All</MenuItem>
+            {campaigns.map((campaign) => (
+              <MenuItem value={campaign.name} key={campaign.name}>
+                {campaign.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Grid>
+      <Grid xs={12} spacing={3}>
+        <Grid container spacing={3}>
+          <Grid item>
+            <FormControl>
+              <DatePicker
+                fullWidth
+                label="Select Day From"
+                value={selectedDateFrom}
+                onChange={handleDateFromChange}
+              />
+            </FormControl>
+          </Grid>
+          <Grid item>
+            <FormControl>
+              <DatePicker
+                fullWidth
+                label="Select Day To"
+                value={selectedDateTo}
+                onChange={handleDateToChange}
+              />
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Grid>
+
       <Grid xs={12} md={6} lg={3}>
         <FormControl fullWidth>
           <InputLabel id="recorded">Filter by Recorded</InputLabel>
@@ -166,9 +301,7 @@ const formatter = new Intl.DateTimeFormat('en-US', {
   timeStyle: 'short',
 });
 
-function CampaignsTable({ campaigns }) {
-  const { list } = campaigns;
-
+function CampaignsTable({ campaigns, pagination }) {
   const { replace, query } = useRouter();
 
   const handleRowsPerPageChange = useCallback(
@@ -194,14 +327,14 @@ function CampaignsTable({ campaigns }) {
             <TableHead>
               <TableRow>
                 <TableCell>Campaign Name</TableCell>
-                <TableCell>Starts at</TableCell>
-                <TableCell>Ends at</TableCell>
+                <TableCell>Ad unit name</TableCell>
+                <TableCell>Created Date</TableCell>
                 <TableCell>Play Duration</TableCell>
                 <TableCell>is Recorded</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
-            {list.length === 0 && (
+            {campaigns.length === 0 && (
               <TableBody>
                 <TableRow>
                   <TableCell colSpan={13}>
@@ -214,20 +347,16 @@ function CampaignsTable({ campaigns }) {
             )}
 
             <TableBody>
-              {list.map((campaign) => {
+              {campaigns.map((campaign) => {
                 return (
                   <TableRow hover key={campaign.reference}>
                     <TableCell>{campaign.name}</TableCell>
                     <TableCell>
-                      <Typography variant="subtitle2">
-                        {campaign.startAt &&
-                          formatter.format(new Date(`${campaign.startAt} ${campaign.playFrom}`))}
-                      </Typography>
+                      <Typography variant="subtitle2">{campaign.adunitName}</Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="subtitle2">
-                        {campaign.endAt &&
-                          formatter.format(new Date(`${campaign.endAt} ${campaign.playTo}`))}
+                        {formatter.format(new Date(`${campaign.createdAt}`))}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -258,10 +387,10 @@ function CampaignsTable({ campaigns }) {
       </Scrollbar>
       <TablePagination
         component="div"
-        count={+campaigns.totalRows}
+        count={+pagination.totalRows}
         onPageChange={onPageChange}
-        page={+campaigns.currentPage - 1}
-        rowsPerPage={+campaigns.rowsPerPage}
+        page={+pagination.currentPage - 1}
+        rowsPerPage={+pagination.rowsPerPage}
         rowsPerPageOptions={[5, 10, 25, 30]}
         onRowsPerPageChange={handleRowsPerPageChange}
       />
