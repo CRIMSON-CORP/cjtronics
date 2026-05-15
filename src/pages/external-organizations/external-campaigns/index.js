@@ -45,7 +45,7 @@ const Page = ({ campaigns, unique_campaigns, screens, externalOrganizations, pag
       >
         <Container maxWidth="xl">
           <Stack spacing={3}>
-            <Typography variant="h5">External Campaigns({campaigns.totalRows})</Typography>
+            <Typography variant="h5">External Campaigns({pagination.totalRows})</Typography>
             <Filters
               screens={screens}
               campaigns={unique_campaigns}
