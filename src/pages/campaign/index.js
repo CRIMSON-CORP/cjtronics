@@ -24,7 +24,7 @@ import { useFormik } from 'formik';
 import { nanoid } from 'nanoid';
 import Head from 'next/head';
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
@@ -44,64 +44,68 @@ const Page = ({ organizations, screens }) => {
   const isSuperAdmin = defaultOrganizationReference === superAdminRef;
 
   const [adAccounts, setAdAccounts] = useState([]);
-  const [fetchingAdAccounts, setFetchingAdAccounts] = useState(false);
+  const [loadingScreens, setLoadingScreens] = useState({});
+
+  const fetchAdAccounts = async (screenId) => {
+    if (!screenId) return;
+
+    setLoadingScreens((prev) => ({ ...prev, [screenId]: true }));
+    try {
+      toast.loading(`Fetching Ad Accounts for screen...`);
+      const response = await axios.get(`/api/admin/ad-account/get-by-screen?reference=${screenId}`);
+      toast.dismiss();
+      const { list } = response.data.data;
+      if (list.length === 0) {
+        toast.error('No Ad Accounts found for this screen');
+      }
+      setAdAccounts((prev) => [
+        ...prev.filter((acc) => acc.screenReference !== screenId),
+        ...list.map((acc) => ({
+          ...acc,
+          screenReference: screenId,
+        })),
+      ]);
+    } catch (error) {
+      toast.error('Failed to fetch Ad accounts for this screen');
+    }
+    setLoadingScreens((prev) => ({ ...prev, [screenId]: false }));
+  };
 
   const formik = useFormik({
     initialValues: {
       organizationId: defaultOrganizationReference,
-      screenId: '',
-      adsAccountId: '',
-      adFiles: [],
+      screenEntries: [
+        {
+          id: nanoid(5),
+          screenId: '',
+          adsAccountId: '',
+          adFiles: [],
+        },
+      ],
       submit: null,
     },
     validationSchema: Yup.object({
       ...(isSuperAdmin
         ? {}
         : { organizationId: Yup.string().required('Organization is required') }),
-      screenId: Yup.string().max(255).required('Screen ID is required'),
-      adsAccountId: Yup.string().max(255).required('Ad Account name is required'),
+      screenEntries: Yup.array()
+        .of(
+          Yup.object({
+            screenId: Yup.string().max(255).required('Screen ID is required'),
+            adsAccountId: Yup.string().max(255).required('Ad Account name is required'),
+            adFiles: Yup.array(),
+          })
+        )
+        .min(1, 'At least one screen entry is required'),
     }),
-    onSubmit: async (values, helpers) => {
-      try {
-        await signIn(values.email, values.password);
-        router.push(router.query.continueUrl ?? '/');
-      } catch (err) {
-        helpers.setStatus({ success: false });
-        helpers.setErrors({ submit: err.message });
-        helpers.setSubmitting(false);
-      }
-    },
   });
 
-  const { screenId } = formik.values;
-  const fetchAdAccounts = useCallback(async () => {
-    setFetchingAdAccounts(true);
-    try {
-      toast.loading('Fetching Ad Accounts...');
-      const response = await axios.get(`/api/admin/ad-account/get-by-screen?reference=${screenId}`);
-      toast.dismiss();
-      const { list } = response.data.data;
-      if (list.length === 0) {
-        toast.error('No Ad Accounts found for this screen');
-        return;
-      }
-      setAdAccounts(response.data.data.list);
-    } catch (error) {
-      toast.error('Failed to fetch Ad accounts for this screen');
-    }
-    setFetchingAdAccounts(false);
-  }, [screenId]);
-
-  useEffect(() => {
-    if (screenId) {
-      fetchAdAccounts();
-    }
-  }, [screenId]);
+  // Remove the old effect and fetchAdAccounts definition
 
   return (
     <>
       <Head>
-        <title>Create Ad | Dalukwa Admin</title>
+        <title>Create Ad | Cjtronics Admin</title>
       </Head>
       <Box
         component="main"
@@ -141,54 +145,130 @@ const Page = ({ organizations, screens }) => {
                       </FormHelperText>
                     )}
                   </FormControl>
-                  <FormControl fullWidth>
-                    <InputLabel id="screenId">Select Screen</InputLabel>
-                    <Select
-                      error={!!(formik.touched.screenId && formik.errors.screenId)}
-                      fullWidth
-                      id="screenId"
-                      name="screenId"
-                      onBlur={formik.handleBlur}
-                      onChange={formik.handleChange}
-                      value={formik.values.screenId}
-                      label="Select Screen"
-                    >
-                      {screens.screen.map((screen) => (
-                        <MenuItem value={screen.reference} key={screen.reference}>
-                          {screen.screenName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl variant="outlined">
-                    <InputLabel htmlFor="screen_id">Select Ad Account</InputLabel>
-                    <Select
-                      error={!!(formik.touched.adsAccountId && formik.errors.adsAccountId)}
-                      fullWidth
-                      label="Select Ad Account-"
-                      name="adsAccountId"
-                      id="adsAccountId"
-                      onBlur={formik.handleBlur}
-                      onChange={formik.handleChange}
-                      value={formik.values.adsAccountId}
-                      disabled={
-                        !formik.values.screenId || adAccounts.length === 0 || fetchingAdAccounts
-                      }
-                      endAdornment={fetchingAdAccounts && <CircularProgress />}
-                    >
-                      {adAccounts.map((adAccount) => (
-                        <MenuItem value={adAccount.reference} key={adAccount.reference}>
-                          {adAccount.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {!!(formik.touched.adsAccountId && formik.errors.adsAccountId) && (
-                      <FormHelperText sx={{ color: 'error.main' }}>
-                        {formik.errors.adsAccountId}
-                      </FormHelperText>
-                    )}
-                  </FormControl>
-                  <AdFiles formik={formik} />
+                  {formik.values.screenEntries.map((entry, index) => (
+                    <Stack key={entry.id} spacing={3} sx={{ position: 'relative', pt: 2 }}>
+                      {index > 0 && (
+                        <IconButton
+                          sx={{ position: 'absolute', right: -8, top: -8 }}
+                          onClick={() => {
+                            const newEntries = [...formik.values.screenEntries];
+                            newEntries.splice(index, 1);
+                            formik.setFieldValue('screenEntries', newEntries);
+                          }}
+                        >
+                          <Close />
+                        </IconButton>
+                      )}
+                      <FormControl fullWidth>
+                        <InputLabel id={`screenId-${entry.id}`}>Select Screen</InputLabel>
+                        <Select
+                          error={
+                            !!(
+                              formik.touched.screenEntries?.[index]?.screenId &&
+                              formik.errors.screenEntries?.[index]?.screenId
+                            )
+                          }
+                          fullWidth
+                          id={`screenId-${entry.id}`}
+                          name={`screenEntries.${index}.screenId`}
+                          onBlur={formik.handleBlur}
+                          onChange={(e) => {
+                            formik.handleChange(e);
+                            // Reset ad account when screen changes
+                            formik.setFieldValue(`screenEntries.${index}.adsAccountId`, '');
+                            // Fetch ad accounts for the selected screen
+                            fetchAdAccounts(e.target.value);
+                          }}
+                          value={entry.screenId}
+                          label="Select Screen"
+                        >
+                          {screens.screen.map((screen) => (
+                            <MenuItem value={screen.reference} key={screen.reference}>
+                              {screen.screenName}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <FormControl variant="outlined">
+                        <InputLabel htmlFor={`adsAccountId-${entry.id}`}>
+                          Select Ad Account
+                        </InputLabel>
+                        <Select
+                          error={
+                            !!(
+                              formik.touched.screenEntries?.[index]?.adsAccountId &&
+                              formik.errors.screenEntries?.[index]?.adsAccountId
+                            )
+                          }
+                          fullWidth
+                          label="Select Ad Account"
+                          name={`screenEntries.${index}.adsAccountId`}
+                          id={`adsAccountId-${entry.id}`}
+                          onBlur={formik.handleBlur}
+                          onChange={formik.handleChange}
+                          value={entry.adsAccountId}
+                          disabled={!entry.screenId}
+                          endAdornment={
+                            loadingScreens[entry.screenId] && <CircularProgress size={20} />
+                          }
+                        >
+                          <MenuItem value="" disabled>
+                            {entry.screenId
+                              ? adAccounts.some((acc) => acc.screenReference === entry.screenId)
+                                ? 'Select an Ad Account'
+                                : 'No available Ad Accounts for this screen'
+                              : 'Select a screen first'}
+                          </MenuItem>
+                          {adAccounts
+                            .filter((account) => {
+                              // Only show accounts for this screen
+                              if (account.screenReference !== entry.screenId) return false;
+
+                              // Check if this account is already selected in another entry
+                              const isSelectedInOtherEntry = formik.values.screenEntries.some(
+                                (otherEntry, otherIndex) =>
+                                  otherIndex !== index &&
+                                  otherEntry.adsAccountId === account.reference
+                              );
+
+                              return !isSelectedInOtherEntry;
+                            })
+                            .map((adAccount) => (
+                              <MenuItem value={adAccount.reference} key={adAccount.reference}>
+                                {adAccount.name}
+                              </MenuItem>
+                            ))}
+                        </Select>
+                        {!!(
+                          formik.touched.screenEntries?.[index]?.adsAccountId &&
+                          formik.errors.screenEntries?.[index]?.adsAccountId
+                        ) && (
+                          <FormHelperText sx={{ color: 'error.main' }}>
+                            {formik.errors.screenEntries?.[index]?.adsAccountId}
+                          </FormHelperText>
+                        )}
+                      </FormControl>
+                      <AdFiles formik={formik} entryIndex={index} adFiles={entry.adFiles} />
+                      {index === formik.values.screenEntries.length - 1 && (
+                        <Button
+                          variant="outlined"
+                          onClick={() => {
+                            formik.setFieldValue('screenEntries', [
+                              ...formik.values.screenEntries,
+                              {
+                                id: nanoid(5),
+                                screenId: '',
+                                adsAccountId: '',
+                                adFiles: [],
+                              },
+                            ]);
+                          }}
+                        >
+                          Add Another Screen
+                        </Button>
+                      )}
+                    </Stack>
+                  ))}
                   <UploadForm formik={formik} />
                 </Stack>
               </form>
@@ -231,12 +311,12 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
   }
 });
 
-function AdFiles({ formik }) {
+function AdFiles({ formik, entryIndex, adFiles }) {
   return (
     <Stack spacing={2}>
       <Typography variant="h6">Ad Files</Typography>
-      <AddedFiles formik={formik} />
-      <EmptyAdForm formik={formik} />
+      <AddedFiles formik={formik} entryIndex={entryIndex} adFiles={adFiles} />
+      <EmptyAdForm formik={formik} entryIndex={entryIndex} />
     </Stack>
   );
 }
@@ -258,7 +338,7 @@ const videoStyle = {
   height: 40,
 };
 
-function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
+function EmptyAdForm({ id, formik, entryIndex, fileType, fileName, ifrmContent, close }) {
   const [selectedAdFileType, setSelectedAdFileType] = useState(fileType || '');
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedFileName, setSelectedFileName] = useState(fileName || '');
@@ -291,25 +371,34 @@ function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
   };
 
   const addAdFile = () => {
-    const existingAdFiles = [...formik.values.adFiles];
     const newAdFile = {
       name: selectedFileName,
       type: selectedAdFileType,
       file: iframeContent || selectedFile,
       iframeContent,
+      id: id || nanoid(5),
     };
+
+    const newEntries = [...formik.values.screenEntries];
+    const currentEntry = newEntries[entryIndex];
+    const existingAdFiles = [...currentEntry.adFiles];
+
     if (id) {
-      const index = existingAdFiles.findIndex((adFile) => adFile.id === id);
-      existingAdFiles[index] = {
-        ...existingAdFiles[index],
+      const fileIndex = existingAdFiles.findIndex((adFile) => adFile.id === id);
+      existingAdFiles[fileIndex] = {
+        ...existingAdFiles[fileIndex],
         ...newAdFile,
-        file: newAdFile.file || existingAdFiles[index].file,
+        file: newAdFile.file || existingAdFiles[fileIndex].file,
       };
     } else {
-      newAdFile.id = nanoid(5);
       existingAdFiles.push(newAdFile);
     }
-    formik.setFieldValue('adFiles', existingAdFiles);
+
+    newEntries[entryIndex] = {
+      ...currentEntry,
+      adFiles: existingAdFiles,
+    };
+    formik.setFieldValue('screenEntries', newEntries);
     close?.();
 
     setSelectedAdFileType('');
@@ -321,6 +410,7 @@ function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
   };
 
   useEffect(() => {
+    // This effect is only for cleanup when component unmounts
     return () => {
       setSelectedFile(null);
       setFileObjectUrl('');
@@ -328,7 +418,8 @@ function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
       setSelectedFileName('');
       setIframeContent('');
     };
-  }, [selectedAdFileType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Stack spacing={1}>
@@ -362,7 +453,7 @@ function EmptyAdForm({ id, formik, fileType, fileName, ifrmContent, close }) {
                 <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
               )}
               {selectedAdFileType === 'video' && (
-                <video style={videoStyle} src={fileObjectUrl} alt="preview" />
+                <video style={videoStyle} src={fileObjectUrl} muted alt="preview" />
               )}
               <Button
                 component="label"
@@ -432,24 +523,28 @@ const reorder = (list, startIndex, endIndex) => {
   return result;
 };
 
-function AddedFiles({ formik }) {
+function AddedFiles({ formik, entryIndex, adFiles }) {
   const onDragEnd = (result) => {
     if (!result.destination) {
       return;
     }
 
-    const items = reorder(formik.values.adFiles, result.source.index, result.destination.index);
-
-    formik.setFieldValue('adFiles', items);
+    const items = reorder(adFiles, result.source.index, result.destination.index);
+    const newEntries = [...formik.values.screenEntries];
+    newEntries[entryIndex] = {
+      ...newEntries[entryIndex],
+      adFiles: items,
+    };
+    formik.setFieldValue('screenEntries', newEntries);
   };
   return (
-    formik.values.adFiles.length > 0 && (
+    adFiles.length > 0 && (
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="ad-files">
-          {(provided, snapshot) => (
+        <Droppable droppableId={`ad-files-${entryIndex}`}>
+          {(provided) => (
             <Stack {...provided.droppableProps} ref={provided.innerRef}>
-              {formik.values.adFiles.map((file, index) => (
-                <Draggable draggableId={file.id} index={index} key={file.id}>
+              {adFiles.map((file, index) => (
+                <Draggable draggableId={`${file.id}-${entryIndex}`} index={index} key={file.id}>
                   {(_provided) => (
                     <Box
                       ref={_provided.innerRef}
@@ -468,6 +563,7 @@ function AddedFiles({ formik }) {
                         type={file.type}
                         file={file.file}
                         formik={formik}
+                        entryIndex={entryIndex}
                         iframeContent={file.iframeContent}
                       />
                     </Box>
@@ -483,17 +579,20 @@ function AddedFiles({ formik }) {
   );
 }
 
-function AddedFile({ id, name, type, file, iframeContent, formik }) {
+function AddedFile({ id, name, type, file, iframeContent, formik, entryIndex }) {
   const fileObjectUrl = useMemo(
     () => (file instanceof File ? URL.createObjectURL(file) : null),
     [file]
   );
 
   const handleRemoveFile = () => {
-    formik.setFieldValue(
-      'adFiles',
-      formik.values.adFiles.filter((f) => f.id !== id)
-    );
+    const newEntries = [...formik.values.screenEntries];
+    const currentEntry = newEntries[entryIndex];
+    newEntries[entryIndex] = {
+      ...currentEntry,
+      adFiles: currentEntry.adFiles.filter((f) => f.id !== id),
+    };
+    formik.setFieldValue('screenEntries', newEntries);
     URL.revokeObjectURL(fileObjectUrl);
   };
   return (
@@ -516,7 +615,7 @@ function AddedFile({ id, name, type, file, iframeContent, formik }) {
               <Image width={40} height={40} src={fileObjectUrl} alt="preview" />
             )}
             {file && type === 'video' && (
-              <video style={videoStyle} src={fileObjectUrl} alt="preview" />
+              <video style={videoStyle} src={fileObjectUrl} muted alt="preview" />
             )}
             {type === 'html' && <Iframe content={iframeContent} styles={videoStyle} />}
           </Box>
@@ -542,7 +641,7 @@ function AddedFile({ id, name, type, file, iframeContent, formik }) {
           alignSelf="flex-end"
           sx={{ ml: 'auto !important' }}
         >
-          <EditFile fileId={id} formik={formik} />
+          <EditFile fileId={id} formik={formik} entryIndex={entryIndex} />
           <ConfirmAction
             color="error"
             buttonProps={{ color: 'error', variant: 'text' }}
@@ -583,12 +682,12 @@ const cardStyles = {
   maxHeight: '85vh',
   overflowY: 'auto',
 };
-function EditFile({ formik, fileId }) {
+function EditFile({ formik, fileId, entryIndex }) {
   const { state, open, close } = useToggle(false);
 
   const { id, name, type, iframeContent } = useMemo(
-    () => formik.values.adFiles.find((file) => file.id === fileId),
-    [fileId]
+    () => formik.values.screenEntries[entryIndex].adFiles.find((file) => file.id === fileId),
+    [fileId, formik.values.screenEntries, entryIndex]
   );
 
   return (
@@ -647,41 +746,61 @@ function UploadForm({ formik }) {
   const [requestProcessing, setRequestProcessing] = useState(false);
   const { user } = useAuth();
 
-  console.log(process.env.BACKEND_DOMAIN);
+  const handleUpload = async () => {
+    const { organizationId, screenEntries } = formik.values;
+    const filesToUpload = [];
 
-  const hanldeUpload = () => {
-    const formData = new FormData();
-    const { organizationId, screenId, adsAccountId, adFiles } = formik.values;
-    formData.append('organizationId', organizationId);
-    formData.append('screenId', screenId);
-    formData.append('adsAccountId', adsAccountId);
-
-    adFiles.forEach((file) => {
-      formData.append(`adsType[]`, file.type);
-      formData.append(`adsUpload[]`, file.iframeContent || file.file);
-      formData.append(`adsName[]`, file.name);
+    // Flatten all files into one list with context
+    screenEntries.forEach((entry) => {
+      entry.adFiles.forEach((file) => {
+        filesToUpload.push({
+          organizationId,
+          screenId: entry.screenId,
+          adsAccountId: entry.adsAccountId,
+          file,
+        });
+      });
     });
+
+    let totalUploaded = 0;
+    const totalSize = filesToUpload.reduce(
+      (acc, f) => acc + (f.file.file?.size || f.file.iframeContent?.length || 0),
+      0
+    );
 
     setRequestProcessing(true);
 
     toast.promise(
-      axios.post(`${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/v1/ads/create`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${user.token}`,
-        },
-        onUploadProgress: (progressEvent) => {
-          const { loaded, total } = progressEvent;
-          setuploadProgress((loaded / total) * 100);
-        },
-      }),
+      Promise.all(
+        filesToUpload.map(({ organizationId, screenId, adsAccountId, file }) => {
+          const formData = new FormData();
+          formData.append('organizationId', organizationId);
+          formData.append('screenId', screenId);
+          formData.append('adsAccountId', adsAccountId);
+          formData.append('adsType', file.type);
+          formData.append('adsUpload', file.iframeContent || file.file);
+          formData.append('adsName', file.name);
+
+          return axios.post(`${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/v1/ads/create`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${user.token}`,
+            },
+            onUploadProgress: (progressEvent) => {
+              const { loaded } = progressEvent;
+              totalUploaded += loaded;
+              setuploadProgress((totalUploaded / totalSize) * 100);
+            },
+          });
+        })
+      ),
       {
         loading: 'Uploading Ads, Hang on...',
-        success: (response) => {
+        success: () => {
           formik.resetForm();
           setuploadProgress(0);
           setRequestProcessing(false);
-          return response.data.message || 'Ads uploaded successfully';
+          return 'All ads uploaded successfully';
         },
         error: (err) => {
           setRequestProcessing(false);
@@ -697,12 +816,14 @@ function UploadForm({ formik }) {
       size="large"
       variant="contained"
       sx={uploadButtonStyle}
-      onClick={hanldeUpload}
+      onClick={handleUpload}
       endIcon={
         requestProcessing && <CircularProgress size={16} sx={{ color: 'rgba(17,25,39,0.6)' }} />
       }
       disabled={
-        !(formik.isValid && formik.dirty) || requestProcessing || formik.values.adFiles.length === 0
+        !(formik.isValid && formik.dirty) ||
+        requestProcessing ||
+        !formik.values.screenEntries.some((entry) => entry.adFiles.length > 0)
       }
     >
       Submit
