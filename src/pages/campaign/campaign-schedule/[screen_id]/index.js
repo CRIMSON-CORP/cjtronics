@@ -21,19 +21,19 @@ import {
   Paper,
   Select,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import axios from 'axios';
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
-import Iframe from 'src/components/Iframe';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -470,138 +470,81 @@ function SendCampaignToDevice({ isOnline, deviceId }) {
   );
 }
 
-const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
+/**
+ * Mirrors what the device is actually playing, rather than simulating the
+ * schedule. The device emits `now-playing` on every transition and the dialog
+ * holds each frame until the next one arrives, so it cannot drift out of sync.
+ *
+ * Consequences of that, both deliberate: opening mid-ad shows a waiting state
+ * until the device next changes, and a stalled device is indistinguishable
+ * from one playing a long video.
+ */
 function PlayAds({ screen }) {
-  const [requestProcessing, setRequestProcessing] = useState(false);
-  const [campaignsLists, setCampaingsLists] = useState([]);
   const { open, close, state } = useToggle();
-  const [screenView, setScreenView] = useState('player');
-  const [completedScreen, setCompletedScreen] = useState([]);
-  const [widgets, setWidgets] = useState([]);
+  // Keyed by campaignView so each pane of a split layout updates independently.
+  const [frames, setFrames] = useState({});
+  const [widget, setWidget] = useState(null);
 
-  const loadAds = async () => {
-    setRequestProcessing(true);
+  const onMessage = useCallback(
+    (data) => {
+      if (data.event !== 'now-playing' || data.deviceId !== screen.deviceId) return;
+      const item = data.data;
+      if (!item) return;
 
-    try {
-      const response = await axios.get(
-        `/api/admin/campaigns/get-campaign-ads?reference=${screen.deviceId}`
-      );
-
-      const campaigns = response.data.data[0].campaigns;
-
-      const filteredDaysCampaigns = campaigns.filter((campaign) =>
-        campaign.adConfiguration.days.includes(days[new Date().getDay()])
-      );
-
-      const filteredTimeCampaigns = filteredDaysCampaigns.filter((campaign) => {
-        const startTime = new Date(campaign.adConfiguration.startTime).getTime();
-        const endTime = new Date(campaign.adConfiguration.endTime).getTime();
-        return startTime <= new Date().getTime() && new Date().getTime() <= endTime;
-      });
-
-      const filteredCampaigsWithoutView = filteredTimeCampaigns.filter(
-        (campaign) => campaign.campaignView
-      );
-
-      const widgets = filteredTimeCampaigns.filter((campaign) =>
-        ['time', 'weather'].includes(campaign.adId)
-      );
-
-      const grouped = filteredCampaigsWithoutView.reduce(
-        (acc, obj) => {
-          obj.campaignView === 1 ? acc[0].push(obj) : acc[1].push(obj);
-          return acc;
-        },
-        [[], []]
-      );
-
-      const filteredGroup = grouped.filter((group) => group.length > 0);
-
-      // const campaignUploads = campaignsLists
-      //   .map((campaign) =>
-      //     campaign.playUploads.map((file) => {
-      //       file.duration = campaign.playDuration;
-      //       return file;
-      //     })
-      //   )
-      //   .flat();
-
-      // const maxLength = Math.max(...campaignsLists.map((arr) => arr.length));
-      // const mergedCampaigns = Array.from({ length: maxLength }).flatMap((_, i) =>
-      //   campaignsLists.map((arr) => arr[i]).filter((val) => val !== undefined)
-      // );
-      setWidgets(widgets);
-      setCampaingsLists(filteredGroup);
-
-      open();
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
-      console.log(error);
-    } finally {
-      setRequestProcessing(false);
-    }
-  };
-
-  const onComplete = () => {
-    setCompletedScreen((prev) => [...prev, true]);
-  };
-
-  const onWidgetComplete = () => {
-    setScreenView('player');
-    setCompletedScreen([]);
-  };
-
-  useEffect(() => {
-    if (campaignsLists.length !== 0 || widgets.length !== 0) {
-      if (completedScreen.length === campaignsLists.length && widgets.length > 0) {
-        setScreenView('widgets');
-      } else {
-        if (completedScreen.length === campaignsLists.length) {
-          console.log('setting');
-
-          setCompletedScreen([]);
-          setScreenView('player' + new Date().getTime());
-        }
+      if (item.kind === 'widget') {
+        // Widgets take over the whole screen on the device.
+        setWidget(item);
+        return;
       }
-    }
-  }, [completedScreen, campaignsLists, widgets]);
 
-  useEffect(() => {
-    setCompletedScreen([]);
-  }, [screenView]);
+      setWidget(null);
+      setFrames((prev) => ({ ...prev, [item.campaignView]: item }));
+    },
+    [screen.deviceId]
+  );
 
-  useEffect(() => {
-    if (!state) {
-      setCompletedScreen([]);
-      setScreenView('player' + new Date().getTime());
-    }
-  }, [state]);
+  const { isConnected, screenIsOnline } = useDeviceSocket({
+    deviceId: screen.deviceId,
+    initialIsOnline: screen.isOnline,
+    onMessage,
+  });
+
+  const disabled = !screenIsOnline || !isConnected;
+  const disabledReason = !screenIsOnline
+    ? 'Screen is offline'
+    : 'Connecting to the device service...';
+
+  const paneCount = screenReferenceToConfig[screen.layoutReference]?.split ? 2 : 1;
+  const panes = Array.from({ length: paneCount }, (_, index) => frames[index + 1] ?? null);
 
   return (
     <>
-      <Button
-        onClick={loadAds}
-        variant="outlined"
-        disabled={requestProcessing}
-        startIcon={requestProcessing ? <CircularProgress /> : <PlayCircleFilledRounded />}
-      >
-        Play
-      </Button>
+      <Tooltip title={disabled ? disabledReason : ''}>
+        <span>
+          <Button
+            onClick={open}
+            variant="outlined"
+            disabled={disabled}
+            startIcon={<PlayCircleFilledRounded />}
+          >
+            Play
+          </Button>
+        </span>
+      </Tooltip>
       <Dialog
-        sx={{
-          '.MuiDialog-paper': {
-            width: 'auto',
-            maxWidth: 'none',
-          },
-        }}
+        sx={{ '.MuiDialog-paper': { width: 'auto', maxWidth: 'none' } }}
         fullWidth
         onClose={close}
         open={state}
       >
         <DialogTitle>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography>{screen.screenName}</Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
+            <Stack>
+              <Typography>{screen.screenName}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Live from the device
+              </Typography>
+            </Stack>
             <IconButton onClick={close}>
               <Close />
             </IconButton>
@@ -616,27 +559,61 @@ function PlayAds({ screen }) {
             backgroundColor: 'black',
           }}
         >
-          {screenView.startsWith('player') ? (
-            <Screen screenLayoutRef={screen.layoutReference}>
-              {campaignsLists.map((campaignsList, index) => (
-                <View
-                  campaignsList={campaignsList}
-                  key={index}
-                  screenView={screenView}
-                  setScreenView={setScreenView}
-                  onComplete={onComplete}
-                />
-              ))}
+          {widget ? (
+            <Screen screenLayoutRef="VBSGTREW43">
+              <NowPlayingFrame item={widget} />
             </Screen>
           ) : (
-            <Screen screenLayoutRef="VBSGTREW43">
-              <View campaignsList={widgets} onComplete={onWidgetComplete} />
+            <Screen screenLayoutRef={screen.layoutReference}>
+              {panes.map((item, index) => (
+                <NowPlayingFrame key={index} item={item} />
+              ))}
             </Screen>
           )}
         </DialogContent>
       </Dialog>
     </>
   );
+}
+
+function NowPlayingFrame({ item }) {
+  if (!item) {
+    return (
+      <Stack alignItems="center" justifyContent="center" height="100%" width="100%" gap={1}>
+        <CircularProgress size={20} sx={{ color: 'grey.600' }} />
+        <Typography variant="caption" color="grey.500">
+          Waiting for the device...
+        </Typography>
+      </Stack>
+    );
+  }
+
+  const style = { objectFit: 'contain', width: '100%', height: '100%' };
+
+  if (item.adType === 'image') {
+    return (
+      // Unoptimised: these are arbitrary remote hosts reported by the device at
+      // runtime, so they cannot be in next.config's remotePatterns allowlist.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={item.url} alt={item.uploadName || 'Now playing'} style={style} />
+    );
+  }
+
+  if (item.adType === 'video') {
+    return <video loop muted autoPlay controls={false} src={item.url} style={style} />;
+  }
+
+  if (item.adType === 'iframe') {
+    return (
+      <CardMedia
+        component="iframe"
+        src={item.url}
+        sx={{ width: '100%', height: '100%', margin: 0, border: 'none' }}
+      />
+    );
+  }
+
+  return null;
 }
 
 function Screen({ children, screenLayoutRef }) {
@@ -675,100 +652,6 @@ function Screen({ children, screenLayoutRef }) {
   };
 
   return <Box sx={screenStyle}>{children}</Box>;
-}
-
-function View({ campaignsList, screenView, onComplete }) {
-  const sequence = campaignsList;
-
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-
-  useEffect(() => {
-    if (currentAdIndex < sequence.length) {
-      const adDuration = sequence[currentAdIndex].adConfiguration.duration * 1000; // Convert to milliseconds
-      const timer = setTimeout(() => {
-        setCurrentAdIndex((prevIndex) => prevIndex + 1);
-      }, adDuration);
-
-      return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
-    } else {
-      onComplete();
-      // setTimeout(() => {
-      //   setCurrentAdIndex(0);
-      // }, 1000 * 20);
-    }
-  }, [currentAdIndex, onComplete, sequence]);
-
-  useEffect(() => {
-    setCurrentAdIndex(0);
-  }, [screenView]);
-
-  return (
-    <Box overflow="hidden">
-      <Stack
-        direction="row"
-        alignItems="center"
-        style={{
-          width: '100%',
-          height: '100%',
-          flex: 1,
-          position: 'relative',
-          transition: currentAdIndex === 0 ? 'none' : 'transform 1s ease-out',
-          transform: `translateX(-${currentAdIndex * 100}%)`,
-        }}
-      >
-        {sequence.map((file, index) => {
-          return (
-            <Box
-              key={file.uploadRef}
-              width="100%"
-              height="100%"
-              flex="none"
-              position="absolute"
-              sx={{ transform: `translateX(${index * 100}%)` }}
-            >
-              {file.adType === 'image' ? (
-                <Image
-                  src={file.adUrl}
-                  alt={file.uploadName}
-                  width={500}
-                  height={400}
-                  key={currentAdIndex}
-                  style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-                />
-              ) : file.adType === 'video' ? (
-                <video
-                  loop
-                  muted
-                  key={currentAdIndex}
-                  controls={false}
-                  src={file.adUrl}
-                  alt={file.uploadName}
-                  autoPlay={index === currentAdIndex}
-                  style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-                />
-              ) : file.adType === 'iframe' ? (
-                <>
-                  {file.adUrl.startsWith('https://') ? (
-                    <CardMedia
-                      sx={{ width: '100%', height: '100%', margin: 0, border: 'none' }}
-                      component="iframe"
-                      className="card media"
-                      src={file.adUrl}
-                    />
-                  ) : (
-                    <Iframe
-                      content={file.adUrl}
-                      styles={{ width: '100%', height: '100%', border: 'none' }}
-                    />
-                  )}
-                </>
-              ) : null}
-            </Box>
-          );
-        })}
-      </Stack>
-    </Box>
-  );
 }
 
 // function SequenceAds({ sequence, onComplete }) {

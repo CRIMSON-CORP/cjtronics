@@ -36,11 +36,12 @@ import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useThrottledCallback } from 'use-debounce';
 import ConfirmAction from 'src/components/ConfirmAction';
 import ProtectDashboard from 'src/hocs/protectDashboard';
+import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import {
   getAllOrganizations,
@@ -363,77 +364,6 @@ const BRIGHTNESS_MIN = 10;
 const DEFAULT_BRIGHTNESS = 100;
 const DEFAULT_VOLUME = 0;
 const SETTINGS_SEND_INTERVAL = 150;
-const MAX_RECONNECT_ATTEMPTS = 10;
-const BASE_RECONNECT_DELAY = 2000;
-
-/**
- * Live socket for this screen. Tracks whether we are connected and whether the
- * device is online, so the sliders can re-enable themselves the moment a screen
- * comes back rather than needing a page refresh.
- */
-function useDeviceSocket({ deviceId, initialIsOnline }) {
-  const socketRef = useRef(null);
-  const reconnectAttempts = useRef(0);
-  const reconnectTimeout = useRef(null);
-  const unmounted = useRef(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [screenIsOnline, setScreenIsOnline] = useState(!!initialIsOnline);
-
-  useEffect(() => {
-    unmounted.current = false;
-
-    const connect = () => {
-      const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
-      socketRef.current = socket;
-
-      socket.onopen = () => {
-        setIsConnected(true);
-        reconnectAttempts.current = 0;
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.event !== 'device-connection') return;
-          const thisScreen = data.screens?.find((item) => item.deviceId === deviceId);
-          if (thisScreen) setScreenIsOnline(thisScreen.isOnline);
-        } catch (error) {
-          console.error('Bad socket message', error);
-        }
-      };
-
-      socket.onclose = () => {
-        setIsConnected(false);
-        socketRef.current = null;
-        if (unmounted.current || reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) return;
-        const delay = BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts.current);
-        reconnectAttempts.current += 1;
-        reconnectTimeout.current = setTimeout(connect, delay);
-      };
-
-      socket.onerror = () => socket.close();
-    };
-
-    connect();
-
-    return () => {
-      unmounted.current = true;
-      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
-      socketRef.current?.close();
-      socketRef.current = null;
-    };
-  }, [deviceId]);
-
-  const send = useCallback((payload) => {
-    const socket = socketRef.current;
-    // Instance constant, not the global: this also runs during SSR teardown.
-    if (!socket || socket.readyState !== socket.OPEN) return false;
-    socket.send(JSON.stringify(payload));
-    return true;
-  }, []);
-
-  return { isConnected, screenIsOnline, send };
-}
 
 function DeviceSettings({ screen }) {
   const { isConnected, screenIsOnline, send } = useDeviceSocket({
