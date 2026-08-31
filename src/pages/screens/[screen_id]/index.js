@@ -18,6 +18,7 @@ import {
   MenuItem,
   Modal,
   Select,
+  Slider,
   Stack,
   Switch,
   Table,
@@ -35,8 +36,9 @@ import axios from 'axios';
 import { useFormik } from 'formik';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useThrottledCallback } from 'use-debounce';
 import ConfirmAction from 'src/components/ConfirmAction';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -343,11 +345,200 @@ function ScreenDetails({ screen, organizations, cities, screenLayouts }) {
                   />
                 </TableCell>
               </TableRow>
+              <DeviceSettings screen={screen} />
             </TableBody>
           </Table>
         </TableContainer>
       </CardContent>
     </Card>
+  );
+}
+
+// Brightness never reaches 0: a black screen is indistinguishable from a dead
+// one to anyone standing in front of it, and the only fix is remote.
+const BRIGHTNESS_MIN = 10;
+// Defaults for a screen the backend has no stored settings for. Full brightness
+// so an unconfigured screen looks normal, silent so no screen ever starts
+// playing audio unless somebody deliberately turned it up.
+const DEFAULT_BRIGHTNESS = 100;
+const DEFAULT_VOLUME = 0;
+const SETTINGS_SEND_INTERVAL = 150;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY = 2000;
+
+/**
+ * Live socket for this screen. Tracks whether we are connected and whether the
+ * device is online, so the sliders can re-enable themselves the moment a screen
+ * comes back rather than needing a page refresh.
+ */
+function useDeviceSocket({ deviceId, initialIsOnline }) {
+  const socketRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const reconnectTimeout = useRef(null);
+  const unmounted = useRef(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [screenIsOnline, setScreenIsOnline] = useState(!!initialIsOnline);
+
+  useEffect(() => {
+    unmounted.current = false;
+
+    const connect = () => {
+      const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        setIsConnected(true);
+        reconnectAttempts.current = 0;
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.event !== 'device-connection') return;
+          const thisScreen = data.screens?.find((item) => item.deviceId === deviceId);
+          if (thisScreen) setScreenIsOnline(thisScreen.isOnline);
+        } catch (error) {
+          console.error('Bad socket message', error);
+        }
+      };
+
+      socket.onclose = () => {
+        setIsConnected(false);
+        socketRef.current = null;
+        if (unmounted.current || reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) return;
+        const delay = BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts.current);
+        reconnectAttempts.current += 1;
+        reconnectTimeout.current = setTimeout(connect, delay);
+      };
+
+      socket.onerror = () => socket.close();
+    };
+
+    connect();
+
+    return () => {
+      unmounted.current = true;
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, [deviceId]);
+
+  const send = useCallback((payload) => {
+    const socket = socketRef.current;
+    // Instance constant, not the global: this also runs during SSR teardown.
+    if (!socket || socket.readyState !== socket.OPEN) return false;
+    socket.send(JSON.stringify(payload));
+    return true;
+  }, []);
+
+  return { isConnected, screenIsOnline, send };
+}
+
+function DeviceSettings({ screen }) {
+  const { isConnected, screenIsOnline, send } = useDeviceSocket({
+    deviceId: screen.deviceId,
+    initialIsOnline: screen.isOnline,
+  });
+
+  const [brightness, setBrightness] = useState(screen.brightness ?? DEFAULT_BRIGHTNESS);
+  const [volume, setVolume] = useState(screen.volume ?? DEFAULT_VOLUME);
+
+  const disabled = !screenIsOnline || !isConnected;
+  const disabledReason = !screenIsOnline
+    ? 'Screen is offline'
+    : 'Connecting to the device service...';
+
+  const sendSettings = useCallback(
+    (next) => {
+      send({ event: 'device-settings', deviceId: screen.deviceId, data: next });
+    },
+    [send, screen.deviceId]
+  );
+
+  // Throttled so dragging feels live on the screen without flooding a relay
+  // that has no backpressure. Trailing edge guarantees the last value lands.
+  const sendThrottled = useThrottledCallback(sendSettings, SETTINGS_SEND_INTERVAL);
+
+  const persistSettings = useCallback(
+    async (next) => {
+      try {
+        await axios.post('/api/admin/screens/update-settings', {
+          reference: screen.reference,
+          brightness: next.brightness,
+          volume: next.volume,
+        });
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Could not save screen settings');
+      }
+    },
+    [screen.reference]
+  );
+
+  const handleChange = (field) => (_event, value) => {
+    if (field === 'brightness') setBrightness(value);
+    else setVolume(value);
+    sendThrottled({ brightness, volume, [field]: value });
+  };
+
+  // Release: skip the queued throttled send, push the final value immediately,
+  // and persist once per adjustment rather than once per drag frame.
+  const handleCommit = (field) => (_event, value) => {
+    const next = { brightness, volume, [field]: value };
+    sendThrottled.cancel();
+    sendSettings(next);
+    persistSettings(next);
+  };
+
+  return (
+    <>
+      <TableRow>
+        <TableCell>
+          <Typography>Brightness</Typography>
+          {disabled && <FormHelperText>{disabledReason}</FormHelperText>}
+        </TableCell>
+        <TableCell>
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ minWidth: 220 }}>
+            <Slider
+              aria-label="Screen brightness"
+              value={brightness}
+              min={BRIGHTNESS_MIN}
+              max={100}
+              disabled={disabled}
+              valueLabelDisplay="auto"
+              onChange={handleChange('brightness')}
+              onChangeCommitted={handleCommit('brightness')}
+            />
+            <Typography variant="body2" width={40} textAlign="right">
+              {brightness}%
+            </Typography>
+          </Stack>
+        </TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell>
+          <Typography>Volume</Typography>
+          {disabled && <FormHelperText>{disabledReason}</FormHelperText>}
+        </TableCell>
+        <TableCell>
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ minWidth: 220 }}>
+            <Slider
+              aria-label="Screen volume"
+              value={volume}
+              min={0}
+              max={100}
+              disabled={disabled}
+              valueLabelDisplay="auto"
+              onChange={handleChange('volume')}
+              onChangeCommitted={handleCommit('volume')}
+            />
+            <Typography variant="body2" width={40} textAlign="right">
+              {volume}%
+            </Typography>
+          </Stack>
+        </TableCell>
+      </TableRow>
+    </>
   );
 }
 
