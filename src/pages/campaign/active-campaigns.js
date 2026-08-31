@@ -1,7 +1,9 @@
+import { Pause, PlayArrow } from '@mui/icons-material';
 import {
   Box,
   Button,
   Card,
+  CircularProgress,
   Container,
   FormControl,
   InputLabel,
@@ -17,10 +19,12 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/system/Unstable_Grid/Grid';
+import axios from 'axios';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -91,6 +95,7 @@ const columns = [
   { id: 'campaigns', label: 'Campaigns', minWidth: 170 },
   { id: 'ad_accounts', label: 'Ad Accounts', minWidth: 100 },
   { id: 'screen_name', label: 'Screen Name', minWidth: 100 },
+  { id: 'actions', label: 'Actions', minWidth: 120, align: 'right' },
 ];
 
 function Activecampaigns({ campaigns }) {
@@ -133,6 +138,9 @@ function Activecampaigns({ campaigns }) {
                   <TableCell>{campaign.name}</TableCell>
                   <TableCell>{campaign.accountName || campaign.adsAccountName}</TableCell>
                   <TableCell>{campaign.screenName}</TableCell>
+                  <TableCell align="right">
+                    <PauseToggle campaign={campaign} />
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -140,6 +148,57 @@ function Activecampaigns({ campaigns }) {
         </Table>
       </TableContainer>
     </Card>
+  );
+}
+
+function PauseToggle({ campaign }) {
+  const [isPaused, setIsPaused] = useState(campaign.is_paused ?? false);
+  const [requestProcessing, setRequestProcessing] = useState(false);
+
+  const togglePause = async () => {
+    const nextPaused = !isPaused;
+    setRequestProcessing(true);
+
+    try {
+      await toast.promise(
+        axios.put('/api/admin/campaigns/update', {
+          campaign_id: campaign.reference,
+          is_paused: nextPaused,
+        }),
+        {
+          loading: nextPaused ? 'Pausing campaign...' : 'Resuming campaign...',
+          success: (response) => {
+            setIsPaused(nextPaused);
+            return response.data.message || (nextPaused ? 'Campaign paused' : 'Campaign resumed');
+          },
+          error: (error) => error.response?.data?.message || error.message,
+        }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+    setRequestProcessing(false);
+  };
+
+  return (
+    <Button
+      size="small"
+      variant={isPaused ? 'contained' : 'outlined'}
+      color={isPaused ? 'success' : 'warning'}
+      onClick={togglePause}
+      disabled={requestProcessing}
+      startIcon={
+        requestProcessing ? (
+          <CircularProgress size={14} color="inherit" />
+        ) : isPaused ? (
+          <PlayArrow />
+        ) : (
+          <Pause />
+        )
+      }
+    >
+      {isPaused ? 'Resume' : 'Pause'}
+    </Button>
   );
 }
 
