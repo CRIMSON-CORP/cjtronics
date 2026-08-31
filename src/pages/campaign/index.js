@@ -24,7 +24,7 @@ import { useFormik } from 'formik';
 import { nanoid } from 'nanoid';
 import Head from 'next/head';
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
@@ -50,10 +50,12 @@ const Page = ({ organizations, screens }) => {
     if (!screenId) return;
 
     setLoadingScreens((prev) => ({ ...prev, [screenId]: true }));
+    // Dismiss by id in a finally: a bare toast.dismiss() on the success path only
+    // left the spinner up forever when the request threw, and would also clear
+    // unrelated toasts such as an upload in progress.
+    const loadingToastId = toast.loading(`Fetching Ad Accounts for screen...`);
     try {
-      toast.loading(`Fetching Ad Accounts for screen...`);
       const response = await axios.get(`/api/admin/ad-account/get-by-screen?reference=${screenId}`);
-      toast.dismiss();
       const { list } = response.data.data;
       if (list.length === 0) {
         toast.error('No Ad Accounts found for this screen');
@@ -67,8 +69,10 @@ const Page = ({ organizations, screens }) => {
       ]);
     } catch (error) {
       toast.error('Failed to fetch Ad accounts for this screen');
+    } finally {
+      toast.dismiss(loadingToastId);
+      setLoadingScreens((prev) => ({ ...prev, [screenId]: false }));
     }
-    setLoadingScreens((prev) => ({ ...prev, [screenId]: false }));
   };
 
   const formik = useFormik({
@@ -100,8 +104,6 @@ const Page = ({ organizations, screens }) => {
     }),
   });
 
-  // Remove the old effect and fetchAdAccounts definition
-
   return (
     <>
       <Head>
@@ -118,14 +120,17 @@ const Page = ({ organizations, screens }) => {
           <Card>
             <CardHeader title="Create Ad" />
             <CardContent>
-              <form onSubmit={formik.handleSubmit}>
+              {/* Submitting runs through UploadForm's onClick, not formik: this
+                  form has no onSubmit handler, so wiring formik.handleSubmit here
+                  would call an undefined onSubmit if the form were ever submitted. */}
+              <form onSubmit={(event) => event.preventDefault()}>
                 <Stack spacing={3}>
                   <FormControl variant="outlined">
-                    <InputLabel htmlFor="organization">Select Organization</InputLabel>
+                    <InputLabel htmlFor="organizationId">Select Organization</InputLabel>
                     <Select
                       error={!!(formik.touched.organizationId && formik.errors.organizationId)}
                       fullWidth
-                      label="Select Organization-"
+                      label="Select Organization"
                       name="organizationId"
                       id="organizationId"
                       onBlur={formik.handleBlur}
@@ -147,8 +152,11 @@ const Page = ({ organizations, screens }) => {
                   </FormControl>
 
                   {formik.values.screenEntries.map((entry, index) => (
-                    <>
-                      <Card key={entry.id} sx={{ padding: 2 }}>
+                    // Key belongs on the fragment: it is the array element. On a
+                    // bare <> React falls back to index reconciliation, so removing
+                    // an entry leaves the next one's in-progress draft behind.
+                    <Fragment key={entry.id}>
+                      <Card sx={{ padding: 2 }}>
                         <Stack spacing={3} sx={{ position: 'relative', pt: 2 }}>
                           {index > 0 && (
                             <IconButton
@@ -163,7 +171,7 @@ const Page = ({ organizations, screens }) => {
                             </IconButton>
                           )}
                           <FormControl fullWidth>
-                            <InputLabel id={`screenId-${entry.id}`}>Select Screen</InputLabel>
+                            <InputLabel id={`screenId-label-${entry.id}`}>Select Screen</InputLabel>
                             <Select
                               error={
                                 !!(
@@ -172,6 +180,7 @@ const Page = ({ organizations, screens }) => {
                                 )
                               }
                               fullWidth
+                              labelId={`screenId-label-${entry.id}`}
                               id={`screenId-${entry.id}`}
                               name={`screenEntries.${index}.screenId`}
                               onBlur={formik.handleBlur}
@@ -290,7 +299,7 @@ const Page = ({ organizations, screens }) => {
                           Add Another Screen
                         </Button>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                   <UploadForm formik={formik} />
                 </Stack>
@@ -367,6 +376,17 @@ function EmptyAdForm({ id, formik, entryIndex, fileType, fileName, ifrmContent, 
   const [selectedFileName, setSelectedFileName] = useState(fileName || '');
   const [fileObjectUrl, setFileObjectUrl] = useState('');
   const [iframeContent, setIframeContent] = useState(ifrmContent || '');
+  // Kept in a ref as well as state so cleanup can reach the current value; the
+  // old unmount effect closed over the first render's empty string and revoked
+  // nothing.
+  const fileObjectUrlRef = useRef('');
+
+  const revokePreview = () => {
+    if (fileObjectUrlRef.current) {
+      URL.revokeObjectURL(fileObjectUrlRef.current);
+      fileObjectUrlRef.current = '';
+    }
+  };
 
   const handleAdFileTypeSelect = (e) => {
     setSelectedAdFileType(e.target.value);
@@ -381,8 +401,12 @@ function EmptyAdForm({ id, formik, entryIndex, fileType, fileName, ifrmContent, 
       return;
     }
 
+    // Revoke the previous preview first, otherwise every "Replace file" leaks one.
+    revokePreview();
+    const objectUrl = URL.createObjectURL(file);
+    fileObjectUrlRef.current = objectUrl;
     setSelectedFile(file);
-    setFileObjectUrl(URL.createObjectURL(file));
+    setFileObjectUrl(objectUrl);
   };
 
   const handleAdFileNameChange = (e) => {
@@ -426,21 +450,16 @@ function EmptyAdForm({ id, formik, entryIndex, fileType, fileName, ifrmContent, 
 
     setSelectedAdFileType('');
     setSelectedFile(null);
+    revokePreview();
     setFileObjectUrl('');
-    URL.revokeObjectURL(fileObjectUrl);
     setSelectedFileName('');
     setIframeContent('');
   };
 
   useEffect(() => {
-    // This effect is only for cleanup when component unmounts
-    return () => {
-      setSelectedFile(null);
-      setFileObjectUrl('');
-      URL.revokeObjectURL(fileObjectUrl);
-      setSelectedFileName('');
-      setIframeContent('');
-    };
+    // Cleanup on unmount. Setting state here would be a no-op, so only the
+    // object url is worth releasing.
+    return revokePreview;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -580,7 +599,6 @@ function AddedFiles({ formik, entryIndex, adFiles }) {
                       }}
                     >
                       <AddedFile
-                        key={index}
                         id={file.id}
                         name={file.name}
                         type={file.type}
@@ -608,6 +626,15 @@ function AddedFile({ id, name, type, file, iframeContent, formik, entryIndex }) 
     [file]
   );
 
+  // Release on unmount and whenever the file changes. Revoking only in
+  // handleRemoveFile leaked every preview that went away another way - notably
+  // resetForm() after a successful upload, which unmounts all of them at once.
+  useEffect(() => {
+    return () => {
+      if (fileObjectUrl) URL.revokeObjectURL(fileObjectUrl);
+    };
+  }, [fileObjectUrl]);
+
   const handleRemoveFile = () => {
     const newEntries = [...formik.values.screenEntries];
     const currentEntry = newEntries[entryIndex];
@@ -616,7 +643,6 @@ function AddedFile({ id, name, type, file, iframeContent, formik, entryIndex }) 
       adFiles: currentEntry.adFiles.filter((f) => f.id !== id),
     };
     formik.setFieldValue('screenEntries', newEntries);
-    URL.revokeObjectURL(fileObjectUrl);
   };
   return (
     <Paper sx={{ p: 2 }} elevation={5}>
@@ -708,10 +734,15 @@ const cardStyles = {
 function EditFile({ formik, fileId, entryIndex }) {
   const { state, open, close } = useToggle(false);
 
-  const { id, name, type, iframeContent } = useMemo(
-    () => formik.values.screenEntries[entryIndex].adFiles.find((file) => file.id === fileId),
+  const adFile = useMemo(
+    () => formik.values.screenEntries[entryIndex]?.adFiles.find((file) => file.id === fileId),
     [fileId, formik.values.screenEntries, entryIndex]
   );
+
+  // The entry or the file can disappear underneath us while the modal is open.
+  if (!adFile) return null;
+
+  const { id, name, type, iframeContent } = adFile;
 
   return (
     <>
@@ -734,6 +765,7 @@ function EditFile({ formik, fileId, entryIndex }) {
                 {...{
                   id,
                   formik,
+                  entryIndex,
                   fileType: type,
                   fileName: name,
                   ifrmContent: iframeContent,
@@ -764,6 +796,13 @@ const progressSpanStyles = {
   transition: 'width 0.3s ease-out',
 };
 
+// Byte size of what actually goes into the request body. The previous version
+// mixed File.size in bytes with iframeContent.length in characters.
+function adFileByteSize(adFile) {
+  if (adFile.file instanceof File) return adFile.file.size;
+  return new Blob([adFile.iframeContent || '']).size;
+}
+
 function UploadForm({ formik }) {
   const [uploadProgress, setuploadProgress] = useState(0);
   const [requestProcessing, setRequestProcessing] = useState(false);
@@ -774,64 +813,90 @@ function UploadForm({ formik }) {
     const filesToUpload = [];
 
     // Flatten all files into one list with context
-    screenEntries.forEach((entry) => {
+    screenEntries.forEach((entry, entryIndex) => {
       entry.adFiles.forEach((file) => {
         filesToUpload.push({
           organizationId,
           screenId: entry.screenId,
           adsAccountId: entry.adsAccountId,
           file,
+          entryIndex,
         });
       });
     });
 
-    let totalUploaded = 0;
-    const totalSize = filesToUpload.reduce(
-      (acc, f) => acc + (f.file.file?.size || f.file.iframeContent?.length || 0),
-      0
-    );
+    if (filesToUpload.length === 0) return;
+
+    const totalSize = filesToUpload.reduce((acc, item) => acc + adFileByteSize(item.file), 0);
+    // Each request reports its own cumulative `loaded`, so keep them separate and
+    // sum. Adding `loaded` to one running total counts the same bytes on every
+    // progress event and races past 100% almost immediately.
+    const loadedPerFile = new Array(filesToUpload.length).fill(0);
 
     setRequestProcessing(true);
 
-    toast.promise(
-      Promise.all(
-        filesToUpload.map(({ organizationId, screenId, adsAccountId, file }) => {
-          const formData = new FormData();
-          formData.append('organizationId', organizationId);
-          formData.append('screenId', screenId);
-          formData.append('adsAccountId', adsAccountId);
-          formData.append('adsType', file.type);
-          formData.append('adsUpload', file.iframeContent || file.file);
-          formData.append('adsName', file.name);
+    const uploadAll = Promise.allSettled(
+      filesToUpload.map(({ organizationId, screenId, adsAccountId, file }, index) => {
+        const formData = new FormData();
+        formData.append('organizationId', organizationId);
+        formData.append('screenId', screenId);
+        formData.append('adsAccountId', adsAccountId);
+        formData.append('adsType', file.type);
+        formData.append('adsUpload', file.iframeContent || file.file);
+        formData.append('adsName', file.name);
 
-          return axios.post(`${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/v1/ads/create`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${user.token}`,
-            },
-            onUploadProgress: (progressEvent) => {
-              const { loaded } = progressEvent;
-              totalUploaded += loaded;
-              setuploadProgress((totalUploaded / totalSize) * 100);
-            },
-          });
-        })
-      ),
-      {
+        return axios.post(`${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/v1/ads/create`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${user.token}`,
+          },
+          onUploadProgress: (progressEvent) => {
+            loadedPerFile[index] = progressEvent.loaded;
+            if (totalSize > 0) {
+              const uploaded = loadedPerFile.reduce((acc, bytes) => acc + bytes, 0);
+              setuploadProgress(Math.min((uploaded / totalSize) * 100, 100));
+            }
+          },
+        });
+      })
+    ).then((results) => {
+      const failedKeys = new Set(
+        filesToUpload
+          .filter((_, index) => results[index].status === 'rejected')
+          .map((item) => `${item.entryIndex}:${item.file.id}`)
+      );
+
+      if (failedKeys.size === 0) return results;
+
+      // Drop the ads that did land. They already exist server-side, so leaving
+      // them in the form means a retry uploads them a second time.
+      formik.setFieldValue(
+        'screenEntries',
+        screenEntries.map((entry, entryIndex) => ({
+          ...entry,
+          adFiles: entry.adFiles.filter((adFile) => failedKeys.has(`${entryIndex}:${adFile.id}`)),
+        }))
+      );
+
+      const uploaded = results.length - failedKeys.size;
+      throw new Error(
+        `${uploaded} of ${results.length} ads uploaded. The ${failedKeys.size} that failed are still in the form, resubmit to retry just those.`
+      );
+    });
+
+    await toast
+      .promise(uploadAll, {
         loading: 'Uploading Ads, Hang on...',
         success: () => {
           formik.resetForm();
-          setuploadProgress(0);
-          setRequestProcessing(false);
           return 'All ads uploaded successfully';
         },
-        error: (err) => {
-          setRequestProcessing(false);
-          setuploadProgress(0);
-          return err.response?.data?.message || err.message;
-        },
-      }
-    );
+        error: (err) => err.response?.data?.message || err.message,
+      })
+      .catch(() => {});
+
+    setuploadProgress(0);
+    setRequestProcessing(false);
   };
 
   return (
