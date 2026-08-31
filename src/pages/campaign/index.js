@@ -145,110 +145,133 @@ const Page = ({ organizations, screens }) => {
                       </FormHelperText>
                     )}
                   </FormControl>
+
                   {formik.values.screenEntries.map((entry, index) => (
-                    <Stack key={entry.id} spacing={3} sx={{ position: 'relative', pt: 2 }}>
-                      {index > 0 && (
-                        <IconButton
-                          sx={{ position: 'absolute', right: -8, top: -8 }}
-                          onClick={() => {
-                            const newEntries = [...formik.values.screenEntries];
-                            newEntries.splice(index, 1);
-                            formik.setFieldValue('screenEntries', newEntries);
-                          }}
-                        >
-                          <Close />
-                        </IconButton>
-                      )}
-                      <FormControl fullWidth>
-                        <InputLabel id={`screenId-${entry.id}`}>Select Screen</InputLabel>
-                        <Select
-                          error={
-                            !!(
-                              formik.touched.screenEntries?.[index]?.screenId &&
-                              formik.errors.screenEntries?.[index]?.screenId
-                            )
-                          }
-                          fullWidth
-                          id={`screenId-${entry.id}`}
-                          name={`screenEntries.${index}.screenId`}
-                          onBlur={formik.handleBlur}
-                          onChange={(e) => {
-                            formik.handleChange(e);
-                            // Reset ad account when screen changes
-                            formik.setFieldValue(`screenEntries.${index}.adsAccountId`, '');
-                            // Fetch ad accounts for the selected screen
-                            fetchAdAccounts(e.target.value);
-                          }}
-                          value={entry.screenId}
-                          label="Select Screen"
-                        >
-                          {screens.screen.map((screen) => (
-                            <MenuItem value={screen.reference} key={screen.reference}>
-                              {screen.screenName}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <FormControl variant="outlined">
-                        <InputLabel htmlFor={`adsAccountId-${entry.id}`}>
-                          Select Ad Account
-                        </InputLabel>
-                        <Select
-                          error={
-                            !!(
-                              formik.touched.screenEntries?.[index]?.adsAccountId &&
-                              formik.errors.screenEntries?.[index]?.adsAccountId
-                            )
-                          }
-                          fullWidth
-                          label="Select Ad Account"
-                          name={`screenEntries.${index}.adsAccountId`}
-                          id={`adsAccountId-${entry.id}`}
-                          onBlur={formik.handleBlur}
-                          onChange={formik.handleChange}
-                          value={entry.adsAccountId}
-                          disabled={!entry.screenId}
-                          endAdornment={
-                            loadingScreens[entry.screenId] && <CircularProgress size={20} />
-                          }
-                        >
-                          <MenuItem value="" disabled>
-                            {entry.screenId
-                              ? adAccounts.some((acc) => acc.screenReference === entry.screenId)
-                                ? 'Select an Ad Account'
-                                : 'No available Ad Accounts for this screen'
-                              : 'Select a screen first'}
-                          </MenuItem>
-                          {adAccounts
-                            .filter((account) => {
-                              // Only show accounts for this screen
-                              if (account.screenReference !== entry.screenId) return false;
+                    <>
+                      <Card key={entry.id} sx={{ padding: 2 }}>
+                        <Stack spacing={3} sx={{ position: 'relative', pt: 2 }}>
+                          {index > 0 && (
+                            <IconButton
+                              sx={{ position: 'absolute', right: -8, top: -8 }}
+                              onClick={() => {
+                                const newEntries = [...formik.values.screenEntries];
+                                newEntries.splice(index, 1);
+                                formik.setFieldValue('screenEntries', newEntries);
+                              }}
+                            >
+                              <Close />
+                            </IconButton>
+                          )}
+                          <FormControl fullWidth>
+                            <InputLabel id={`screenId-${entry.id}`}>Select Screen</InputLabel>
+                            <Select
+                              error={
+                                !!(
+                                  formik.touched.screenEntries?.[index]?.screenId &&
+                                  formik.errors.screenEntries?.[index]?.screenId
+                                )
+                              }
+                              fullWidth
+                              id={`screenId-${entry.id}`}
+                              name={`screenEntries.${index}.screenId`}
+                              onBlur={formik.handleBlur}
+                              onChange={(e) => {
+                                formik.handleChange(e);
+                                // Reset ad account when screen changes
+                                formik.setFieldValue(`screenEntries.${index}.adsAccountId`, '');
+                                // Fetch ad accounts for the selected screen
+                                fetchAdAccounts(e.target.value);
+                              }}
+                              value={entry.screenId}
+                              label="Select Screen"
+                            >
+                              {screens.screen.map((screen) => (
+                                <MenuItem value={screen.reference} key={screen.reference}>
+                                  {screen.screenName}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          {entry.screenId && (
+                            <>
+                              <FormControl variant="outlined">
+                                <InputLabel htmlFor={`adsAccountId-${entry.id}`}>
+                                  Select Ad Account
+                                </InputLabel>
+                                <Select
+                                  error={
+                                    !!(
+                                      formik.touched.screenEntries?.[index]?.adsAccountId &&
+                                      formik.errors.screenEntries?.[index]?.adsAccountId
+                                    )
+                                  }
+                                  fullWidth
+                                  label="Select Ad Account"
+                                  name={`screenEntries.${index}.adsAccountId`}
+                                  id={`adsAccountId-${entry.id}`}
+                                  onBlur={formik.handleBlur}
+                                  onChange={formik.handleChange}
+                                  value={entry.adsAccountId}
+                                  disabled={!entry.screenId}
+                                  endAdornment={
+                                    loadingScreens[entry.screenId] && <CircularProgress size={20} />
+                                  }
+                                >
+                                  <MenuItem value="" disabled>
+                                    {entry.screenId
+                                      ? adAccounts.some(
+                                          (acc) => acc.screenReference === entry.screenId
+                                        )
+                                        ? 'Select an Ad Account'
+                                        : 'No available Ad Accounts for this screen'
+                                      : 'Select a screen first'}
+                                  </MenuItem>
+                                  {adAccounts
+                                    .filter((account) => {
+                                      // Only show accounts for this screen
+                                      if (account.screenReference !== entry.screenId) return false;
 
-                              // Check if this account is already selected in another entry
-                              const isSelectedInOtherEntry = formik.values.screenEntries.some(
-                                (otherEntry, otherIndex) =>
-                                  otherIndex !== index &&
-                                  otherEntry.adsAccountId === account.reference
-                              );
+                                      // Check if this account is already selected in another entry
+                                      const isSelectedInOtherEntry =
+                                        formik.values.screenEntries.some(
+                                          (otherEntry, otherIndex) =>
+                                            otherIndex !== index &&
+                                            otherEntry.adsAccountId === account.reference
+                                        );
 
-                              return !isSelectedInOtherEntry;
-                            })
-                            .map((adAccount) => (
-                              <MenuItem value={adAccount.reference} key={adAccount.reference}>
-                                {adAccount.name}
-                              </MenuItem>
-                            ))}
-                        </Select>
-                        {!!(
-                          formik.touched.screenEntries?.[index]?.adsAccountId &&
-                          formik.errors.screenEntries?.[index]?.adsAccountId
-                        ) && (
-                          <FormHelperText sx={{ color: 'error.main' }}>
-                            {formik.errors.screenEntries?.[index]?.adsAccountId}
-                          </FormHelperText>
-                        )}
-                      </FormControl>
-                      <AdFiles formik={formik} entryIndex={index} adFiles={entry.adFiles} />
+                                      return !isSelectedInOtherEntry;
+                                    })
+                                    .map((adAccount) => (
+                                      <MenuItem
+                                        value={adAccount.reference}
+                                        key={adAccount.reference}
+                                      >
+                                        {adAccount.name}
+                                      </MenuItem>
+                                    ))}
+                                </Select>
+                                {!!(
+                                  formik.touched.screenEntries?.[index]?.adsAccountId &&
+                                  formik.errors.screenEntries?.[index]?.adsAccountId
+                                ) && (
+                                  <FormHelperText sx={{ color: 'error.main' }}>
+                                    {formik.errors.screenEntries?.[index]?.adsAccountId}
+                                  </FormHelperText>
+                                )}
+                              </FormControl>
+                              {entry.adsAccountId && (
+                                <Paper sx={{ padding: 2 }}>
+                                  <AdFiles
+                                    formik={formik}
+                                    entryIndex={index}
+                                    adFiles={entry.adFiles}
+                                  />
+                                </Paper>
+                              )}
+                            </>
+                          )}
+                        </Stack>
+                      </Card>
                       {index === formik.values.screenEntries.length - 1 && (
                         <Button
                           variant="outlined"
@@ -267,7 +290,7 @@ const Page = ({ organizations, screens }) => {
                           Add Another Screen
                         </Button>
                       )}
-                    </Stack>
+                    </>
                   ))}
                   <UploadForm formik={formik} />
                 </Stack>
