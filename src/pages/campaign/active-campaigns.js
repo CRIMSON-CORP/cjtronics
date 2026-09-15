@@ -161,7 +161,7 @@ function PauseToggle({ campaign }) {
 
     try {
       await toast.promise(
-        axios.put('/api/admin/campaigns/update', {
+        axios.put('/api/admin/campaigns/pause', {
           campaign_id: campaign.reference,
           is_paused: nextPaused,
         }),
