@@ -1,4 +1,4 @@
-import { Add, Close, PlayCircleFilledRounded, Save } from '@mui/icons-material';
+import { Add, Close, PlayCircleFilledRounded, Save, CameraAlt } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -268,7 +268,10 @@ function SequenceResult({ sequence, screen }) {
             justifyContent="space-between"
           >
             <Typography variant="h6">Sequence Ad Accounts</Typography>
-            <PlayAds sequence={sequence} screen={screen} />
+            <Stack direction="row" gap={2}>
+              <ScreenshotButton screen={screen} />
+              <PlayAds sequence={sequence} screen={screen} />
+            </Stack>
           </Stack>
         }
       />
@@ -467,6 +470,74 @@ function SendCampaignToDevice({ isOnline, deviceId }) {
     >
       Send to Device
     </Button>
+  );
+}
+
+function ScreenshotButton({ screen }) {
+  const [requestProcessing, setRequestProcessing] = useState(false);
+
+  const onMessage = useCallback(
+    (data) => {
+      if (data.event === 'device-screenshot' && data.deviceId === screen.deviceId) {
+        setRequestProcessing(false);
+        toast.success('Screenshot received!');
+
+        const a = document.createElement('a');
+        a.href = `data:image/png;base64,${data.data}`;
+        a.download = `screenshot_${screen.deviceId}_${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    },
+    [screen.deviceId]
+  );
+
+  const { isConnected, screenIsOnline, send } = useDeviceSocket({
+    deviceId: screen.deviceId,
+    initialIsOnline: screen.isOnline,
+    onMessage,
+  });
+
+  const handleTakeScreenshot = () => {
+    if (!isConnected) return toast.error('Websocket is not Connected');
+    if (!screenIsOnline) return toast.error('Screen is offline');
+
+    setRequestProcessing(true);
+    toast.success('Screenshot requested...');
+    send({ event: 'take-screenshot', deviceId: screen.deviceId });
+
+    // Auto-timeout if the device doesn't respond
+    setTimeout(() => {
+      setRequestProcessing((prev) => {
+        if (prev) {
+          toast.error('Screenshot request timed out');
+          return false;
+        }
+        return prev;
+      });
+    }, 15000);
+  };
+
+  const disabled = !screenIsOnline || !isConnected || requestProcessing;
+  const disabledReason = !screenIsOnline
+    ? 'Screen is offline'
+    : 'Connecting to the device service...';
+
+  return (
+    <Tooltip title={disabled ? disabledReason : ''}>
+      <span>
+        <Button
+          onClick={handleTakeScreenshot}
+          disabled={disabled}
+          startIcon={requestProcessing ? <CircularProgress size={20} /> : <CameraAlt />}
+          variant="outlined"
+          color="secondary"
+        >
+          Screenshot
+        </Button>
+      </span>
+    </Tooltip>
   );
 }
 
