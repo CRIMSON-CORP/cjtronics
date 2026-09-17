@@ -26,7 +26,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Scrollbar } from 'src/components/scrollbar';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
@@ -61,7 +61,7 @@ const Page = ({ campaigns, unique_campaigns, screens, externalOrganizations, pag
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -103,7 +103,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 export default Page;
 

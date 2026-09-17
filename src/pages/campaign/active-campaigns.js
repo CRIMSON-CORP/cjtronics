@@ -25,7 +25,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
@@ -204,7 +204,8 @@ function PauseToggle({ campaign }) {
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const { screen } = ctx.query;
   try {
     const [campaigns, screens] = await Promise.all([
@@ -234,6 +235,6 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       notFound: true,
     };
   }
-});
+};
 
 export default Page;

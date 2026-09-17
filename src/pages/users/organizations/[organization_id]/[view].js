@@ -19,7 +19,7 @@ import { useRouter } from 'next/router';
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import { Scrollbar } from 'src/components/scrollbar';
 import { SeverityPill } from 'src/components/severity-pill';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -91,7 +91,8 @@ const Page = ({ organization, data }) => {
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const params = {
     page: ctx.query.page || 1,
     size: ctx.query.size || 25,
@@ -125,7 +126,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       notFound: true,
     };
   }
-});
+};
 
 export default Page;
 

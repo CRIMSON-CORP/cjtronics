@@ -29,7 +29,6 @@ import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
 import Iframe from 'src/components/Iframe';
-import ProtectDashboard from 'src/hocs/protectDashboard';
 import { useAuth } from 'src/hooks/use-auth';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -316,7 +315,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const [organizations, screens] = await Promise.all([
       getResourse(ctx.req, '/organization'),
@@ -341,7 +340,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 function AdFiles({ formik, entryIndex, adFiles }) {
   return (

@@ -3,7 +3,7 @@ import { Box, Button, Container, Unstable_Grid2 as Grid, Stack } from '@mui/mate
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -85,7 +85,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const [stats, screens, campaingActivity] = await Promise.all([
       getResourse(ctx.req, `/stats/dashboard`),
@@ -112,7 +112,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
 
     throw error;
   }
-});
+};
 
 function useSocketScreens({ defaultScreens }) {
   const { user } = useAuth();

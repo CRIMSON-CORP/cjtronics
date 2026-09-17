@@ -32,7 +32,6 @@ import Script from 'next/script';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
-import ProtectDashboard from 'src/hocs/protectDashboard';
 import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -256,6 +255,8 @@ function CampaignSequence({ screen, sequence, setSequence }) {
 }
 
 function SequenceResult({ sequence, screen }) {
+  const router = useRouter();
+
   return (
     <Card>
       <CardHeader
@@ -269,6 +270,13 @@ function SequenceResult({ sequence, screen }) {
           >
             <Typography variant="h6">Sequence Ad Accounts</Typography>
             <Stack direction="row" gap={2}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => router.push(`/campaign/campaign-schedule/${router.query.screen_id}/screenshots`)}
+              >
+                History
+              </Button>
               <ScreenshotButton screen={screen} />
               <PlayAds sequence={sequence} screen={screen} />
             </Stack>
@@ -301,7 +309,7 @@ function SequenceResult({ sequence, screen }) {
   );
 }
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const [screens, screen, layouts, campaignSquence] = await Promise.all([
       getResourse(ctx.req, '/screen'),
@@ -327,7 +335,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 function SendCampaignToDevice({ isOnline, deviceId }) {
   const [websocket, setWebsocket] = useState(null);

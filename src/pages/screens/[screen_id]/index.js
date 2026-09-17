@@ -40,7 +40,6 @@ import { useCallback, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useThrottledCallback } from 'use-debounce';
 import ConfirmAction from 'src/components/ConfirmAction';
-import ProtectDashboard from 'src/hocs/protectDashboard';
 import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import {
@@ -796,7 +795,7 @@ function ToolTipContent() {
   );
 }
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -831,4 +830,4 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};

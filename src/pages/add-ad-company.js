@@ -22,7 +22,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useMemo } from 'react';
 import toast from 'react-hot-toast';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getUsers } from 'src/lib/actions';
 import * as Yup from 'yup';
@@ -210,7 +210,8 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   try {
     const { users } = await getUsers(ctx.req);
     return {
@@ -234,4 +235,4 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       notFound: true,
     };
   }
-});
+};

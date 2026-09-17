@@ -37,7 +37,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import Layout from 'src/components/ScreenLayout';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import {
@@ -507,7 +507,8 @@ export const screenLayoutToReferenceMap = {
   ),
 };
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -562,4 +563,4 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
   //     pager_current_page: 1,
   //   },
   // };
-});
+};

@@ -23,7 +23,7 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
 import Iframe from 'src/components/Iframe';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
@@ -101,7 +101,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const [adAccounts, adAccount, campaigns] = await Promise.all([
       getResourse(ctx.req, '/ads-account'),
@@ -142,7 +142,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 function AdFileCard({
   uploadType,

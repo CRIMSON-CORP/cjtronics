@@ -30,7 +30,7 @@ import { useRouter } from 'next/router';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import Iframe from 'src/components/Iframe';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { usePopover } from 'src/hooks/use-popover';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -88,7 +88,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -119,7 +119,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 function FilesDisplay({ files }) {
   return (

@@ -2,7 +2,7 @@ import { Box, Container, Stack, Typography } from '@mui/material';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useCallback, useMemo } from 'react';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import axios from 'src/lib/axios';
@@ -69,7 +69,8 @@ const Page = ({ users, total_results, current_page, rows_per_page }) => {
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -127,6 +128,6 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
   //     pager_current_page: 1,
   //   },
   // };
-});
+};
 
 export default Page;

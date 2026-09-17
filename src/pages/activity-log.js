@@ -23,7 +23,7 @@ import {
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useCallback, useState } from 'react';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 function groupLogsByDate(logs, dateKey) {
@@ -97,7 +97,8 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -128,7 +129,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       notFound: true,
     };
   }
-});
+};
 
 function formatRelativeTime(date) {
   const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });

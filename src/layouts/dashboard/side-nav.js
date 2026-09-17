@@ -1,6 +1,5 @@
 import { Logout } from '@mui/icons-material';
 import { Box, ButtonBase, Divider, Drawer, Stack, useMediaQuery } from '@mui/material';
-import Image from 'next/image';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/router';
@@ -16,7 +15,7 @@ export const SideNav = (props) => {
   const { open, onClose } = props;
   const pathname = usePathname();
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const userAccountType = user?.account_type;
 
   const content = (
@@ -38,14 +37,15 @@ export const SideNav = (props) => {
             display: 'inline-flex',
           }}
         >
-          <Image
-            src="/assets/logo-cjtronics.png"
-            alt="Logo"
-            width="200"
-            height="60"
-            priority
-            style={{ width: '100%', height: 'auto' }}
-          />
+          <Box sx={{ position: 'relative', flex: 1, width: '100%', maxWidth: 400 }}>
+            <img
+              src="/assets/logo-cjtronics.png"
+              width={200}
+              height={60}
+              alt="logo"
+              style={{ width: '100%', height: 'auto' }}
+            />
+          </Box>
         </Box>
       </Box>
       <Divider sx={{ borderColor: 'neutral.50' }} />

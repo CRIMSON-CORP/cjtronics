@@ -26,7 +26,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 import { formatRelativeTime } from 'src/utils/fromRelativeTime';
@@ -332,7 +332,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   const params = {
     page: ctx.query.page || 1,
     size: ctx.query.size || 25,
@@ -378,7 +378,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 function ActivityHistory({ logs }) {
   return (

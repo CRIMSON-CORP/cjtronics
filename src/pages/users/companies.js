@@ -2,7 +2,7 @@ import { Box, Container, Stack, Typography } from '@mui/material';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useCallback, useMemo } from 'react';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getCompanies, getUsers } from 'src/lib/actions';
@@ -72,7 +72,7 @@ const Page = ({ companies, users }) => {
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -103,6 +103,6 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 export default Page;

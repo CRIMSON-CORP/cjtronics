@@ -36,7 +36,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import Iframe from 'src/components/Iframe';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -492,7 +492,7 @@ function DayCheck({ label, formik, value }) {
   );
 }
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const [screens, organizations, layouts] = await Promise.all([
       getResourse(ctx.req, '/screen'),
@@ -518,7 +518,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};
 
 function AdFilesSelectWrapper({ adAccountId, formik }) {
   const [fetchingAds, setFetchingAds] = useState(false);

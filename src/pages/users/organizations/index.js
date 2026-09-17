@@ -20,7 +20,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useCallback, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllOrganizations } from 'src/lib/actions';
@@ -87,7 +87,8 @@ const Page = ({ organizations }) => {
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -115,7 +116,7 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       notFound: true,
     };
   }
-});
+};
 
 export default Page;
 

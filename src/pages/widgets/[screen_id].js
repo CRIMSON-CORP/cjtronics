@@ -22,7 +22,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
@@ -176,7 +176,7 @@ function Widget({ widgetName, widgetSource, added, widgetRef, screenRef }) {
   );
 }
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const [screens, widgets, screenWidgets] = await Promise.all([
       getResourse(ctx.req, '/screen'),
@@ -202,4 +202,4 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};

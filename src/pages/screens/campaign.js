@@ -14,7 +14,7 @@ import {
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllScreens } from 'src/lib/actions';
 
@@ -98,7 +98,7 @@ function SelectedScreen({ campaigns = [] }) {
   );
 }
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const screens = await getAllScreens(ctx.req);
 
@@ -121,4 +121,4 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};

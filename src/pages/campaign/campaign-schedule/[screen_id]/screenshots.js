@@ -17,7 +17,6 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import ProtectDashboard from 'src/hocs/protectDashboard';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 import { format } from 'date-fns';
@@ -146,9 +145,7 @@ const Page = ({ screenshots, screenId }) => {
 };
 
 Page.getLayout = (page) => (
-  <ProtectDashboard>
-    <DashboardLayout>{page}</DashboardLayout>
-  </ProtectDashboard>
+  <DashboardLayout>{page}</DashboardLayout>
 );
 
 export const getServerSideProps = async (ctx) => {

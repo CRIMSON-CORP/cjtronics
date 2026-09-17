@@ -34,7 +34,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import ConfirmAction from 'src/components/ConfirmAction';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useAuth } from 'src/hooks/use-auth';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
@@ -449,7 +449,7 @@ function AdCampaignWrapper({ name, reference, listCampaigns }) {
   );
 }
 
-export const getServerSideProps = ProtectDashboard(async (ctx) => {
+export const getServerSideProps = async (ctx) => {
   try {
     const [organizations, companies, screens] = await Promise.all([
       getAllOrganizations(ctx.req),
@@ -476,4 +476,4 @@ export const getServerSideProps = ProtectDashboard(async (ctx) => {
       notFound: true,
     };
   }
-});
+};

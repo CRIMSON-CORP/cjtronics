@@ -1,7 +1,7 @@
 import { Box, Container, Stack, Typography } from '@mui/material';
 import Head from 'next/head';
 import { useCallback, useMemo } from 'react';
-import ProtectDashboard from 'src/hocs/protectDashboard';
+
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
@@ -69,7 +69,8 @@ const Page = ({ organizations }) => {
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
-export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) => {
+export const getServerSideProps = async (ctx) => {
+  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
@@ -97,6 +98,6 @@ export const getServerSideProps = ProtectDashboard(async (ctx, userAuthToken) =>
       notFound: true,
     };
   }
-});
+};
 
 export default Page;
