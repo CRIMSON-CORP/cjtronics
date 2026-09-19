@@ -423,6 +423,7 @@ function EmptyAdForm({ id, formik, entryIndex, fileType, fileName, ifrmContent, 
       file: iframeContent || selectedFile,
       iframeContent,
       id: id || nanoid(5),
+      idempotencyKey: nanoid(),
     };
 
     const newEntries = [...formik.values.screenEntries];
@@ -435,6 +436,7 @@ function EmptyAdForm({ id, formik, entryIndex, fileType, fileName, ifrmContent, 
         ...existingAdFiles[fileIndex],
         ...newAdFile,
         file: newAdFile.file || existingAdFiles[fileIndex].file,
+        idempotencyKey: nanoid(),
       };
     } else {
       existingAdFiles.push(newAdFile);
@@ -814,6 +816,9 @@ function UploadForm({ formik }) {
     // Flatten all files into one list with context
     screenEntries.forEach((entry, entryIndex) => {
       entry.adFiles.forEach((file) => {
+        if (!file.idempotencyKey) {
+          file.idempotencyKey = nanoid();
+        }
         filesToUpload.push({
           organizationId,
           screenId: entry.screenId,
@@ -846,8 +851,8 @@ function UploadForm({ formik }) {
 
         return axios.post(`${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/v1/ads/create`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${user.token}`,
+            'idempotency-key': file.idempotencyKey,
           },
           onUploadProgress: (progressEvent) => {
             loadedPerFile[index] = progressEvent.loaded;
@@ -859,27 +864,28 @@ function UploadForm({ formik }) {
         });
       })
     ).then((results) => {
-      const failedKeys = new Set(
+      const failedFileIds = new Set(
         filesToUpload
           .filter((_, index) => results[index].status === 'rejected')
-          .map((item) => `${item.entryIndex}:${item.file.id}`)
+          .map((item) => item.file.id)
       );
 
-      if (failedKeys.size === 0) return results;
+      if (failedFileIds.size === 0) return results;
 
-      // Drop the ads that did land. They already exist server-side, so leaving
-      // them in the form means a retry uploads them a second time.
-      formik.setFieldValue(
-        'screenEntries',
-        screenEntries.map((entry, entryIndex) => ({
+      // Drop the ads that did land and prune screen entries whose ads all landed.
+      // Leaving landed ads means a retry uploads them a second time.
+      const remainingScreenEntries = screenEntries
+        .map((entry) => ({
           ...entry,
-          adFiles: entry.adFiles.filter((adFile) => failedKeys.has(`${entryIndex}:${adFile.id}`)),
+          adFiles: entry.adFiles.filter((adFile) => failedFileIds.has(adFile.id)),
         }))
-      );
+        .filter((entry) => entry.adFiles.length > 0);
 
-      const uploaded = results.length - failedKeys.size;
+      formik.setFieldValue('screenEntries', remainingScreenEntries);
+
+      const uploaded = results.length - failedFileIds.size;
       throw new Error(
-        `${uploaded} of ${results.length} ads uploaded. The ${failedKeys.size} that failed are still in the form, resubmit to retry just those.`
+        `${uploaded} of ${results.length} ads uploaded. The ${failedFileIds.size} that failed are still in the form, resubmit to retry just those.`
       );
     });
 
