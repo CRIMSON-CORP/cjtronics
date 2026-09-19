@@ -7,6 +7,9 @@
  * Contract for the backend team: docs/api/screen-brightness-volume.md
  */
 
+import axios from 'src/lib/axios';
+import getCookie from 'src/utils/get-cookie';
+
 const isPercentage = (value) => Number.isInteger(value) && value >= 0 && value <= 100;
 
 export default async function handler(req, res) {
@@ -31,28 +34,22 @@ export default async function handler(req, res) {
   // stubbed response below and restore this. Needs the two imports back:
   // `import axios from 'src/lib/axios'` and `import getCookie from 'src/utils/get-cookie'`.
   //
-  // try {
-  //   const response = await axios.put(
-  //     `/screen/settings/${reference}`,
-  //     { brightness, volume },
-  //     { headers: { Authorization: `Bearer ${getCookie(req)}` } }
-  //   );
-  //   if (response.data.status && response.status === 200)
-  //     return res.status(response.status).json(response.data);
-  //   throw response;
-  // } catch (error) {
-  //   if (error.data) {
-  //     return res.status(401).json({ message: error.message });
-  //   }
-  //   if (!error.response) {
-  //     return res.status(503).json({ message: 'No response from Server' });
-  //   }
-  //   return res.status(error.response.status).json(error.response.data);
-  // }
-
-  return res.status(200).json({
-    status: true,
-    message: 'Screen settings saved',
-    data: { reference, brightness, volume },
-  });
+  try {
+    const response = await axios.put(
+      `/screen/settings/${reference}`,
+      { brightness, volume },
+      { headers: { Authorization: `Bearer ${getCookie(req)}` } }
+    );
+    if (response.data.status && response.status === 200)
+      return res.status(response.status).json(response.data);
+    throw response;
+  } catch (error) {
+    if (error.data) {
+      return res.status(401).json({ message: error.message });
+    }
+    if (!error.response) {
+      return res.status(503).json({ message: 'No response from Server' });
+    }
+    return res.status(error.response.status).json(error.response.data);
+  }
 }
