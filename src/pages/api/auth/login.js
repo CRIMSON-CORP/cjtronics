@@ -4,7 +4,6 @@ import { ADMIN_COOKIE_NAME } from 'src/utils/constants';
 export default async function handler(req, res) {
   // extract a particluar cookie from a string of cookies nextjs getServerSideProps?
   try {
-    console.log(`${process.env.BACKEND_DOMAIN}/${process.env.BACKEND_VERSION}`, 'backend-url');
     const response = await axios.post('/auth/login', req.body);
 
     if (response.data.status && response.status === 200) {
