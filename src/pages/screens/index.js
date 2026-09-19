@@ -1,4 +1,4 @@
-import { ChevronRight, Monitor, Refresh } from '@mui/icons-material';
+import { ChevronRight, Monitor, Refresh, Search } from '@mui/icons-material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {
   Autocomplete,
@@ -16,6 +16,7 @@ import {
   FormHelperText,
   Unstable_Grid2 as Grid,
   IconButton,
+  InputAdornment,
   InputLabel,
   List,
   ListItem,
@@ -34,7 +35,7 @@ import { useFormik } from 'formik';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import Layout from 'src/components/ScreenLayout';
 
@@ -89,7 +90,8 @@ function ToolTipContent() {
         <li>Install the apk on the device</li>
         <li>Copy device Id generated on the device</li>
         <li>
-          Use device Id generated to create new screen details on cj tronics by folham's application
+          Use device Id generated to create new screen details on cj tronics by folham&apos;s
+          application
         </li>
         <li>Proceed to create campaign with the newly created screen details</li>
         <li>Start up the device and begin to view your adverts</li>
@@ -362,29 +364,73 @@ function Form({ organizations, cities, screenLayouts }) {
 }
 
 function Screens({ screens }) {
-  const { replace, asPath } = useRouter();
+  const { replace, asPath, query } = useRouter();
   const refreshPageForScreens = () => replace(asPath);
 
+  const [searchValue, setSearchValue] = useState(query.search || '');
+
+  useEffect(() => {
+    setSearchValue(query.search || '');
+  }, [query.search]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const queryParams = new URLSearchParams(query);
+    const trimmed = searchValue.trim();
+    if (trimmed) {
+      queryParams.set('search', trimmed);
+    } else {
+      queryParams.delete('search');
+    }
+    queryParams.set('page', 1);
+    replace(`/screens?${queryParams.toString()}`);
+  };
+
   const hanldePageChange = (_event, value) => {
-    replace(`/screens?page=${value}`);
+    const queryParams = new URLSearchParams(query);
+    queryParams.set('page', value);
+    replace(`/screens?${queryParams.toString()}`);
   };
   return (
     <Card>
       <CardHeader
         title={
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            flexWrap="wrap"
-            justifyContent="space-between"
-          >
-            <Typography variant="h5">
-              Screens <Chip label={screens.totalRows} />
-            </Typography>
-            <Button startIcon={<Refresh />} onClick={refreshPageForScreens}>
-              Refresh Screens
-            </Button>
+          <Stack spacing={2}>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              flexWrap="wrap"
+              justifyContent="space-between"
+            >
+              <Typography variant="h5">
+                Screens <Chip label={screens.totalRows} />
+              </Typography>
+              <Button startIcon={<Refresh />} onClick={refreshPageForScreens}>
+                Refresh Screens
+              </Button>
+            </Stack>
+            <form onSubmit={handleSearch}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Search screens..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <Button type="submit" variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+                  Search
+                </Button>
+              </Stack>
+            </form>
           </Stack>
         }
       />
@@ -422,12 +468,21 @@ function Screens({ screens }) {
                 />
               </ListItem>
             ))}
+            {screens.screen.length === 0 && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ py: 2, textAlign: 'center' }}
+              >
+                No screens found
+              </Typography>
+            )}
           </List>
           <Pagination
             sx={{ ul: { justifyContent: 'space-between' } }}
-            count={Math.ceil(screens.totalRows / +screens.rowsPerPage)}
+            count={Math.ceil(screens.totalRows / +screens.rowsPerPage) || 1}
             siblingCount={4}
-            page={parseInt(screens.currentPage)}
+            page={parseInt(screens.currentPage) || 1}
             onChange={hanldePageChange}
           />
         </Stack>
@@ -508,7 +563,6 @@ export const screenLayoutToReferenceMap = {
 };
 
 export const getServerSideProps = async (ctx) => {
-  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const params = {
     ...ctx.query,
     page: ctx.query.page || 1,
