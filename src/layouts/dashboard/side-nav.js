@@ -151,21 +151,19 @@ function LogoutButton() {
   const { signOut } = useAuth();
 
   const handleSignOut = useCallback(async () => {
-    try {
-      await toast.promise(signOut(), {
-        loading: 'Signing out',
-        success: () => {
+    await toast.promise(signOut(), {
+      loading: 'Signing out',
+      success: () => {
+        router.push('/auth/login');
+        return 'Sign out successfull';
+      },
+      error: (error) => {
+        if (error.response.data.message === 'Sorry, you are not logged in') {
           router.push('/auth/login');
-          return 'Sign out successfull';
-        },
-        error: (error) => {
-          if (error.response.data.message === 'Sorry, you are not logged in') {
-            router.push('/auth/login');
-          }
-          return error?.response?.data?.message ?? error.message;
-        },
-      });
-    } catch (erro) {}
+        }
+        return error?.response?.data?.message ?? error.message;
+      },
+    });
   }, [signOut, router]);
   return (
     <li>
