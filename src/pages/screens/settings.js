@@ -4,7 +4,6 @@ import {
   Close,
   Monitor,
   Refresh,
-  Restore,
   Save,
   Search,
   VolumeDown,
@@ -15,7 +14,6 @@ import {
   Box,
   Button,
   Card,
-  CardActions,
   CardContent,
   CardHeader,
   Chip,
@@ -28,7 +26,6 @@ import {
   Slider,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import axios from 'axios';
@@ -36,12 +33,14 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useThrottledCallback } from 'use-debounce';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllScreens } from 'src/lib/actions';
 
 const BRIGHTNESS_MIN = 10;
 const DEFAULT_BRIGHTNESS = 100;
 const DEFAULT_VOLUME = 0;
+const SETTINGS_SEND_INTERVAL = 150;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY = 2000;
 
@@ -51,6 +50,7 @@ const Page = ({ screens }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [onlineMap, setOnlineMap] = useState({});
+  const [isConnected, setIsConnected] = useState(false);
 
   // Central WebSocket connection for all screens on this page
   const socketRef = useRef(null);
@@ -78,6 +78,7 @@ const Page = ({ screens }) => {
       socketRef.current = socket;
 
       socket.onopen = () => {
+        setIsConnected(true);
         reconnectAttempts.current = 0;
       };
 
@@ -101,6 +102,7 @@ const Page = ({ screens }) => {
       };
 
       socket.onclose = () => {
+        setIsConnected(false);
         socketRef.current = null;
         if (isUnmounted.current || reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) return;
         const delay = BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts.current);
@@ -120,15 +122,18 @@ const Page = ({ screens }) => {
 
   // Dispatch live settings to active device over socket
   const sendLiveSettings = useCallback((deviceId, settings) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(
+    const socket = socketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN && deviceId) {
+      socket.send(
         JSON.stringify({
           event: 'device-settings',
           deviceId,
           data: settings,
         })
       );
+      return true;
     }
+    return false;
   }, []);
 
   // Filter screens by name, screen ID, or device ID
@@ -231,7 +236,8 @@ const Page = ({ screens }) => {
                       <ScreenCard
                         screen={screen}
                         isOnline={isOnline}
-                        onSaveLiveSettings={sendLiveSettings}
+                        isConnected={isConnected}
+                        sendLiveSettings={sendLiveSettings}
                       />
                     </Grid>
                   );
@@ -249,7 +255,7 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function ScreenCard({ screen, isOnline, onSaveLiveSettings }) {
+function ScreenCard({ screen, isOnline, isConnected, sendLiveSettings }) {
   const initialBrightness = screen.brightness ?? DEFAULT_BRIGHTNESS;
   const initialVolume = screen.volume ?? DEFAULT_VOLUME;
   const initialDeviceCode = screen.deviceId || '';
@@ -257,79 +263,88 @@ function ScreenCard({ screen, isOnline, onSaveLiveSettings }) {
   const [brightness, setBrightness] = useState(initialBrightness);
   const [volume, setVolume] = useState(initialVolume);
   const [deviceCode, setDeviceCode] = useState(initialDeviceCode);
+  const [savedDeviceCode, setSavedDeviceCode] = useState(initialDeviceCode);
 
-  const [savedState, setSavedState] = useState({
-    brightness: initialBrightness,
-    volume: initialVolume,
-    deviceCode: initialDeviceCode,
-  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isSavingDeviceCode, setIsSavingDeviceCode] = useState(false);
 
-  const [isSaving, setIsSaving] = useState(false);
+  // Send live socket event to screen device
+  const sendSettings = useCallback(
+    (next) => {
+      sendLiveSettings(savedDeviceCode, next);
+    },
+    [sendLiveSettings, savedDeviceCode]
+  );
 
-  const isDirty =
-    brightness !== savedState.brightness ||
-    volume !== savedState.volume ||
-    deviceCode.trim() !== savedState.deviceCode.trim();
+  // Throttled live updates during slider dragging
+  const sendThrottled = useThrottledCallback(sendSettings, SETTINGS_SEND_INTERVAL);
 
-  const handleReset = () => {
-    setBrightness(savedState.brightness);
-    setVolume(savedState.volume);
-    setDeviceCode(savedState.deviceCode);
+  // Persist brightness & volume to backend API
+  const persistSettings = useCallback(
+    async (next) => {
+      setIsSavingSettings(true);
+      try {
+        await axios.post('/api/admin/screens/update-settings', {
+          reference: screen.reference,
+          brightness: next.brightness,
+          volume: next.volume,
+        });
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Could not save screen settings');
+      } finally {
+        setIsSavingSettings(false);
+      }
+    },
+    [screen.reference]
+  );
+
+  // Throttled slider dragging
+  const handleChange = (field) => (_event, value) => {
+    if (field === 'brightness') setBrightness(value);
+    else setVolume(value);
+    sendThrottled({ brightness, volume, [field]: value });
   };
 
-  const handleSave = async () => {
-    const trimmedDeviceCode = deviceCode.trim();
-    if (!trimmedDeviceCode) {
+  // Slider release: cancel throttled queue, push final socket event immediately, and persist to API
+  const handleCommit = (field) => (_event, value) => {
+    const next = { brightness, volume, [field]: value };
+    sendThrottled.cancel();
+    sendSettings(next);
+    persistSettings(next);
+  };
+
+  const isDeviceCodeDirty = deviceCode.trim() !== savedDeviceCode.trim();
+
+  // Save device code modification to API
+  const handleSaveDeviceCode = async () => {
+    const trimmed = deviceCode.trim();
+    if (!trimmed) {
       toast.error('Device code cannot be empty');
       return;
     }
 
-    const settingsChanged = brightness !== savedState.brightness || volume !== savedState.volume;
-    const deviceCodeChanged = trimmedDeviceCode !== savedState.deviceCode;
-
-    if (!settingsChanged && !deviceCodeChanged) return;
-
-    setIsSaving(true);
-
-    const saveOperations = async () => {
-      // 1. Update brightness/volume if changed
-      if (settingsChanged) {
-        await axios.post('/api/admin/screens/update-settings', {
-          reference: screen.reference,
-          brightness,
-          volume,
-        });
-
-        // Push live over WebSocket to device
-        onSaveLiveSettings(trimmedDeviceCode, { brightness, volume });
-      }
-
-      // 2. Update device ID if changed
-      if (deviceCodeChanged) {
-        await axios.post('/api/admin/screens/edit', {
+    setIsSavingDeviceCode(true);
+    await toast
+      .promise(
+        axios.post('/api/admin/screens/edit', {
           ...screen,
           reference: screen.reference,
-          screenUniqueId: trimmedDeviceCode,
+          screenUniqueId: trimmed,
           screenCity: screen.screenCity || 'Lagos',
-        });
-      }
-
-      setSavedState({
-        brightness,
-        volume,
-        deviceCode: trimmedDeviceCode,
-      });
-    };
-
-    await toast
-      .promise(saveOperations(), {
-        loading: `Saving settings for ${screen.screenName}...`,
-        success: `Settings saved for ${screen.screenName}`,
-        error: (err) => err.response?.data?.message || err.message || 'Failed to save settings',
-      })
+        }),
+        {
+          loading: `Updating device code for ${screen.screenName}...`,
+          success: () => {
+            setSavedDeviceCode(trimmed);
+            return `Device code updated for ${screen.screenName}`;
+          },
+          error: (err) =>
+            err.response?.data?.message || err.message || 'Failed to update device code',
+        }
+      )
       .catch(() => {});
 
-    setIsSaving(false);
+    setIsSavingDeviceCode(false);
   };
 
   return (
@@ -384,15 +399,39 @@ function ScreenCard({ screen, isOnline, onSaveLiveSettings }) {
       <CardContent sx={{ flexGrow: 1 }}>
         <Stack spacing={3}>
           {/* Device Code / Device ID */}
-          <TextField
-            fullWidth
-            size="small"
-            label="Device Code"
-            variant="outlined"
-            value={deviceCode}
-            onChange={(e) => setDeviceCode(e.target.value)}
-            helperText="The unique ID displayed on the physical screen"
-          />
+          <Stack spacing={1}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Device Code"
+              variant="outlined"
+              value={deviceCode}
+              onChange={(e) => setDeviceCode(e.target.value)}
+              helperText="The unique ID displayed on the physical screen"
+              InputProps={{
+                endAdornment: isDeviceCodeDirty ? (
+                  <InputAdornment position="end">
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={handleSaveDeviceCode}
+                      disabled={isSavingDeviceCode}
+                      startIcon={
+                        isSavingDeviceCode ? (
+                          <CircularProgress size={12} color="inherit" />
+                        ) : (
+                          <Save />
+                        )
+                      }
+                      sx={{ py: 0.25, px: 1, minWidth: 'auto', fontSize: '0.75rem' }}
+                    >
+                      Update
+                    </Button>
+                  </InputAdornment>
+                ) : null,
+              }}
+            />
+          </Stack>
 
           {/* Brightness Slider */}
           <Stack spacing={1}>
@@ -412,7 +451,8 @@ function ScreenCard({ screen, isOnline, onSaveLiveSettings }) {
               min={BRIGHTNESS_MIN}
               max={100}
               valueLabelDisplay="auto"
-              onChange={(_e, val) => setBrightness(val)}
+              onChange={handleChange('brightness')}
+              onChangeCommitted={handleCommit('brightness')}
             />
           </Stack>
 
@@ -438,43 +478,38 @@ function ScreenCard({ screen, isOnline, onSaveLiveSettings }) {
               min={0}
               max={100}
               valueLabelDisplay="auto"
-              onChange={(_e, val) => setVolume(val)}
+              onChange={handleChange('volume')}
+              onChangeCommitted={handleCommit('volume')}
             />
+          </Stack>
+
+          {/* Status feedback */}
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="caption" color="text.secondary">
+              {!isOnline
+                ? 'Device is offline (changes will apply when online)'
+                : !isConnected
+                  ? 'Connecting to live socket...'
+                  : 'Live socket active'}
+            </Typography>
+            {isSavingSettings ? (
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <CircularProgress size={12} />
+                <Typography variant="caption" color="text.secondary">
+                  Saving...
+                </Typography>
+              </Stack>
+            ) : (
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <CheckCircle sx={{ fontSize: 14, color: 'success.main' }} />
+                <Typography variant="caption" color="text.secondary">
+                  Synced
+                </Typography>
+              </Stack>
+            )}
           </Stack>
         </Stack>
       </CardContent>
-      <Divider />
-      <CardActions sx={{ px: 2, py: 1.5, justifyContent: 'space-between' }}>
-        {isDirty ? (
-          <Tooltip title="Discard unsaved changes">
-            <Button
-              size="small"
-              color="inherit"
-              startIcon={<Restore />}
-              onClick={handleReset}
-              disabled={isSaving}
-            >
-              Reset
-            </Button>
-          </Tooltip>
-        ) : (
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
-            <Typography variant="caption" color="text.secondary">
-              Saved
-            </Typography>
-          </Stack>
-        )}
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <Save />}
-          onClick={handleSave}
-          disabled={!isDirty || isSaving}
-        >
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </Button>
-      </CardActions>
     </Card>
   );
 }
