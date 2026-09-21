@@ -10,6 +10,7 @@ import {
   OndemandVideo,
   OpenInNew,
   People,
+  Settings,
   ShowChart,
   VideoCameraFront,
   Widgets,
@@ -108,6 +109,16 @@ export const items = [
           </SvgIcon>
         ),
         matchers: ['campaign'],
+      },
+      {
+        title: 'Screen Settings',
+        path: '/screens/settings',
+        icon: (
+          <SvgIcon fontSize="small">
+            <Settings />
+          </SvgIcon>
+        ),
+        matchers: ['settings'],
       },
     ],
     roles: ['admin', 'partner'],
