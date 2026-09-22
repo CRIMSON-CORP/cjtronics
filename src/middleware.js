@@ -29,6 +29,6 @@ export const config = {
      * - 404
      * - 500
      */
-    '/((?!api/(?!admin)|_next/static|_next/image|favicon.ico|auth|reset-password|404|500).*)',
+    '/((?!api/(?!admin)|_next/static|_next/image|assets|favicon.ico|auth|reset-password|404|500).*)',
   ],
 };
