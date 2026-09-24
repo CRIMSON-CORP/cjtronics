@@ -273,7 +273,9 @@ function SequenceResult({ sequence, screen }) {
               <Button
                 variant="outlined"
                 color="secondary"
-                onClick={() => router.push(`/campaign/campaign-schedule/${router.query.screen_id}/screenshots`)}
+                onClick={() =>
+                  router.push(`/campaign/campaign-schedule/${router.query.screen_id}/screenshots`)
+                }
               >
                 History
               </Button>
@@ -632,6 +634,7 @@ function PlayAds({ screen }) {
         <DialogContent
           sx={{
             width: 'auto !important',
+            height: 'fit-content !important',
             overflow: 'hidden',
             p: 0,
             display: 'flex',
@@ -667,7 +670,13 @@ function NowPlayingFrame({ item }) {
     );
   }
 
-  const style = { objectFit: 'contain', width: '100%', height: '100%' };
+  const style = {
+    objectFit: 'contain',
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    inset: 0,
+  };
 
   if (item.adType === 'image') {
     return (
@@ -687,7 +696,7 @@ function NowPlayingFrame({ item }) {
       <CardMedia
         component="iframe"
         src={item.url}
-        sx={{ width: '100%', height: '100%', margin: 0, border: 'none' }}
+        sx={{ width: '100%', height: '100%', margin: 0, border: 'none', ...style }}
       />
     );
   }
@@ -701,6 +710,7 @@ function Screen({ children, screenLayoutRef }) {
   const screenStyle = {
     display: 'grid',
     overflow: 'hidden',
+    position: 'relative',
     ...(layoutConfig.horizontal
       ? {
           gridTemplateColumns: layoutConfig.split
