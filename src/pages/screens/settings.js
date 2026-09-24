@@ -4,7 +4,6 @@ import {
   Close,
   Monitor,
   Refresh,
-  Save,
   Search,
   VolumeDown,
   VolumeUp,
@@ -31,9 +30,10 @@ import {
 import axios from 'axios';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useThrottledCallback } from 'use-debounce';
+import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllScreens } from 'src/lib/actions';
 
@@ -41,100 +41,13 @@ const BRIGHTNESS_MIN = 10;
 const DEFAULT_BRIGHTNESS = 100;
 const DEFAULT_VOLUME = 0;
 const SETTINGS_SEND_INTERVAL = 150;
-const MAX_RECONNECT_ATTEMPTS = 10;
-const BASE_RECONNECT_DELAY = 2000;
 
 const Page = ({ screens }) => {
   const router = useRouter();
   const screenList = useMemo(() => screens?.screen || [], [screens?.screen]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [onlineMap, setOnlineMap] = useState({});
-  const [isConnected, setIsConnected] = useState(false);
-
-  // Central WebSocket connection for all screens on this page
-  const socketRef = useRef(null);
-  const reconnectAttempts = useRef(0);
-  const reconnectTimeout = useRef(null);
-  const isUnmounted = useRef(false);
-
-  useEffect(() => {
-    isUnmounted.current = false;
-
-    // Initialize online statuses from initial screen data
-    const initialMap = {};
-    screenList.forEach((scr) => {
-      if (scr.deviceId) {
-        initialMap[scr.deviceId] = !!scr.isOnline;
-      }
-    });
-    setOnlineMap(initialMap);
-
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
-    if (!socketUrl) return;
-
-    const connect = () => {
-      const socket = new WebSocket(socketUrl);
-      socketRef.current = socket;
-
-      socket.onopen = () => {
-        setIsConnected(true);
-        reconnectAttempts.current = 0;
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.event === 'device-connection' && Array.isArray(data.screens)) {
-            setOnlineMap((prev) => {
-              const updated = { ...prev };
-              data.screens.forEach((item) => {
-                if (item.deviceId) {
-                  updated[item.deviceId] = !!item.isOnline;
-                }
-              });
-              return updated;
-            });
-          }
-        } catch (err) {
-          console.error('Socket message parse error', err);
-        }
-      };
-
-      socket.onclose = () => {
-        setIsConnected(false);
-        socketRef.current = null;
-        if (isUnmounted.current || reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) return;
-        const delay = BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts.current);
-        reconnectAttempts.current += 1;
-        reconnectTimeout.current = setTimeout(connect, delay);
-      };
-    };
-
-    connect();
-
-    return () => {
-      isUnmounted.current = true;
-      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
-      if (socketRef.current) socketRef.current.close();
-    };
-  }, [screenList]);
-
-  // Dispatch live settings to active device over socket
-  const sendLiveSettings = useCallback((deviceId, settings) => {
-    const socket = socketRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN && deviceId) {
-      socket.send(
-        JSON.stringify({
-          event: 'device-settings',
-          deviceId,
-          data: settings,
-        })
-      );
-      return true;
-    }
-    return false;
-  }, []);
+  const { isConnected, isScreenOnline, sendDeviceSettings } = useDeviceSocket();
 
   // Filter screens by name, screen ID, or device ID
   const filteredScreens = useMemo(() => {
@@ -149,9 +62,7 @@ const Page = ({ screens }) => {
   }, [screenList, searchQuery]);
 
   const totalCount = screenList.length;
-  const onlineCount = screenList.filter(
-    (s) => (s.deviceId && onlineMap[s.deviceId]) ?? s.isOnline
-  ).length;
+  const onlineCount = screenList.filter((s) => isScreenOnline(s.deviceId, s.isOnline)).length;
 
   return (
     <>
@@ -228,16 +139,14 @@ const Page = ({ screens }) => {
             ) : (
               <Grid container spacing={3}>
                 {filteredScreens.map((screen) => {
-                  const isOnline = screen.deviceId
-                    ? !!onlineMap[screen.deviceId]
-                    : !!screen.isOnline;
+                  const isOnline = isScreenOnline(screen.deviceId, screen.isOnline);
                   return (
                     <Grid xs={12} sm={6} lg={4} key={screen.id || screen.reference}>
                       <ScreenCard
                         screen={screen}
                         isOnline={isOnline}
                         isConnected={isConnected}
-                        sendLiveSettings={sendLiveSettings}
+                        sendDeviceSettings={sendDeviceSettings}
                       />
                     </Grid>
                   );
@@ -255,25 +164,22 @@ Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export default Page;
 
-function ScreenCard({ screen, isOnline, isConnected, sendLiveSettings }) {
+function ScreenCard({ screen, isOnline, isConnected, sendDeviceSettings }) {
   const initialBrightness = screen.brightness ?? DEFAULT_BRIGHTNESS;
   const initialVolume = screen.volume ?? DEFAULT_VOLUME;
-  const initialDeviceCode = screen.deviceId || '';
 
   const [brightness, setBrightness] = useState(initialBrightness);
   const [volume, setVolume] = useState(initialVolume);
-  const [deviceCode, setDeviceCode] = useState(initialDeviceCode);
-  const [savedDeviceCode, setSavedDeviceCode] = useState(initialDeviceCode);
-
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [isSavingDeviceCode, setIsSavingDeviceCode] = useState(false);
 
   // Send live socket event to screen device
   const sendSettings = useCallback(
     (next) => {
-      sendLiveSettings(savedDeviceCode, next);
+      if (screen.deviceId) {
+        sendDeviceSettings(screen.deviceId, next);
+      }
     },
-    [sendLiveSettings, savedDeviceCode]
+    [sendDeviceSettings, screen.deviceId]
   );
 
   // Throttled live updates during slider dragging
@@ -313,40 +219,6 @@ function ScreenCard({ screen, isOnline, isConnected, sendLiveSettings }) {
     persistSettings(next);
   };
 
-  const isDeviceCodeDirty = deviceCode.trim() !== savedDeviceCode.trim();
-
-  // Save device code modification to API
-  const handleSaveDeviceCode = async () => {
-    const trimmed = deviceCode.trim();
-    if (!trimmed) {
-      toast.error('Device code cannot be empty');
-      return;
-    }
-
-    setIsSavingDeviceCode(true);
-    await toast
-      .promise(
-        axios.post('/api/admin/screens/edit', {
-          ...screen,
-          reference: screen.reference,
-          screenUniqueId: trimmed,
-          screenCity: screen.screenCity || 'Lagos',
-        }),
-        {
-          loading: `Updating device code for ${screen.screenName}...`,
-          success: () => {
-            setSavedDeviceCode(trimmed);
-            return `Device code updated for ${screen.screenName}`;
-          },
-          error: (err) =>
-            err.response?.data?.message || err.message || 'Failed to update device code',
-        }
-      )
-      .catch(() => {});
-
-    setIsSavingDeviceCode(false);
-  };
-
   return (
     <Card
       sx={{
@@ -384,6 +256,7 @@ function ScreenCard({ screen, isOnline, isConnected, sendLiveSettings }) {
             {screen.screenWidth && screen.screenHeight
               ? `${screen.screenWidth} × ${screen.screenHeight} px`
               : 'Unknown Resolution'}
+            {screen.deviceId ? ` • Device: ${screen.deviceId}` : ''}
           </Typography>
         }
         action={
@@ -398,41 +271,6 @@ function ScreenCard({ screen, isOnline, isConnected, sendLiveSettings }) {
       <Divider />
       <CardContent sx={{ flexGrow: 1 }}>
         <Stack spacing={3}>
-          {/* Device Code / Device ID */}
-          <Stack spacing={1}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Device Code"
-              variant="outlined"
-              value={deviceCode}
-              onChange={(e) => setDeviceCode(e.target.value)}
-              helperText="The unique ID displayed on the physical screen"
-              InputProps={{
-                endAdornment: isDeviceCodeDirty ? (
-                  <InputAdornment position="end">
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={handleSaveDeviceCode}
-                      disabled={isSavingDeviceCode}
-                      startIcon={
-                        isSavingDeviceCode ? (
-                          <CircularProgress size={12} color="inherit" />
-                        ) : (
-                          <Save />
-                        )
-                      }
-                      sx={{ py: 0.25, px: 1, minWidth: 'auto', fontSize: '0.75rem' }}
-                    >
-                      Update
-                    </Button>
-                  </InputAdornment>
-                ) : null,
-              }}
-            />
-          </Stack>
-
           {/* Brightness Slider */}
           <Stack spacing={1}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
