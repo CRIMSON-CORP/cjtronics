@@ -8,6 +8,7 @@ import { Toaster } from 'react-hot-toast';
 import 'simplebar-react/dist/simplebar.min.css';
 import ProtectPage from 'src/components/ProtectPage';
 import { AuthConsumer, AuthProvider } from 'src/contexts/auth-context';
+import { DeviceSocketProvider } from 'src/contexts/device-socket-context';
 import { useNProgress } from 'src/hooks/use-nprogress';
 import { createTheme } from 'src/theme';
 import { createEmotionCache } from 'src/utils/create-emotion-cache';
@@ -69,11 +70,13 @@ const App = (props) => {
           <ProtectPage />
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <AuthConsumer>
-              {(auth) =>
-                auth.isLoading ? <SplashScreen /> : getLayout(<Component {...pageProps} />)
-              }
-            </AuthConsumer>
+            <DeviceSocketProvider>
+              <AuthConsumer>
+                {(auth) =>
+                  auth.isLoading ? <SplashScreen /> : getLayout(<Component {...pageProps} />)
+                }
+              </AuthConsumer>
+            </DeviceSocketProvider>
           </ThemeProvider>
         </AuthProvider>
       </LocalizationProvider>

@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Card,
-  CircularProgress,
   Container,
   FormControl,
   InputLabel,
@@ -19,13 +18,13 @@ import {
   Typography,
 } from '@mui/material';
 import Grid from '@mui/system/Unstable_Grid/Grid';
-import axios from 'axios';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { useEffect, useMemo, useState } from 'react';
 
+import ConfirmAction from 'src/components/ConfirmAction';
+import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
 
@@ -83,7 +82,7 @@ const Page = ({ campaigns, screens }) => {
                 </Button>
               </Grid>
             </Grid>
-            <Activecampaigns campaigns={campaigns} />
+            <Activecampaigns campaigns={campaigns} screens={screens} />
           </Stack>
         </Container>
       </Box>
@@ -98,22 +97,7 @@ const columns = [
   { id: 'actions', label: 'Actions', minWidth: 120, align: 'right' },
 ];
 
-function Activecampaigns({ campaigns }) {
-  const { query, replace } = useRouter();
-  const handleRowsPerPageChange = useCallback((event) => {
-    const queryParams = new URLSearchParams(query);
-    queryParams.set('size', event.target.value);
-    queryParams.delete('screen_id');
-    replace(`/campaign/active-campaigns?${queryParams.toString()}`);
-  }, []);
-
-  const onPageChange = (_event, newPage) => {
-    const queryParams = new URLSearchParams(query);
-    queryParams.set('page', newPage + 1);
-    queryParams.delete('screen_id');
-    replace(`/campaign/active-campaigns?${queryParams.toString()}`);
-  };
-
+function Activecampaigns({ campaigns, screens }) {
   return (
     <Card sx={{ width: '100%', overflow: 'hidden' }}>
       <TableContainer sx={{ maxHeight: '60vh' }}>
@@ -139,7 +123,7 @@ function Activecampaigns({ campaigns }) {
                   <TableCell>{campaign.accountName || campaign.adsAccountName}</TableCell>
                   <TableCell>{campaign.screenName}</TableCell>
                   <TableCell align="right">
-                    <PauseToggle campaign={campaign} />
+                    <PauseToggle campaign={campaign} screens={screens} />
                   </TableCell>
                 </TableRow>
               );
@@ -151,61 +135,55 @@ function Activecampaigns({ campaigns }) {
   );
 }
 
-function PauseToggle({ campaign }) {
+function PauseToggle({ campaign, screens }) {
   const [isPaused, setIsPaused] = useState(campaign.is_paused ?? false);
-  const [requestProcessing, setRequestProcessing] = useState(false);
+  const { toggleCampaignPause } = useDeviceSocket();
 
-  const togglePause = async () => {
+  const screen = useMemo(() => {
+    return screens?.screen?.find(
+      (s) => s.reference === campaign.screenReference || s.screenName === campaign.screenName
+    );
+  }, [screens, campaign.screenReference, campaign.screenName]);
+
+  const deviceId = campaign.deviceId || screen?.deviceId;
+
+  const handleToggle = async () => {
     const nextPaused = !isPaused;
-    setRequestProcessing(true);
-
-    try {
-      await toast.promise(
-        axios.put('/api/admin/campaigns/pause', {
-          campaign_id: campaign.reference,
-          is_paused: nextPaused,
-        }),
-        {
-          loading: nextPaused ? 'Pausing campaign...' : 'Resuming campaign...',
-          success: (response) => {
-            setIsPaused(nextPaused);
-            return response.data.message || (nextPaused ? 'Campaign paused' : 'Campaign resumed');
-          },
-          error: (error) => error.response?.data?.message || error.message,
-        }
-      );
-    } catch (error) {
-      console.log(error);
+    const result = await toggleCampaignPause({
+      campaignId: campaign.reference,
+      isPaused: nextPaused,
+      deviceId,
+    });
+    if (result?.success) {
+      setIsPaused(nextPaused);
     }
-    setRequestProcessing(false);
   };
 
   return (
-    <Button
-      size="small"
-      variant={isPaused ? 'contained' : 'outlined'}
+    <ConfirmAction
       color={isPaused ? 'success' : 'warning'}
-      onClick={togglePause}
-      disabled={requestProcessing}
-      startIcon={
-        requestProcessing ? (
-          <CircularProgress size={14} color="inherit" />
-        ) : isPaused ? (
-          <PlayArrow />
-        ) : (
-          <Pause />
-        )
+      title={isPaused ? 'Resume Campaign?' : 'Pause Campaign?'}
+      content={
+        isPaused
+          ? `Are you sure you want to resume "${campaign.name}"? It will be re-added to the screen playback playlist.`
+          : `Are you sure you want to pause "${campaign.name}"? It will be removed from the screen playback playlist.`
       }
+      proceedText={isPaused ? 'Yes, Resume' : 'Yes, Pause'}
+      action={handleToggle}
+      buttonProps={{
+        size: 'small',
+        variant: isPaused ? 'contained' : 'outlined',
+        startIcon: isPaused ? <PlayArrow /> : <Pause />,
+      }}
     >
       {isPaused ? 'Resume' : 'Pause'}
-    </Button>
+    </ConfirmAction>
   );
 }
 
 Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>;
 
 export const getServerSideProps = async (ctx) => {
-  const userAuthToken = ctx.req.cookies['_cjtronics_cookie_admin'];
   const { screen } = ctx.query;
   try {
     const [campaigns, screens] = await Promise.all([

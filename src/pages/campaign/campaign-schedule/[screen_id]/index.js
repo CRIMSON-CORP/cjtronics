@@ -29,7 +29,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import useDeviceSocket from 'src/hooks/useDeviceSocket';
@@ -271,13 +271,12 @@ function SequenceResult({ sequence, screen }) {
             <Typography variant="h6">Sequence Ad Accounts</Typography>
             <Stack direction="row" gap={2}>
               <Button
-                variant="outlined"
+                component={Link}
                 color="secondary"
-                onClick={() =>
-                  router.push(`/campaign/campaign-schedule/${router.query.screen_id}/screenshots`)
-                }
+                variant="outlined"
+                href={`/campaign/campaign-schedule/${router.query.screen_id}/screenshots`}
               >
-                History
+                Screenshot History
               </Button>
               <ScreenshotButton screen={screen} />
               <PlayAds sequence={sequence} screen={screen} />
@@ -340,120 +339,24 @@ export const getServerSideProps = async (ctx) => {
 };
 
 function SendCampaignToDevice({ isOnline, deviceId }) {
-  const [websocket, setWebsocket] = useState(null);
+  const { sendCampaignToDevice, isConnected } = useDeviceSocket({
+    deviceId,
+    initialIsOnline: isOnline,
+  });
   const [requestProcessing, setRequestProcessing] = useState(false);
   const [hasSent, setHasSent] = useState(false);
-  const [screenIsOnline, setScreenIsOnline] = useState(isOnline);
 
-  const reconnectAttempts = useRef(0);
-  const reconnectTimeout = useRef(null);
-  const maxReconnectAttempts = 10; // you can bump this or make it infinite
-  const baseDelay = 2000; // 2s
-
-  const connect = () => {
-    const socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL);
-
-    socket.onopen = () => {
-      console.log('WebSocket connected ✅');
-      setWebsocket(socket);
-      reconnectAttempts.current = 0; // reset attempts
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket closed ❌');
-      setWebsocket(null);
-
-      if (reconnectAttempts.current < maxReconnectAttempts) {
-        const delay = baseDelay * Math.pow(2, reconnectAttempts.current); // exponential backoff
-        reconnectAttempts.current += 1;
-        console.log(`Reconnecting in ${delay / 1000}s...`);
-
-        reconnectTimeout.current = setTimeout(connect, delay);
-      }
-    };
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.event === 'device-connection') {
-        const screen = data.screens.find((screen) => screen.deviceId === deviceId);
-        if (screen) {
-          setScreenIsOnline(screen.isOnline);
-          if (screen.isOnline) {
-            toast.success('Screen just came online!', { duration: 5000 });
-          } else {
-            toast.error('Screen just went offline!', { duration: 5000 });
-          }
-        }
-      }
-    };
-
-    socket.onerror = (err) => {
-      console.error('WebSocket error:', err);
-      socket.close(); // force close, triggers onclose → reconnect
-    };
-  };
-
-  useEffect(() => {
-    connect();
-
-    return () => {
-      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
-      if (websocket) websocket.close();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const sendCampaignToDevice = async () => {
-    if (websocket.readyState !== websocket.OPEN)
-      return toast.error('Websocket is not Connected, Please Contact Maintainance');
-    if (!screenIsOnline) {
-      return toast.error('Screen is currently offline');
-    }
-    if (hasSent)
+  const handleSendCampaign = async () => {
+    if (hasSent) {
       return toast.error('Campaign already sent to device, Pls try again in less than a minute');
+    }
     setRequestProcessing(true);
-    await toast.promise(
-      axios.post('/api/admin/campaigns/get-new-campaign-data', { reference: deviceId }),
-      {
-        loading: 'Getting Campaign data, hold on a moment...',
-        success: (response) => {
-          websocket.send(
-            JSON.stringify({
-              event: 'send-to-device',
-              deviceId,
-              data: response.data,
-            })
-          );
-          setHasSent(true);
-          return "Campaign's data sent successfully";
-        },
-        error: (err) => {
-          return err.response?.data?.message || err.message;
-        },
-      }
-    );
+    const result = await sendCampaignToDevice(deviceId);
+    if (result.success) {
+      setHasSent(true);
+    }
     setRequestProcessing(false);
   };
-
-  // const sendToDevice = () => {
-  //   if (!isOnline) {
-  //     return toast.error(
-  //       'Screen is currently offline, pls make sure screen is online, refresh and try again'
-  //     );
-  //   }
-  //   if (hasSent) {
-  //     return toast.error('Schedule already sent to device please try again later');
-  //   }
-  //   if (websocket.readyState === WebSocket.OPEN) {
-  //     websocket.send(
-  //       JSON.stringify({
-  //         event: 'send-to-device',
-  //         device_id: deviceId,
-  //       })
-  //     );
-  //     setHasSent(true);
-  //   }
-  // };
 
   useEffect(() => {
     let timeout = null;
@@ -470,11 +373,14 @@ function SendCampaignToDevice({ isOnline, deviceId }) {
 
   return (
     <Button
-      onClick={sendCampaignToDevice}
-      disabled={requestProcessing || !websocket}
-      // disabled={requestProcessing || hasSent || !websocket}
+      onClick={handleSendCampaign}
+      disabled={requestProcessing || !isConnected}
       startIcon={
-        requestProcessing || !websocket ? <CircularProgress /> : <PlayCircleFilledRounded />
+        requestProcessing || !isConnected ? (
+          <CircularProgress size={20} />
+        ) : (
+          <PlayCircleFilledRounded />
+        )
       }
       variant="outlined"
     >
@@ -742,96 +648,6 @@ function Screen({ children, screenLayoutRef }) {
 
   return <Box sx={screenStyle}>{children}</Box>;
 }
-
-// function SequenceAds({ sequence, onComplete }) {
-//   const [currentAdIndex, setCurrentAdIndex] = useState(0);
-
-//   useEffect(() => {
-//     if (currentAdIndex < sequence.length) {
-//       const adDuration = sequence[currentAdIndex].duration * 1000; // Convert to milliseconds
-//       const timer = setTimeout(() => {
-//         setCurrentAdIndex((prevIndex) => prevIndex + 1);
-//       }, adDuration);
-
-//       return () => clearTimeout(timer); // Clear the timer when component unmounts or index changes
-//     } else if (onComplete) {
-//       onComplete(); // Call the callback when all ads have finished
-//     }
-//   }, [currentAdIndex, sequence, onComplete]);
-
-//   if (currentAdIndex >= sequence.length) {
-//     return null; // No more ads to show
-//   }
-
-//   const currentAd = sequence[currentAdIndex];
-
-//   return (
-//     <Stack
-//       direction="row"
-//       alignItems="center"
-//       style={{
-//         width: '100%',
-//         flex: 1,
-//         transition: 'transform 1s ease-out',
-//         transform: `translateX(-${currentAdIndex * 100}%)`,
-//       }}
-//     >
-//       {sequence.map((file, index) => {
-//         return (
-//           <Box key={file.reference} width="100%" height="100%" flex="none">
-//             {file.uploadType === 'image' ? (
-//               <Image
-//                 src={file.uploadFile}
-//                 alt={file.uploadName}
-//                 width={500}
-//                 height={400}
-//                 style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-//               />
-//             ) : file.uploadType === 'video' ? (
-//               <video
-//                 controls
-//                 src={file.uploadFile}
-//                 alt={file.uploadName}
-//                 autoPlay={index === currentAdIndex}
-//                 style={{ objectFit: 'contain', width: '100%', height: '100%' }}
-//               />
-//             ) : file.uploadType === 'html' ? (
-//               index === currentAdIndex && (
-//                 <Iframe content={file.uploadFile} styles={{ width: '100%', height: '100%' }} />
-//               )
-//             ) : null}
-//           </Box>
-//         );
-//       })}
-//     </Stack>
-//   );
-
-//   // return (
-//   //   <Stack direction="row">
-//   //     {currentAd.uploadType === 'image' ? (
-//   //       <Image
-//   //         src={currentAd.uploadFile}
-//   //         alt={currentAd.uploadName}
-//   //         width={500}
-//   //         height={400}
-//   //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
-//   //       />
-//   //     ) : currentAd.uploadType === 'video' ? (
-//   //       <video
-//   //         src={currentAd.uploadFile}
-//   //         alt={currentAd.uploadName}
-//   //         width={500}
-//   //         height={400}
-//   //         controls
-//   //         autoPlay
-//   //         style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
-//   //       />
-//   //     ) : currentAd.uploadType === 'html' ? (
-//   //       <Iframe content={currentAd.uploadFile} styles={{ width: '100%', height: 'auto' }} />
-//   //     ) : null}
-//   //   </Stack>
-//   // );
-// }
 
 const screenReferenceToConfig = {
   VBSGTREW43: {
