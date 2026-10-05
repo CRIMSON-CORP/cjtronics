@@ -1,14 +1,11 @@
+import { useState } from 'react';
 import {
+  Autocomplete,
   Box,
   Button,
   CircularProgress,
-  FormControl,
-  FormHelperText,
   Unstable_Grid2 as Grid,
-  InputLabel,
   Link,
-  MenuItem,
-  Select,
   Stack,
   TextField,
   Typography,
@@ -23,9 +20,11 @@ import { Layout as AuthLayout } from 'src/layouts/auth/layout';
 import axios from 'src/lib/axios';
 import * as Yup from 'yup';
 
-const Page = ({ organizations }) => {
+const Page = ({ organizations = [] }) => {
   const router = useRouter();
   const auth = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
   const formik = useFormik({
     initialValues: {
       firstName: '',
@@ -70,6 +69,23 @@ const Page = ({ organizations }) => {
       }
     },
   });
+
+  const selectedOrganization =
+    organizations.find((org) => org.reference === formik.values.organizationRef) || null;
+  const hasOrgError = !!(formik.touched.organizationRef && formik.errors.organizationRef);
+  const hasExactMatch = organizations.some(
+    (org) => org.name?.trim().toLowerCase() === inputValue.trim().toLowerCase()
+  );
+  const showTypingHint =
+    !hasOrgError &&
+    !formik.values.organizationRef &&
+    inputValue.trim().length > 0 &&
+    !hasExactMatch;
+  const orgHelperText = hasOrgError
+    ? formik.errors.organizationRef
+    : showTypingHint
+      ? 'Enter full organization name to match'
+      : '';
 
   return (
     <>
@@ -152,30 +168,69 @@ const Page = ({ organizations }) => {
                   type="tel"
                   value={formik.values.phone}
                 />
-                <FormControl variant="outlined">
-                  <InputLabel htmlFor="organizationId">Select Organization</InputLabel>
-                  <Select
-                    error={!!(formik.touched.organizationRef && formik.errors.organizationRef)}
-                    fullWidth
-                    label="Select Organization"
-                    name="organizationRef"
-                    id="organizationRef"
-                    onBlur={formik.handleBlur}
-                    onChange={formik.handleChange}
-                    value={formik.values.organizationRef}
-                  >
-                    {organizations.map((organization) => (
-                      <MenuItem key={organization.reference} value={organization.reference}>
-                        {organization.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {!!(formik.touched.organizationRef && formik.errors.organizationRef) && (
-                    <FormHelperText sx={{ color: 'error.main' }}>
-                      {formik.errors.organizationRef}
-                    </FormHelperText>
+                <Autocomplete
+                  autoHighlight
+                  autoSelect
+                  disableClearable
+                  filterOptions={(options, state) => {
+                    const query = (state.inputValue || '').trim().toLowerCase();
+                    if (!query) return [];
+                    return options.filter((opt) => opt.name?.trim().toLowerCase() === query);
+                  }}
+                  forcePopupIcon={false}
+                  fullWidth
+                  getOptionLabel={(option) =>
+                    typeof option === 'string' ? option : option?.name || ''
+                  }
+                  id="organizationRef"
+                  isOptionEqualToValue={(option, val) => option?.reference === val?.reference}
+                  noOptionsText={null}
+                  onChange={(event, newValue) => {
+                    formik.setFieldValue('organizationRef', newValue ? newValue.reference : '');
+                    setIsOpen(false);
+                  }}
+                  onClose={() => setIsOpen(false)}
+                  onInputChange={(event, newInputValue, reason) => {
+                    setInputValue(newInputValue);
+                    if (reason === 'input') {
+                      const isExactMatch = organizations.some(
+                        (org) =>
+                          org.name?.trim().toLowerCase() === newInputValue.trim().toLowerCase()
+                      );
+                      setIsOpen(isExactMatch);
+                      if (!isExactMatch && formik.values.organizationRef) {
+                        formik.setFieldValue('organizationRef', '');
+                      }
+                    } else if (reason === 'reset') {
+                      setIsOpen(false);
+                    } else if (reason === 'clear') {
+                      setIsOpen(false);
+                      formik.setFieldValue('organizationRef', '');
+                    }
+                  }}
+                  open={isOpen}
+                  options={organizations}
+                  popupIcon={null}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      error={hasOrgError}
+                      helperText={orgHelperText}
+                      label="Select Organization"
+                      name="organizationRef"
+                      onBlur={() => {
+                        formik.setFieldTouched('organizationRef', true);
+                        setIsOpen(false);
+                      }}
+                    />
                   )}
-                </FormControl>
+                  renderOption={(props, option) => (
+                    <li {...props} key={option.reference}>
+                      {option.name}
+                    </li>
+                  )}
+                  value={selectedOrganization}
+                />
                 <TextField
                   error={!!(formik.touched.password && formik.errors.password)}
                   fullWidth
