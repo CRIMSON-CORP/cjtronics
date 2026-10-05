@@ -11,14 +11,12 @@ import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-ca
 import { OverViewItem } from 'src/sections/overview/overview-item';
 import { OverviewScreensList } from 'src/sections/overview/overview-screens-list';
 
-const now = new Date();
-
 const Page = ({ stats, screens: { screen }, campaingActivity }) => {
   const { connectedScreens, screens } = useSocketScreens({ defaultScreens: screen });
   return (
     <>
       <Head>
-        <title>Dashboard | Cjtronimcs</title>
+        <title>Cjtronics | Dashboard</title>
       </Head>
       <Box component="main" flexGrow={1}>
         <Container maxWidth="xl">
@@ -142,7 +140,7 @@ function useSocketScreens({ defaultScreens }) {
           user.organizationReference === process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF
         );
       }),
-    [screens]
+    [screens, user.organizationReference]
   );
 
   const connectedScreens = useMemo(
