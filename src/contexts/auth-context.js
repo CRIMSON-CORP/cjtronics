@@ -101,6 +101,9 @@ export const AuthProvider = (props) => {
       }
     } catch (err) {
       // Unauthenticated or token expired
+      if (err.response?.status === 401 && !pathname.startsWith('/auth')) {
+        push('/auth/login');
+      }
     }
 
     dispatch({
