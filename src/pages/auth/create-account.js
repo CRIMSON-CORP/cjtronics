@@ -13,7 +13,6 @@ import { useFormik } from 'formik';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as AuthLayout } from 'src/layouts/auth/layout';
 import * as Yup from 'yup';
@@ -21,7 +20,7 @@ import * as Yup from 'yup';
 const Page = () => {
   const router = useRouter();
   const emailPrams = router.query.email;
-  const { signIn, signOut } = useAuth();
+  const { signIn } = useAuth();
   const theme = useTheme();
   const formik = useFormik({
     initialValues: {
@@ -44,18 +43,6 @@ const Page = () => {
       }
     },
   });
-
-  const resentOTP = () => {
-    // resend OTP
-  };
-
-  useEffect(() => {
-    (async () => {
-      if (router.query?.auth === 'false') {
-        signOut();
-      }
-    })();
-  }, [signOut, router.query?.auth]);
 
   return (
     <>

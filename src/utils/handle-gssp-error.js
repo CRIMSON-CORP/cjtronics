@@ -3,7 +3,7 @@ export default function handleGSSPError(error) {
   if (error?.response?.status === 401) {
     return {
       redirect: {
-        destination: '/auth/login?auth=false',
+        destination: '/auth/login',
         permanent: false,
       },
     };

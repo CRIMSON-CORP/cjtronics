@@ -68,8 +68,6 @@ const reducer = (state, action) =>
 
 export const AuthContext = createContext({ undefined });
 
-const securedRoutes = ['users'];
-
 export const AuthProvider = (props) => {
   const { children } = props;
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -84,32 +82,38 @@ export const AuthProvider = (props) => {
 
     initialized.current = true;
 
-    let isAuthenticated = false;
-    let user = {};
+    // If currently on an auth page, skip profile fetch as middleware handles unauthenticated state
+    if (pathname.startsWith('/auth')) {
+      dispatch({
+        type: HANDLERS.INITIALIZE,
+      });
+      return;
+    }
 
     try {
-      isAuthenticated = localStorage.getItem('authenticated') === 'true';
-      user = JSON.parse(localStorage.getItem('user'));
+      const response = await axios.get('/api/auth/me');
+      if (response.data?.status && response.data?.user) {
+        dispatch({
+          type: HANDLERS.INITIALIZE,
+          payload: response.data.user,
+        });
+        return;
+      }
     } catch (err) {
-      console.error(err);
+      // Unauthenticated or token expired
     }
-    if (isAuthenticated) {
-      dispatch({
-        type: HANDLERS.INITIALIZE,
-        payload: user,
-      });
-    } else {
-      dispatch({
-        type: HANDLERS.INITIALIZE,
-      });
-    }
+
+    dispatch({
+      type: HANDLERS.INITIALIZE,
+    });
   };
 
   useEffect(() => {
     initialize();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const signIn = async (email, password) => {
+  const signIn = useCallback(async (email, password) => {
     try {
       const { data, status } = await axios.post('/api/auth/login', {
         email,
@@ -120,9 +124,17 @@ export const AuthProvider = (props) => {
         const payload = {
           token: data.token,
           ...data.data,
+          userType: data.data?.userType,
+          account_type: data.data?.userType,
+          firstName: data.data?.firstName,
+          lastName: data.data?.lastName,
+          first_name: data.data?.firstName,
+          last_name: data.data?.lastName,
+          user: {
+            ...(data.data?.user || {}),
+            role: data.data?.role || data.data?.user?.role || { meta: [] },
+          },
         };
-        localStorage.setItem('authenticated', 'true');
-        localStorage.setItem('user', JSON.stringify(payload));
         dispatch({
           type: HANDLERS.SIGN_IN,
           payload,
@@ -132,15 +144,13 @@ export const AuthProvider = (props) => {
     } catch (err) {
       throw new Error(err?.response?.data?.message ?? err.message);
     }
-  };
+  }, []);
 
   const signOut = useCallback(async () => {
     try {
       const response = await axios.post('/api/auth/logout');
       const { data, status } = response;
       if (status === 200) {
-        localStorage.setItem('authenticated', 'false');
-        localStorage.setItem('user', null);
         dispatch({
           type: HANDLERS.SIGN_OUT,
         });
@@ -148,8 +158,11 @@ export const AuthProvider = (props) => {
       } else {
         throw response;
       }
-    } catch (err) {
-      throw err;
+    } catch (error) {
+      dispatch({
+        type: HANDLERS.SIGN_OUT,
+      });
+      throw error;
     }
   }, []);
 
