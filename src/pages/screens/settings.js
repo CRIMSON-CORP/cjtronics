@@ -49,7 +49,6 @@ const BRIGHTNESS_MIN = 10;
 const DEFAULT_BRIGHTNESS = 100;
 const DEFAULT_VOLUME = 0;
 const SETTINGS_SEND_INTERVAL = 150;
-const SIDE_NAV_WIDTH = 305;
 
 const Page = ({ screens }) => {
   const router = useRouter();
@@ -443,7 +442,7 @@ const Page = ({ screens }) => {
                   };
 
                   return (
-                    <Grid xs={12} sm={6} lg={4} key={screen.id || screen.reference}>
+                    <Grid xs={12} sm={6} lg={4} xl={3} key={screen.id || screen.reference}>
                       <ScreenCard
                         screen={screen}
                         isOnline={isOnline}
@@ -474,7 +473,7 @@ const Page = ({ screens }) => {
         sx={{
           position: 'fixed',
           bottom: { xs: 16, sm: 24 },
-          left: { xs: 16, lg: `calc(${SIDE_NAV_WIDTH}px + 24px)` },
+          left: { xs: 16, sm: 24 },
           right: { xs: 16, sm: 24 },
           display: 'flex',
           justifyContent: 'center',

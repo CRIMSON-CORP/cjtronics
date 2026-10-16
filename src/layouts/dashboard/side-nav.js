@@ -1,5 +1,5 @@
-import { Logout } from '@mui/icons-material';
-import { Box, ButtonBase, Divider, Drawer, Stack, useMediaQuery } from '@mui/material';
+import { Close, Logout } from '@mui/icons-material';
+import { Box, ButtonBase, Divider, Drawer, IconButton, Stack } from '@mui/material';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/router';
@@ -14,7 +14,6 @@ import SideNavDropList from './SideNavDropList';
 export const SideNav = (props) => {
   const { open, onClose } = props;
   const pathname = usePathname();
-  const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
   const { user } = useAuth();
   const userAccountType = user?.account_type;
 
@@ -30,23 +29,28 @@ export const SideNav = (props) => {
       }}
     >
       <Box sx={{ px: 3 }}>
-        <Box
-          component={NextLink}
-          href="/"
-          sx={{
-            display: 'inline-flex',
-          }}
-        >
-          <Box sx={{ position: 'relative', flex: 1, width: '100%', maxWidth: 400 }}>
-            <img
-              src="/assets/logo-cjtronics.png"
-              width={200}
-              height={60}
-              alt="logo"
-              style={{ width: '100%', height: 'auto' }}
-            />
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box
+            component={NextLink}
+            href="/"
+            sx={{
+              display: 'inline-flex',
+            }}
+          >
+            <Box sx={{ position: 'relative', flex: 1, width: '100%', maxWidth: 400 }}>
+              <img
+                src="/assets/logo-cjtronics.png"
+                width={200}
+                height={60}
+                alt="logo"
+                style={{ width: '100%', height: 'auto' }}
+              />
+            </Box>
           </Box>
-        </Box>
+          <IconButton onClick={onClose} size="small" aria-label="close navigation menu">
+            <Close fontSize="small" />
+          </IconButton>
+        </Stack>
       </Box>
       <Divider sx={{ borderColor: 'neutral.50' }} />
       <Box
@@ -102,25 +106,6 @@ export const SideNav = (props) => {
     </Box>
   );
 
-  if (lgUp) {
-    return (
-      <Drawer
-        anchor="left"
-        open
-        PaperProps={{
-          sx: {
-            backgroundColor: 'neutral.50',
-            color: 'neutral.800',
-            width: 305,
-          },
-        }}
-        variant="permanent"
-      >
-        {content}
-      </Drawer>
-    );
-  }
-
   return (
     <Drawer
       anchor="left"
@@ -154,13 +139,11 @@ function LogoutButton() {
     await toast.promise(signOut(), {
       loading: 'Signing out',
       success: () => {
-        router.push('/auth/login');
-        return 'Sign out successfull';
+        router.push('/auth/login?auth=false');
+        return 'Sign out successful';
       },
       error: (error) => {
-        if (error.response.data.message === 'Sorry, you are not logged in') {
-          router.push('/auth/login');
-        }
+        router.push('/auth/login?auth=false');
         return error?.response?.data?.message ?? error.message;
       },
     });

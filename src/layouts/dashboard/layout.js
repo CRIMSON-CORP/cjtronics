@@ -4,16 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { SideNav } from './side-nav';
 import { TopNav } from './top-nav';
 
-const SIDE_NAV_WIDTH = 305;
-
-const LayoutRoot = styled('div')(({ theme }) => ({
+const LayoutRoot = styled('div')({
   display: 'flex',
   flex: '1 1 auto',
   maxWidth: '100%',
-  [theme.breakpoints.up('lg')]: {
-    paddingLeft: SIDE_NAV_WIDTH,
-  },
-}));
+  width: '100%',
+});
 
 const LayoutContainer = styled('div')({
   display: 'flex',

@@ -64,7 +64,6 @@ import { getResourse } from 'src/lib/actions';
 import handleGSSPError from 'src/utils/handle-gssp-error';
 
 const superAdminRef = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF;
-const SIDE_NAV_WIDTH = 305;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const DAYS_OF_WEEK = [
@@ -769,7 +768,7 @@ const Page = ({ organizations, screens, layouts }) => {
                   const isLoadingAccounts = !!loadingScreenAccounts[screen.reference];
 
                   return (
-                    <Grid xs={12} sm={6} lg={4} key={screen.reference || screen.id}>
+                    <Grid xs={12} sm={6} lg={4} xl={3} key={screen.reference || screen.id}>
                       <ScreenCard
                         screen={screen}
                         isOnline={isOnline}
@@ -792,7 +791,7 @@ const Page = ({ organizations, screens, layouts }) => {
         sx={{
           position: 'fixed',
           bottom: { xs: 16, sm: 24 },
-          left: { xs: 16, lg: `calc(${SIDE_NAV_WIDTH}px + 24px)` },
+          left: { xs: 16, sm: 24 },
           right: { xs: 16, sm: 24 },
           display: 'flex',
           justifyContent: 'center',

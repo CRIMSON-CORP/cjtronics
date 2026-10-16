@@ -59,6 +59,15 @@ export function createComponents(config) {
         },
       },
     },
+    MuiContainer: {
+      styleOverrides: {
+        maxWidthXl: {
+          '@media (min-width: 1200px)': {
+            maxWidth: '1800px',
+          },
+        },
+      },
+    },
     MuiCardContent: {
       styleOverrides: {
         root: {
