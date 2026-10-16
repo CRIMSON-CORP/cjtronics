@@ -99,26 +99,4 @@ export const getServerSideProps = async (ctx) => {
   }
 };
 
-  // return {
-  //   props: {
-  //     users: [
-  //       {
-  //         createdAt: '2024-08-07T23:10:31.980Z',
-  //         email: 'aa@aa.com',
-  //         firstName: 'aa',
-  //         lastName: 'aa',
-  //         organizationId: '64ae8231564cd6a76b7b2a42',
-  //         privilege: 'user',
-  //         type: 'individual',
-  //         updatedAt: '2024-08-07T23:10:31.980Z',
-  //         userActiveStatus: 1,
-  //         username: 'aa.aa',
-  //       },
-  //     ],
-  //     total_results: 1,
-  //     pager_current_page: 1,
-  //   },
-  // };
-};
-
 export default Page;
