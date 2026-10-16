@@ -50,6 +50,7 @@ import {
   getScreenCities,
   getScreenLayouts,
 } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import * as Yup from 'yup';
 import { screenLayoutToReferenceMap } from '..';
 
@@ -815,19 +816,6 @@ export const getServerSideProps = async (ctx) => {
       props: { screens, screen, organizations, cities, screen_layouts, screen_campaigns },
     };
   } catch (error) {
-    console.log(error);
-
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 };

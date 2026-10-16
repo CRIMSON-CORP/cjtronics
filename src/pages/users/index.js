@@ -6,6 +6,7 @@ import { useCallback, useMemo } from 'react';
 import { useSelection } from 'src/hooks/use-selection';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import axios from 'src/lib/axios';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import { CustomersTable } from 'src/sections/customer/customers-table';
 
 const useCustomerIds = (customers) => {
@@ -94,19 +95,9 @@ export const getServerSideProps = async (ctx) => {
       },
     };
   } catch (error) {
-    console.log(error);
-
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    throw error;
+    return handleGSSPError(error, ctx);
   }
+};
 
   // return {
   //   props: {

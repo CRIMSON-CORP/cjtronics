@@ -19,6 +19,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import { format } from 'date-fns';
 import { Scrollbar } from 'src/components/scrollbar';
 
@@ -158,6 +159,9 @@ export const getServerSideProps = async (ctx) => {
       screenshots = res.data?.list || [];
     }
   } catch (err) {
+    if (err?.response?.status === 401) {
+      return handleGSSPError(err, ctx);
+    }
     console.error('Failed to fetch screenshots', err.message);
   }
 

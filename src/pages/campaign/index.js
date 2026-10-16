@@ -61,6 +61,7 @@ import { useAuth } from 'src/hooks/use-auth';
 import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 
 const superAdminRef = process.env.NEXT_PUBLIC_SUPER_ADMIN_ORGANIZATION_REF;
 const SIDE_NAV_WIDTH = 305;
@@ -1533,19 +1534,6 @@ export const getServerSideProps = async (ctx) => {
       },
     };
   } catch (error) {
-    console.error(error);
-
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 };

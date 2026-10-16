@@ -35,6 +35,7 @@ import { usePopover } from 'src/hooks/use-popover';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 
 const Page = ({ campaign }) => {
   const { back } = useRouter();
@@ -104,20 +105,7 @@ export const getServerSideProps = async (ctx) => {
       props: { campaign },
     };
   } catch (error) {
-    console.log(error);
-
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 };
 

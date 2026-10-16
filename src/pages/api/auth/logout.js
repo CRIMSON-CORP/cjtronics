@@ -20,6 +20,9 @@ export default async function handler(request, res) {
       throw response;
     }
   } catch (error) {
+    // Always clear the cookie even if backend logout fails (e.g. token was already expired/invalid)
+    res.setHeader('Set-Cookie', `${ADMIN_COOKIE_NAME}=deleted; Max-Age=-1; HttpOnly; Path=/`);
+
     if (error.data) {
       return res.status(401).json({ message: error.message });
     }

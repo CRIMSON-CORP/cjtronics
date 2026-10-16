@@ -102,7 +102,7 @@ export const AuthProvider = (props) => {
     } catch (err) {
       // Unauthenticated or token expired
       if (err.response?.status === 401 && !pathname.startsWith('/auth')) {
-        push('/auth/login');
+        push('/auth/login?auth=false');
       }
     }
 
@@ -114,6 +114,33 @@ export const AuthProvider = (props) => {
   useEffect(() => {
     initialize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (
+          error.response?.status === 401 &&
+          typeof window !== 'undefined' &&
+          !window.location.pathname.startsWith('/auth')
+        ) {
+          toast.error('Session expired. Please log in again.');
+          dispatch({ type: HANDLERS.SIGN_OUT });
+          const continuePath = window.location.pathname + window.location.search;
+          const continueUrl =
+            continuePath && continuePath !== '/'
+              ? `&continueUrl=${encodeURIComponent(continuePath)}`
+              : '';
+          window.location.href = `/auth/login?auth=false${continueUrl}`;
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
   }, []);
 
   const signIn = useCallback(async (email, password) => {

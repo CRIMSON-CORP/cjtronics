@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from 'src/hooks/use-auth';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import { OverviewCampaignActivitieList } from 'src/sections/overview/overview-campaign-activitieslist';
 import { OverViewItem } from 'src/sections/overview/overview-item';
 import { OverviewScreensList } from 'src/sections/overview/overview-screens-list';
@@ -98,17 +99,7 @@ export const getServerSideProps = async (ctx) => {
       },
     };
   } catch (error) {
-    console.log(error);
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    throw error;
+    return handleGSSPError(error, ctx);
   }
 };
 

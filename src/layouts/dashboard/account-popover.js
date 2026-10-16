@@ -15,13 +15,11 @@ export const AccountPopover = (props) => {
       await toast.promise(signOut(), {
         loading: 'Signing out',
         success: () => {
-          router.push('/auth/login');
-          return 'Sign out successfull';
+          router.push('/auth/login?auth=false');
+          return 'Sign out successful';
         },
         error: (error) => {
-          if (error.response.data.message === 'Sorry, you are not logged in') {
-            router.push('/auth/login');
-          }
+          router.push('/auth/login?auth=false');
           return error?.response?.data?.message ?? error.message;
         },
       });

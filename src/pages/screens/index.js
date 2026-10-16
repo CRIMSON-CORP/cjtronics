@@ -47,6 +47,7 @@ import {
   getScreenCities,
   getScreenLayouts,
 } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import * as Yup from 'yup';
 
 const Page = ({ screens, organizations, cities, screen_layouts }) => {
@@ -581,20 +582,7 @@ export const getServerSideProps = async (ctx) => {
       props: { screens, organizations, cities, screen_layouts },
     };
   } catch (error) {
-    console.log(error);
-
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 
   // return {

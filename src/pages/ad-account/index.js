@@ -39,6 +39,7 @@ import { useAuth } from 'src/hooks/use-auth';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllOrganizations, getAllScreens, getCompanies } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import * as Yup from 'yup';
 
 const Page = ({ organizations, companies, screens }) => {
@@ -461,19 +462,6 @@ export const getServerSideProps = async (ctx) => {
       props: { organizations, companies, screens },
     };
   } catch (error) {
-    console.log(error);
-
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 };

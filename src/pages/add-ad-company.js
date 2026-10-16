@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getUsers } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import * as Yup from 'yup';
 
 const Page = ({ users }) => {
@@ -220,19 +221,6 @@ export const getServerSideProps = async (ctx) => {
       },
     };
   } catch (error) {
-    console.log(error);
-
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 };

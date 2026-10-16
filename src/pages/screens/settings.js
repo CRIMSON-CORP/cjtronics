@@ -43,6 +43,7 @@ import { useThrottledCallback } from 'use-debounce';
 import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getAllScreens } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 
 const BRIGHTNESS_MIN = 10;
 const DEFAULT_BRIGHTNESS = 100;
@@ -808,16 +809,6 @@ export const getServerSideProps = async (ctx) => {
       },
     };
   } catch (error) {
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 };

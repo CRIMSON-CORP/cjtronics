@@ -36,6 +36,7 @@ import useDeviceSocket from 'src/hooks/useDeviceSocket';
 import useToggle from 'src/hooks/useToggle';
 import { Layout as DashboardLayout } from 'src/layouts/dashboard/layout';
 import { getResourse } from 'src/lib/actions';
+import handleGSSPError from 'src/utils/handle-gssp-error';
 import { screenLayoutToReferenceMap } from 'src/pages/screens';
 
 const Page = ({ screens, screen, layouts, campaignSquence }) => {
@@ -322,19 +323,7 @@ export const getServerSideProps = async (ctx) => {
       props: { screens, screen, layouts, campaignSquence },
     };
   } catch (error) {
-    console.log(error);
-    if (error?.response?.status === 401) {
-      return {
-        redirect: {
-          destination: '/auth/login?auth=false',
-          permanent: false,
-        },
-      };
-    }
-
-    return {
-      notFound: true,
-    };
+    return handleGSSPError(error, ctx);
   }
 };
 
